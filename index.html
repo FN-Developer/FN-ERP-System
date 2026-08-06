@@ -3048,7 +3048,124 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
 
 <div class="toast" id="toast"><span class="tk">✔</span><span id="toastMsg"></span></div>
 
+<!-- Firebase SDK (compat build) — loaded before the app so cloud sync can attach. If offline/blocked, the app falls back to local-only automatically. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
 <script>
+/* =========================================================================
+   CLOUD SYNC (Firebase Firestore, realtime) — additive, fail-safe layer.
+   -------------------------------------------------------------------------
+   HOW IT WORKS:
+   • Every shared data key (nx_works, nx_employees, …) is mirrored to a
+     Firestore document. Writes go to localStorage first (instant UI) then
+     get pushed to the cloud; remote changes stream back via onSnapshot and
+     re-render the current page live.
+   • Per-device keys (session/login, language, theme) are NEVER synced.
+   • If FIREBASE_CONFIG is left blank, or the SDK/network is unavailable,
+     this whole layer no-ops and the app behaves exactly as local-only.
+   ========================================================================= */
+
+/* >>> PASTE YOUR FIREBASE WEB CONFIG HERE <<<
+   Firebase Console → Project settings (⚙) → Your apps → Web app → Config.
+   These values are safe to keep in client code; security is enforced by
+   Firestore rules + Auth (see the rules I gave you). */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBUcqhvG1WPFVbhmoqv1g1IbqZdSskQY0Q",
+  authDomain: "fn-erp-system.firebaseapp.com",
+  projectId: "fn-erp-system",
+  storageBucket: "fn-erp-system.firebasestorage.app",
+  messagingSenderId: "792928715193",
+  appId: "1:792928715193:web:ef881873b43ee999933668"
+};
+
+/* Shared data keys — these sync to the cloud (everyone sees the same data). */
+const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr'];
+
+/* One-time seed / migration guard flags — set locally once the cloud is the
+   source of truth, so demo-seeders & clean-up migrations never overwrite or
+   wipe real cloud data on a fresh browser. */
+const NX_GUARD_FLAGS = ['nx_seed_leave','nx_seed_ot','nx_seed_pay','nx_seed_pos','nx_seed_dev','nx_seed_emp','nx_seed_stock_v5','nx_seed_v3','nx_ta_clean1','nx_ta_seed_v2','nx_pr_seed_v1','nx_reset_ah2'];
+
+/* Keep the real setItem so cloud pulls can write locally without echoing. */
+const _nxOrigSetItem = localStorage.setItem.bind(localStorage);
+let _nxApplyingRemote = false;
+
+/* Intercept saves: write locally (unchanged behaviour) then push to cloud.
+   NX_CLOUD is referenced lexically (a top-level const is NOT a window property);
+   the try/catch also absorbs the brief TDZ window before it is initialised. */
+localStorage.setItem = function(k, v){
+  _nxOrigSetItem(k, v);
+  try{ if(!_nxApplyingRemote && NX_CLOUD && NX_CLOUD.ready) NX_CLOUD.onLocalWrite(k, v); }catch(_){}
+};
+
+function nxCurrentView(){ try{ const el=document.querySelector('.view.active'); return el ? el.id.replace('view-','') : 'home'; }catch(_){ return 'home'; } }
+function nxRerenderAll(){
+  try{ if(typeof checkSession==='function') checkSession(); }catch(_){}
+  try{ if(typeof computeAlerts==='function') computeAlerts(); }catch(_){}
+  try{ if(typeof go==='function') go(nxCurrentView()); }catch(_){}
+}
+
+const NX_CLOUD = {
+  ready:false, col:null, _t:{},
+  get enabled(){ return !!(FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.apiKey && typeof firebase!=='undefined'); },
+  async init(){
+    if(!this.enabled){ console.info('[NX] Firebase not configured — running local-only.'); return; }
+    try{
+      if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      try{ await firebase.auth().signInAnonymously(); }
+      catch(e){ console.warn('[NX] Anonymous sign-in failed — enable Anonymous Auth in Firebase Console → Authentication → Sign-in method.', e); }
+      this.col = firebase.firestore().collection('nx_state');
+      await this.pull();
+      this.ready = true;
+      this.listen();
+      console.info('[NX] Cloud sync active ✓');
+      try{ if(typeof showToast==='function') showToast('Cloud sync connected'); }catch(_){}
+    }catch(e){ console.error('[NX] Cloud init failed — staying local-only.', e); }
+  },
+  async pull(){
+    const snap = await this.col.get();
+    if(!snap.empty){
+      _nxApplyingRemote = true;
+      snap.forEach(d=>{ const v=d.data(); if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(d.id, v.json); }catch(_){} } });
+      NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
+      _nxApplyingRemote = false;
+      nxRerenderAll();
+    } else {
+      /* Empty cloud → seed it once from this device's current data. */
+      NX_CLOUD_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) this._write(k, v); });
+    }
+  },
+  listen(){
+    this.col.onSnapshot(qs=>{
+      let changed=false;
+      qs.docChanges().forEach(ch=>{
+        if(ch.doc.metadata.hasPendingWrites) return;          // our own local write echoing back
+        const k=ch.doc.id, v=ch.doc.data();
+        if(!v || typeof v.json!=='string') return;
+        if(NX_CLOUD_KEYS.indexOf(k)<0) return;
+        if(localStorage.getItem(k)===v.json) return;           // no real change
+        _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
+        changed=true;
+      });
+      if(changed) nxRerenderAll();
+    }, err=> console.warn('[NX] snapshot error', err));
+  },
+  onLocalWrite(k, v){
+    if(!this.ready) return;
+    if(NX_CLOUD_KEYS.indexOf(k)<0) return;                     // per-device keys never sync
+    clearTimeout(this._t[k]);
+    this._t[k] = setTimeout(()=> this._write(k, v), 400);      // debounce bursts
+  },
+  _write(k, v){
+    if(!this.col) return;
+    try{ this.col.doc(k).set({ json:String(v), ts:Date.now() }).catch(e=> console.warn('[NX] push failed', k, e)); }
+    catch(e){ console.warn('[NX] push error', k, e); }
+  }
+};
+try{ window.NX_CLOUD = NX_CLOUD; }catch(_){}   /* expose for console debugging */
+
 /* =================== DATA LAYER (localStorage = database) =================== */
 const DB = {
   works(){ return JSON.parse(localStorage.getItem('nx_works')||'[]'); },
@@ -8060,6 +8177,8 @@ document.addEventListener('pointerdown',function(e){
 },true);
 checkSession();
 setInterval(computeAlerts,60000); // re-check every minute
+/* Attach cloud sync last, after all local seeding/rendering is done. */
+try{ NX_CLOUD.init(); }catch(e){ console.warn('[NX] cloud init threw', e); }
 </script>
 </body>
 </html>
