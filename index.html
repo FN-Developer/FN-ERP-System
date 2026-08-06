@@ -3100,6 +3100,40 @@ localStorage.setItem = function(k, v){
   try{ if(!_nxApplyingRemote && NX_CLOUD && NX_CLOUD.ready) NX_CLOUD.onLocalWrite(k, v); }catch(_){}
 };
 
+/* Robustness guard: repair any shared-data value that isn't the expected shape,
+   so a single malformed entry can NEVER crash startup (a crash would silently
+   disable cloud sync and leave a device looking normal but not syncing). Runs
+   before any boot render, and again after each cloud pull. */
+const NX_ARRAY_KEYS  = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_positions','nx_ta_devices','nx_ta_logs','nx_pr'];
+const NX_OBJECT_KEYS = ['nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_payslips'];
+function nxSanitizeLocal(){
+  NX_ARRAY_KEYS.forEach(k=>{ const raw=localStorage.getItem(k); if(raw==null) return; let ok=false; try{ ok=Array.isArray(JSON.parse(raw)); }catch(_){ ok=false; } if(!ok){ try{ _nxOrigSetItem(k,'[]'); }catch(_){} } });
+  NX_OBJECT_KEYS.forEach(k=>{ const raw=localStorage.getItem(k); if(raw==null) return; let ok=false; try{ const p=JSON.parse(raw); ok=(p&&typeof p==='object'&&!Array.isArray(p)); }catch(_){ ok=false; } if(!ok){ try{ _nxOrigSetItem(k,'{}'); }catch(_){} } });
+}
+try{ nxSanitizeLocal(); }catch(_){}
+
+/* Visible sync-status badge (bottom-left) so ANY device shows at a glance
+   whether it is actually syncing. If you don't see this badge at all, you are
+   on an old cached page or the downloaded file — reload the website. */
+function nxCloudBadge(state){
+  try{
+    if(!document.body) return;
+    let el=document.getElementById('nxCloudBadge');
+    if(!el){ el=document.createElement('div'); el.id='nxCloudBadge';
+      el.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;font:600 12px/1.4 system-ui,Segoe UI,Roboto,sans-serif;padding:5px 11px;border-radius:999px;display:flex;align-items:center;gap:7px;box-shadow:0 2px 10px rgba(0,0,0,.22);user-select:none;opacity:.94;';
+      document.body.appendChild(el);
+    }
+    const map={
+      connecting:{bg:'#6b4e00',fg:'#ffe08a',dot:'#ffd666',txt:'เชื่อมต่อคลาวด์… / Connecting…',ti:'Connecting to cloud sync…'},
+      online:{bg:'#0f5132',fg:'#a7f0c6',dot:'#2fe36f',txt:'ซิงค์คลาวด์ / Cloud synced ✓',ti:'This device is syncing with the cloud in realtime.'},
+      offline:{bg:'#5c1a1a',fg:'#ffc2c2',dot:'#ff5555',txt:'ออฟไลน์ ไม่ซิงค์ / Not syncing',ti:'This device is NOT syncing. Open the website link (not the downloaded file) and reload.'}
+    };
+    const c=map[state]||map.offline;
+    el.style.background=c.bg; el.style.color=c.fg; el.title=c.ti;
+    el.innerHTML='<span style="width:9px;height:9px;border-radius:50%;background:'+c.dot+';box-shadow:0 0 7px '+c.dot+';display:inline-block"></span><span>'+c.txt+'</span>';
+  }catch(_){}
+}
+
 function nxCurrentView(){ try{ const el=document.querySelector('.view.active'); return el ? el.id.replace('view-','') : 'home'; }catch(_){ return 'home'; } }
 function nxRerenderAll(){
   try{ if(typeof checkSession==='function') checkSession(); }catch(_){}
@@ -3111,7 +3145,8 @@ const NX_CLOUD = {
   ready:false, col:null, _t:{},
   get enabled(){ return !!(FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.apiKey && typeof firebase!=='undefined'); },
   async init(){
-    if(!this.enabled){ console.info('[NX] Firebase not configured — running local-only.'); return; }
+    if(!this.enabled){ console.info('[NX] Firebase not configured — running local-only.'); nxCloudBadge('offline'); return; }
+    nxCloudBadge('connecting');
     try{
       if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       try{ await firebase.auth().signInAnonymously(); }
@@ -3120,9 +3155,10 @@ const NX_CLOUD = {
       await this.pull();
       this.ready = true;
       this.listen();
+      nxCloudBadge('online');
       console.info('[NX] Cloud sync active ✓');
       try{ if(typeof showToast==='function') showToast('Cloud sync connected'); }catch(_){}
-    }catch(e){ console.error('[NX] Cloud init failed — staying local-only.', e); }
+    }catch(e){ console.error('[NX] Cloud init failed — staying local-only.', e); nxCloudBadge('offline'); }
   },
   async pull(){
     const snap = await this.col.get();
@@ -3130,6 +3166,7 @@ const NX_CLOUD = {
       _nxApplyingRemote = true;
       snap.forEach(d=>{ const v=d.data(); if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(d.id, v.json); }catch(_){} } });
       NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
+      try{ nxSanitizeLocal(); }catch(_){}   /* never let a malformed cloud value break rendering */
       _nxApplyingRemote = false;
       nxRerenderAll();
     } else {
@@ -3149,7 +3186,7 @@ const NX_CLOUD = {
         _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
         changed=true;
       });
-      if(changed) nxRerenderAll();
+      if(changed){ try{ nxSanitizeLocal(); }catch(_){} nxRerenderAll(); }
     }, err=> console.warn('[NX] snapshot error', err));
   },
   onLocalWrite(k, v){
