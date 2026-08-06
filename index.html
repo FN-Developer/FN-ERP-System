@@ -3096,6 +3096,11 @@ let _nxApplyingRemote = false;
    NX_CLOUD is referenced lexically (a top-level const is NOT a window property);
    the try/catch also absorbs the brief TDZ window before it is initialised. */
 localStorage.setItem = function(k, v){
+  /* View-only (Spectator) guard: a view-only user can NEVER write shared data.
+     This is the single choke point every DB.saveX() passes through, so it
+     enforces read-only regardless of which button was clicked. Per-device keys
+     (session/login, language, theme) are not shared data and stay writable. */
+  try{ if(!_nxApplyingRemote && NX_CLOUD_KEYS.indexOf(k)>=0 && nxIsViewOnly()){ nxViewOnlyToast(); return; } }catch(_){}
   _nxOrigSetItem(k, v);
   try{ if(!_nxApplyingRemote && NX_CLOUD && NX_CLOUD.ready) NX_CLOUD.onLocalWrite(k, v); }catch(_){}
 };
@@ -3134,6 +3139,40 @@ function nxCloudBadge(state){
   }catch(_){}
 }
 
+/* === VIEW-ONLY (Spectator) support ===
+   A position with viewOnly:true can see pages but cannot save/submit/edit
+   anything. Admin roles (CEO / Developer) are never view-only. */
+function nxIsViewOnly(){
+  try{
+    if(typeof DB==='undefined') return false;
+    const s=DB.session(); if(!s||!s.loggedIn) return false;
+    if(s.role==='CEO'||s.role==='Developer') return false;
+    const e=(typeof sessionEmp==='function')?sessionEmp():null; if(!e) return false;
+    const p=DB.positions().find(x=>x.id===e.positionId);
+    return !!(p && p.viewOnly);
+  }catch(_){ return false; }
+}
+let _nxVoLast=0;
+function nxViewOnlyToast(){
+  try{ const n=Date.now(); if(n-_nxVoLast<1500) return; _nxVoLast=n;
+    if(typeof showToast==='function') showToast('👁 Spectator — ดูได้อย่างเดียว บันทึกไม่ได้ · View-only'); }catch(_){}
+}
+function nxApplyViewOnlyUI(){
+  try{
+    const on=nxIsViewOnly();
+    if(document.body) document.body.classList.toggle('nx-view-only', on);
+    let b=document.getElementById('nxViewOnlyBar');
+    if(on){
+      if(!b && document.body){ b=document.createElement('div'); b.id='nxViewOnlyBar';
+        b.style.cssText='position:fixed;bottom:44px;left:50%;transform:translateX(-50%);z-index:99998;background:linear-gradient(90deg,#334155,#475569);color:#fff;font:600 12px/1.4 system-ui,Segoe UI,Roboto,sans-serif;padding:6px 14px;border-radius:999px;box-shadow:0 3px 12px rgba(0,0,0,.28);white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2px';
+        b.innerHTML='👁 โหมดดูอย่างเดียว (Spectator) — ดูได้ แต่บันทึก/แก้ไข/ส่งไม่ได้ · View-only';
+        document.body.appendChild(b);
+      }
+      if(b) b.style.display='';
+    } else if(b){ b.style.display='none'; }
+  }catch(_){}
+}
+
 function nxCurrentView(){ try{ const el=document.querySelector('.view.active'); return el ? el.id.replace('view-','') : 'home'; }catch(_){ return 'home'; } }
 function nxRerenderAll(){
   try{ if(typeof checkSession==='function') checkSession(); }catch(_){}
@@ -3154,6 +3193,7 @@ const NX_CLOUD = {
       this.col = firebase.firestore().collection('nx_state');
       await this.pull();
       this.ready = true;
+      try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       this.listen();
       nxCloudBadge('online');
       console.info('[NX] Cloud sync active ✓');
@@ -7395,6 +7435,20 @@ function ensureDevPosition(){
   if(!ps.some(p=>p.id==='pos_ceo'||(p.name||'').toLowerCase()==='ceo')){ ps.unshift({id:'pos_ceo',name:'CEO',perms:mkPerms(),admin:true}); changed=true; }
   if(changed) DB.savePositions(ps);
 }
+/* Spectator: a view-only position — can see pages but cannot save/submit/edit.
+   Self-healing (add-if-missing) so it survives the cloud pull that overwrites
+   local positions on existing multi-device setups. Runs at boot AND after each
+   cloud sync. A view-only user never writes, so if one is logged in the add is
+   simply skipped (their position already exists). */
+function ensureSpectatorPosition(){
+  try{
+    const ps=DB.positions();
+    if(ps.some(p=>p.id==='pos_spectator'||(p.name||'').toLowerCase()==='spectator')) return;
+    const perms={}; allPageKeys().forEach(k=>perms[k]=true);   // can view every page by default
+    ps.push({id:'pos_spectator',name:'Spectator',perms,admin:false,viewOnly:true});
+    DB.savePositions(ps);
+  }catch(_){}
+}
 function positionIsAdmin(id){ const p=DB.positions().find(x=>x.id===id); return !!(p&&p.admin); }
 function positionRole(id){ const p=DB.positions().find(x=>x.id===id); if(!p||!p.admin) return 'Staff'; return (p.name||'').toLowerCase()==='ceo'?'CEO':'Developer'; }
 function staffPosId(){ const s=DB.positions().find(p=>(p.name||'').toLowerCase()==='staff'); return s?s.id:''; }
@@ -7407,11 +7461,12 @@ const POS_COLORS={
   manager:{bg:'linear-gradient(90deg,#0906d7,#4b49ff)',fg:'#fff',ic:'★'},
   engineer:{bg:'linear-gradient(90deg,#0e7490,#06b6d4)',fg:'#fff',ic:'⚙'},
   technician:{bg:'linear-gradient(90deg,#15803d,#22c55e)',fg:'#fff',ic:'🔧'},
+  spectator:{bg:'linear-gradient(90deg,#475569,#64748b)',fg:'#fff',ic:'👁'},
   staff:{bg:'var(--chip-bg)',fg:'var(--muted)',ic:'•'}
 };
 function posColor(name){ return POS_COLORS[(name||'').toLowerCase()]||{bg:'linear-gradient(90deg,#475569,#64748b)',fg:'#fff',ic:'•'}; }
 /* Organisational power order — highest (CEO) first → lowest (Staff) last. */
-const POS_RANK={ceo:0,developer:1,manager:2,engineer:3,technician:4,staff:5};
+const POS_RANK={ceo:0,developer:1,manager:2,engineer:3,technician:4,staff:5,spectator:6};
 function posRank(id){ const p=DB.positions().find(x=>x.id===id); const k=(p&&p.name||'').toLowerCase(); return (k in POS_RANK)?POS_RANK[k]:6; }
 function posBadge(id){ const p=DB.positions().find(x=>x.id===id); if(!p) return `<span class="muted-line">${t('permNoPos')}</span>`; const c=posColor(p.name); return `<span class="pos-badge2" style="background:${c.bg};color:${c.fg}">${c.ic} ${escapeHtml(p.name)}</span>`; }
 /* Access enforcement: which pages the current session may see. null = all allowed. */
@@ -7437,6 +7492,7 @@ function applyAccess(){
     const cnt=card.querySelector('.bc-count'); if(cnt&&cnt.firstChild&&cnt.firstChild.nodeType===3) cnt.firstChild.nodeValue=vis+' ';
     card.style.display=(items.length&&vis===0)?'none':'';
   });
+  try{ nxApplyViewOnlyUI(); }catch(_){}
 }
 function positionName(id){ const p=DB.positions().find(x=>x.id===id); return p?p.name:''; }
 function initPermission(){
@@ -7492,6 +7548,10 @@ function renderPermToggles(posId){
     <div class="pa-info"><span class="pa-name">🛡 ${t('permAdminAccess')}</span><span class="pa-hint">${t('permAdminHint')}</span></div>
     <button type="button" class="tgl ${pos.admin?'on':''}" onclick="permToggleAdmin('${posId}')" aria-pressed="${pos.admin?'true':'false'}"><span class="tgl-dot"></span></button>
   </div>`;
+  const viewOnlyRow=`<div class="perm-admin">
+    <div class="pa-info"><span class="pa-name">👁 View-only · ดูอย่างเดียว</span><span class="pa-hint">ดูข้อมูลได้ทุกหน้า แต่บันทึก/แก้ไข/ส่งไม่ได้ · Can view pages but cannot save, edit or submit anything</span></div>
+    <button type="button" class="tgl ${pos.viewOnly?'on':''}" onclick="permToggleViewOnly('${posId}')" aria-pressed="${pos.viewOnly?'true':'false'}"><span class="tgl-dot"></span></button>
+  </div>`;
   const conf=pos.confirm||{};
   const confirmRow=`<div class="perm-confirm">
     <div class="pc-head">🗳 ${t('permConfHead')}</div>
@@ -7504,7 +7564,7 @@ function renderPermToggles(posId){
     <div class="pn-sub">${t('permNotifSub')}</div>
     ${NOTIF_TYPES.map(nt=>{ const on=notif[nt.key]!==false; return `<div class="perm-item"><span class="pi-name">${nt.ic} ${t(nt.label)}</span><button type="button" class="tgl ${on?'on':''}" onclick="permNotifToggle('${posId}','${nt.key}')" aria-pressed="${on?'true':'false'}"><span class="tgl-dot"></span></button></div>`; }).join('')}
   </div>`;
-  wrap.innerHTML=adminRow+confirmRow+notifRow+`<div class="perm-menu">`+PERM_PAGES.map(g=>`
+  wrap.innerHTML=adminRow+viewOnlyRow+confirmRow+notifRow+`<div class="perm-menu">`+PERM_PAGES.map(g=>`
     <div class="perm-grp">
       <div class="perm-grp-head"><span>${t(g.g)}</span><span class="perm-grp-btns"><button type="button" class="btn-mini" onclick="permGroupAll('${posId}','${g.g}',true)">${t('permAllOn')}</button><button type="button" class="btn-mini" onclick="permGroupAll('${posId}','${g.g}',false)">${t('permAllOff')}</button></span></div>
       ${g.items.map(it=>`<div class="perm-item"><span class="pi-name">${t(it[1])}</span><button type="button" class="tgl ${perms[it[0]]?'on':''}" onclick="permToggle('${posId}','${it[0]}')" aria-pressed="${perms[it[0]]?'true':'false'}"><span class="tgl-dot"></span></button></div>`).join('')}
@@ -7519,6 +7579,7 @@ const NOTIF_TYPES=[{key:'delivery',label:'notifDelivery',ic:'🔔'},{key:'ot',la
 function canSeeNotif(type){ if(typeof isCEO==='function'&&isCEO()) return true; const e=(typeof sessionEmp==='function')&&sessionEmp(); if(!e) return true; const pos=DB.positions().find(p=>p.id===e.positionId); if(!pos||!pos.notif) return true; return pos.notif[type]!==false; }
 function permNotifToggle(posId,key){ const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.notif=p.notif||{}; const cur=p.notif[key]!==false; p.notif[key]=!cur; DB.savePositions(ps); renderPermToggles(posId); try{computeAlerts();}catch(e){} showToast(p.notif[key]?t('permNotifOn'):t('permNotifOff')); }
 function permToggle(posId,key){ const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.perms=p.perms||{}; p.perms[key]=!p.perms[key]; DB.savePositions(ps); renderPermToggles(posId); }
+function permToggleViewOnly(posId){ const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.viewOnly=!p.viewOnly; DB.savePositions(ps); renderPermToggles(posId); renderPermEmployees(); try{ applyAccess(); }catch(_){} showToast(p.viewOnly?'👁 View-only ON':'View-only OFF'); }
 function permToggleAdmin(posId){ const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.admin=!p.admin; if(p.admin){ allPageKeys().forEach(k=>{ p.perms=p.perms||{}; p.perms[k]=true; }); } DB.savePositions(ps); renderPermToggles(posId); renderPermEmployees(); showToast(p.admin?t('permAdminOn'):t('permAdminOff')); }
 function permGroupAll(posId,gkey,val){ const grp=PERM_PAGES.find(g=>g.g===gkey); if(!grp) return; const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.perms=p.perms||{}; grp.items.forEach(it=>p.perms[it[0]]=val); DB.savePositions(ps); renderPermToggles(posId); }
 function permCreatePos(){
@@ -8169,6 +8230,7 @@ seedLeaves();
 seedOtCalendar();
 ensurePositions();
 ensureDevPosition();
+ensureSpectatorPosition();
 ensureEmployeePositions();
 seedPayslips();
 seedTimeAttend();
