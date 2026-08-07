@@ -1390,6 +1390,18 @@ tr.lc-row:hover>td{background:var(--hover)}
 .db-status.local{background:rgba(245,158,11,.16);color:#c2740a}
 .db-sec-head{margin:16px 0 2px;font-weight:800;font-size:12.5px;color:var(--primary);text-transform:uppercase;letter-spacing:.4px}
 .db-acts{display:flex;gap:6px;flex-wrap:wrap}
+.cn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}
+.cn-cell{background:var(--inset-bg);border:1px solid var(--line);border-radius:11px;padding:11px 13px;display:flex;flex-direction:column;gap:3px}
+.cn-cell span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.cn-cell b{font-size:14.5px;word-break:break-word}
+.cn-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 6px;border-bottom:1px solid var(--line)}
+.cn-row:last-child{border-bottom:none}
+.cn-user{flex:1;min-width:210px;display:flex;align-items:center;gap:10px}
+.cn-loc{min-width:170px;font-size:12px}
+.cn-stat{min-width:150px;font-size:12.5px;font-weight:700}
+.cn-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.cn-dot.on{background:#2fe36f;box-shadow:0 0 7px #2fe36f}
+.cn-dot.off{background:#94a3b8}
 .db-code{max-height:340px;overflow:auto;background:var(--inset-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:'Orbitron','Rajdhani',ui-monospace,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--txt)}
 .db-diff{max-height:52vh;overflow:auto}
 .db-diff-sec{margin-bottom:12px}
@@ -3169,8 +3181,28 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
   </section>
 
   <section class="view" id="view-devconn">
-    <div class="page-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE CONNECTIVITY</h1><p>Live sessions, device connections and database health. · สถานะการเชื่อมต่อ</p></div></div>
-    <div class="card"><div class="empty-state"><div class="e-ic">📡</div><div><b>Coming next (Phase 3):</b> who's currently logged in &amp; last-seen, device type / name / public IP / location, and database health &amp; expiry. I'll build this in the next step.</div></div></div>
+    <div class="page-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE CONNECTIVITY</h1><p>Live sessions, device connections and database health. · สถานะการเชื่อมต่อ</p></div>
+      <div class="ph-actions"><button type="button" class="ph-btn ov-cta" onclick="initDevConn()"><span class="ov-cta-ic">⟳</span><span>Refresh</span></button></div>
+    </div>
+    <div class="stats stats3">
+      <div class="stat c1"><div class="ic">🟢</div><div class="n" id="cnOnline">0</div><div class="l">Online Now</div></div>
+      <div class="stat c2"><div class="ic">👥</div><div class="n" id="cnSessions">0</div><div class="l">Known Sessions</div></div>
+      <div class="stat c3"><div class="ic">☁️</div><div class="n" id="cnDbStat">—</div><div class="l">Database</div></div>
+    </div>
+    <div class="card">
+      <div class="ta-head"><div><h2 style="margin:0"><span class="dot"></span>Who's Logged In</h2><div class="card-sub">Current sessions · online / last-seen · login &amp; logout status</div></div></div>
+      <div id="cnSessionsList"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin:0 0 4px"><span class="dot"></span>This Device</h2>
+      <div class="card-sub">Connection details for the device you are using right now</div>
+      <div id="cnDevice" class="cn-grid"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin:0 0 4px"><span class="dot"></span>Database Health</h2>
+      <div class="card-sub">Firestore connection, storage and backup status</div>
+      <div id="cnHealth" class="cn-grid"></div>
+    </div>
   </section>
 
   <div class="footer-note"><span class="lf" style="color:#0906d7;font-weight:700">F</span> <span class="ln" style="color:#77e947;font-weight:700">N</span> Technology &nbsp;|&nbsp; <span data-i18n="footer">Enterprise Work Management System</span> &nbsp;|&nbsp; v1.1</div>
@@ -7846,9 +7878,10 @@ function doLogin(){
   if(err) err.style.display='none';
   DB.saveSession(sess);
   const lp=document.getElementById('lgPass'); if(lp) lp.value='';
+  _nxLoginAt=Date.now(); try{ nxFetchIP().then(()=>nxPresenceBeat()).catch(()=>{}); }catch(_){}
   nxSound('signin'); checkSession(); applyLang(); go('home'); showToast(t('lgWelcome')+' '+sess.user);
 }
-function logout(){ nxSound('logout'); DB.clearSession(); checkSession(); const u=document.getElementById('lgUser'); if(u) u.value=''; }
+function logout(){ nxSound('logout'); try{ nxPresenceBeat(true); }catch(_){} _nxLoginAt=null; DB.clearSession(); checkSession(); const u=document.getElementById('lgUser'); if(u) u.value=''; }
 function lgKeydown(e){ if(e.key==='Enter'){ doLogin(); return; } if(e.key==='Tab'){ nxSound('tab'); return; } if(e.key.length===1||e.key==='Backspace'||e.key==='Delete') nxSound('type'); }
 /* Background FX — parallax (mouse + device tilt), click-focus zoom + directional pan, ripple */
 let _bgRaf=0,_bgMx=0,_bgMy=0,_bgFocusT=0;
@@ -8672,10 +8705,7 @@ function dbClearOpen(){
     <div style="border:1.5px solid var(--line2);border-radius:12px;padding:14px;background:var(--inset-bg)">
       <div style="font-weight:800;margin-bottom:4px">Required first: download a backup</div>
       <div class="card-sub" style="margin-bottom:10px">You must download a full backup (CSV or SQL) of all databases before you can confirm. Keep the file safe.</div>
-      <div class="db-btns" style="margin:0 0 4px">
-        <button type="button" class="db-btn db-download" onclick="dbClearDownload('csv')"><span class="db-ic">📄</span><span class="db-l"><b>Download CSV</b><small>Required — or SQL →</small></span></button>
-        <button type="button" class="db-btn db-backup" onclick="dbClearDownload('sql')"><span class="db-ic">🗃</span><span class="db-l"><b>Download SQL</b><small>Required — or CSV ←</small></span></button>
-      </div>
+      <button type="button" class="db-btn db-download" style="width:100%" onclick="dbClearDownload()"><span class="db-ic">⬇️</span><span class="db-l"><b>Download backup (CSV + SQL)</b><small>Required — one click saves both files</small></span></button>
       <div id="dbClearStat" style="margin-top:10px;font-weight:700;font-size:13px;color:var(--muted)">◻ No backup downloaded yet — Confirm is locked.</div>
     </div>`;
   customModal({icon:'🗑',title:'Clear all running data',desc:'Databases: '+NX_CLOUD_KEYS.length+' tables',bodyHtml:body,footButtons:[
@@ -8683,10 +8713,11 @@ function dbClearOpen(){
     {label:'🗑 Confirm clear',cls:'primary',id:'dbClearConfirm',disabled:true,onClick:dbClearConfirm}
   ]});
 }
-function dbClearDownload(fmt){
-  if(fmt==='sql') dbDownloadSql(); else dbDownloadAll();
+function dbClearDownload(){
+  dbDownloadAll();                       // CSV
+  setTimeout(dbDownloadSql, 500);        // SQL (staggered so both downloads fire)
   _dbClearDownloaded=true;
-  const stat=document.getElementById('dbClearStat'); if(stat){ stat.innerHTML='✅ '+(fmt==='sql'?'SQL':'CSV')+' backup downloaded — you can now confirm.'; stat.style.color='var(--green)'; }
+  const stat=document.getElementById('dbClearStat'); if(stat){ stat.innerHTML='✅ CSV + SQL backup downloaded — you can now confirm.'; stat.style.color='var(--green)'; }
   const btn=document.getElementById('dbClearConfirm'); if(btn){ btn.disabled=false; btn.style.opacity=''; btn.style.pointerEvents=''; }
 }
 function dbClearConfirm(){
@@ -8698,7 +8729,63 @@ function dbClearConfirm(){
     _dbClearDownloaded=false; closeModal(); nxRerenderAll(); showToast('🗑 Running data cleared (CSV + cloud backup kept)'); try{ go('devdb'); }catch(_){}
   })();
 }
-function initDevConn(){ /* Phase 3 — connectivity/presence/IP/location */ }
+/* ================= Phase 3: Database Connectivity ================= */
+let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
+function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
+function nxDeviceInfo(){
+  const ua=navigator.userAgent||'';
+  let os='Unknown'; if(/Windows/i.test(ua))os='Windows'; else if(/Android/i.test(ua))os='Android'; else if(/iPhone|iPad|iPod/i.test(ua))os='iOS'; else if(/Mac OS X|Macintosh/i.test(ua))os='macOS'; else if(/Linux/i.test(ua))os='Linux';
+  let br='Browser'; if(/Edg\//i.test(ua))br='Edge'; else if(/OPR\/|Opera/i.test(ua))br='Opera'; else if(/Chrome\//i.test(ua)&&!/Chromium/i.test(ua))br='Chrome'; else if(/Firefox\//i.test(ua))br='Firefox'; else if(/Safari\//i.test(ua)&&!/Chrome/i.test(ua))br='Safari';
+  let type='Desktop'; if(/iPad|Tablet/i.test(ua)||(/Android/i.test(ua)&&!/Mobile/i.test(ua)))type='Tablet'; else if(/Mobi|iPhone|Android.*Mobile/i.test(ua))type='Mobile';
+  return { type, os, browser:br, name: br+' on '+os };
+}
+async function nxFetchIP(){
+  if(_nxIP) return _nxIP;
+  try{ const r=await fetch('https://ipwho.is/',{cache:'no-store'}); const j=await r.json(); if(j&&j.success!==false){ _nxIP={ip:j.ip||'',city:j.city||'',region:j.region||'',country:j.country||'',org:(j.connection&&j.connection.org)||j.org||''}; return _nxIP; } }catch(_){}
+  try{ const r=await fetch('https://ipapi.co/json/',{cache:'no-store'}); const j=await r.json(); _nxIP={ip:j.ip||'',city:j.city||'',region:j.region||'',country:j.country_name||j.country||'',org:j.org||''}; return _nxIP; }catch(_){}
+  _nxIP={ip:'unavailable',city:'',region:'',country:'',org:''}; return _nxIP;
+}
+function nxPresenceCol(){ return (typeof NX_CLOUD!=='undefined'&&NX_CLOUD.col)?NX_CLOUD.col:null; }
+async function nxPresenceBeat(loggingOut){
+  const col=nxPresenceCol(); if(!col) return;
+  let s; try{ s=DB.session()||{}; }catch(_){ s={}; }
+  if(!s.loggedIn) return;
+  if(!_nxLoginAt) _nxLoginAt=Date.now();
+  const dev=nxDeviceInfo(); const ip=_nxIP||{ip:'',city:'',region:'',country:'',org:''};
+  try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', user:s.user||'—', role:s.role||'', empId:s.empId||'', device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt }); }catch(_){}
+}
+async function nxListPresence(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_pr_')===0) out.push(d.data()); }); out.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)); return out; }catch(_){ return []; } }
+async function nxPrunePresence(){ const col=nxPresenceCol(); if(!col) return; const now=Date.now(); try{ const list=await nxListPresence(); for(const p of list){ if(now-(p.lastSeen||0) > 2*86400000){ try{ await col.doc('_pr_'+p.sid).delete(); }catch(_){} } } }catch(_){} }
+async function initDevConn(){
+  await nxFetchIP().catch(()=>{});
+  try{ await nxPresenceBeat(); }catch(_){}
+  try{ nxPrunePresence(); }catch(_){}
+  await renderDevConn();
+  if(_cnTimer) clearInterval(_cnTimer);
+  _cnTimer=setInterval(()=>{ if(nxCurrentView()!=='devconn'){ clearInterval(_cnTimer); _cnTimer=null; return; } renderDevConn(); }, 20000);
+}
+async function renderDevConn(){
+  const now=Date.now(), ONLINE_MS=90000;
+  const list=await nxListPresence();
+  const online=list.filter(p=>p.online&&(now-(p.lastSeen||0))<ONLINE_MS);
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('cnOnline', online.length); set('cnSessions', list.length); set('cnDbStat',(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready)?'Connected':'Offline');
+  const body=document.getElementById('cnSessionsList');
+  if(body){ body.innerHTML = list.length ? list.map(p=>{
+    const isOn=p.online&&(now-(p.lastSeen||0))<ONLINE_MS;
+    const seen=isOn?'online now':('last seen '+nxRelTime(p.lastSeen||0));
+    const status=p.online?(isOn?'🟢 Logged in':'🟠 Idle'):'⚪ Logged out';
+    const ava=(p.user||'?').trim().slice(0,1).toUpperCase(); const me=p.sid===nxSid()?' <span class="muted-line">(this device)</span>':'';
+    return `<div class="cn-row"><div class="cn-user"><span class="att-avatar">${escapeHtml(ava)}</span><div><b>${escapeHtml(p.user||'—')}</b>${me}<div class="ot-sub2">${escapeHtml(p.role||'')} · ${escapeHtml(p.device||'')} · ${escapeHtml(p.name||'')}</div></div></div><div class="cn-loc muted-line">${escapeHtml([p.city,p.country].filter(Boolean).join(', ')||'—')}${p.ip?(' · '+escapeHtml(p.ip)):''}</div><div class="cn-stat"><span class="cn-dot ${isOn?'on':'off'}"></span>${escapeHtml(seen)}</div><div class="cn-stat">${status}</div></div>`;
+  }).join('') : '<div class="muted-line" style="padding:14px">No sessions recorded yet. Other devices appear here when they open the app.</div>'; }
+  const dev=nxDeviceInfo(); const ip=_nxIP||{};
+  const dgrid=document.getElementById('cnDevice');
+  if(dgrid){ dgrid.innerHTML=[['Device type',dev.type],['Device / OS',dev.name],['Public IP',ip.ip||'—'],['Location',[ip.city,ip.region,ip.country].filter(Boolean).join(', ')||'—'],['Network / ISP',ip.org||'—'],['Logged in as',(function(){try{return (DB.session()||{}).user||'—';}catch(_){return '—';}})()]].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join(''); }
+  const totalRecords=NX_CLOUD_KEYS.reduce((n,k)=>{ const c=nxJsonCount(localStorage.getItem(k)); return n+(c||0); },0);
+  const bkTs=parseInt(localStorage.getItem('nx_lastbk_ts')||'0');
+  const hgrid=document.getElementById('cnHealth');
+  if(hgrid){ hgrid.innerHTML=[['Connection',(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready)?'🟢 Connected':'🔴 Offline'],['Project',(typeof FIREBASE_CONFIG!=='undefined'&&FIREBASE_CONFIG.projectId)||'—'],['Region','asia-southeast1 (Singapore)'],['Tables',NX_CLOUD_KEYS.length],['Total records',totalRecords],['Last cloud backup',bkTs?nxRelTime(bkTs):'—'],['Backups retained','up to 60 snapshots'],['Plan / expiry','Spark (free) · no expiry']].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join(''); }
+}
 
 seed();
 seedVendors();
@@ -8760,6 +8847,12 @@ try{ NX_CLOUD.init(); }catch(e){ console.warn('[NX] cloud init threw', e); }
 /* Auto-backup to the cloud every 5 minutes — only from a Developer session
    (avoids every device creating redundant snapshots). Skips if nothing changed. */
 setInterval(()=>{ try{ if(typeof isDeveloper==='function' && isDeveloper()) dbBackupNow(false); }catch(_){} }, 300000);
+/* Presence: announce this session (device + IP/location) and heartbeat so the
+   Developer's Connectivity page shows who is online / last-seen across devices. */
+setTimeout(()=>{ try{ nxFetchIP().then(()=>nxPresenceBeat()).catch(()=>{}); }catch(_){} }, 4000);
+setInterval(()=>{ try{ nxPresenceBeat(); }catch(_){} }, 45000);
+window.addEventListener('beforeunload',()=>{ try{ nxPresenceBeat(true); }catch(_){} });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{ nxPresenceBeat(); }catch(_){} } });
 
 /* ===== Block pinch-zoom / double-tap magnify (tablets & touch screens) =====
    Only multi-finger pinch and double-tap zoom are prevented; single-finger
