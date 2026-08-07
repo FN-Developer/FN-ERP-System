@@ -3139,11 +3139,11 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <div class="db-btns">
         <button type="button" class="db-btn db-backup" onclick="dbBackupNow(true)"><span class="db-ic">💾</span><span class="db-l"><b>Backup now</b><small>Snapshot → cloud</small></span></button>
         <button type="button" class="db-btn db-restore" onclick="dbRestoreOpen()"><span class="db-ic">♻️</span><span class="db-l"><b>Restore</b><small>Pick date &amp; time</small></span></button>
-        <button type="button" class="db-btn db-download" onclick="dbDownloadAll()"><span class="db-ic">⬇️</span><span class="db-l"><b>Download CSV</b><small>All databases</small></span></button>
-        <label class="db-btn db-upload" id="dbUploadBtn"><span class="db-ic">⬆️</span><span class="db-l"><b>Upload CSV</b><small>Drag &amp; drop / click</small></span><input type="file" accept=".csv" id="dbUploadInput" style="display:none" onchange="dbUploadFile(this.files&&this.files[0])"></label>
+        <button type="button" class="db-btn db-download" onclick="dbDownloadPick()"><span class="db-ic">⬇️</span><span class="db-l"><b>Download</b><small>CSV or SQL</small></span></button>
+        <label class="db-btn db-upload" id="dbUploadBtn"><span class="db-ic">⬆️</span><span class="db-l"><b>Upload CSV / SQL</b><small>Drag &amp; drop / click</small></span><input type="file" accept=".csv,.sql" id="dbUploadInput" style="display:none" onchange="dbUploadFile(this.files&&this.files[0])"></label>
         <button type="button" class="db-btn db-clear" onclick="dbClearOpen()"><span class="db-ic">🗑</span><span class="db-l"><b>Clear running data</b><small>Backups kept safe</small></span></button>
       </div>
-      <div class="db-drop" id="dbDrop"><span>⬆️ Drop a CSV here — it loads straight into every page, ready for calculation</span></div>
+      <div class="db-drop" id="dbDrop"><span>⬆️ Drop a CSV or SQL file here — it loads straight into every page, ready for calculation</span></div>
     </div>
     <div class="card">
       <div class="ta-head"><div><h2 style="margin:0"><span class="dot"></span>Databases</h2><div class="card-sub">Each database, its storage path, record count, and last change</div></div>
@@ -8540,22 +8540,61 @@ async function dbDoRestore(){
     closeModal(); nxRerenderAll(); showToast('♻️ Database restored'); try{ go('devdb'); }catch(_){}
   }catch(e){ showToast('⚠ Restore failed'); }
 }
+/* ---- Build files: CSV and SQL (both round-trippable, one JSON blob per table) ---- */
 function dbBuildCsv(){ const lines=['table,records,value_json']; NX_CLOUD_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v==null) return; lines.push([csvCell(k),csvCell(nxJsonCount(v)),csvCell(v)].join(',')); }); return lines.join('\n'); }
-function dbDownloadAll(){
-  const csv=dbBuildCsv(); const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
-  const ts=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-'); const a=document.createElement('a'); a.href=url; a.download='FN-database-'+ts+'.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); showToast('⬇️ Database CSV downloaded');
+function dbBuildSql(){
+  const lines=[
+    '-- F N Technology · Work Management System — database backup',
+    '-- Generated: '+new Date().toISOString(),
+    '-- Format: one JSON value per table. Re-import with the Upload button (accepts .sql or .csv).',
+    'CREATE TABLE IF NOT EXISTS nx_database (table_key TEXT PRIMARY KEY, value_json TEXT);'
+  ];
+  NX_CLOUD_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v==null) return; const esc=(''+v).replace(/'/g,"''"); lines.push(`INSERT INTO nx_database (table_key, value_json) VALUES ('${k}', '${esc}');`); });
+  return lines.join('\n');
 }
-function dbUploadFile(f){ if(!f) return; if(!/\.csv$/i.test(f.name)&&f.type!=='text/csv'){ showToast('⚠ Please choose a .csv file'); return; } const r=new FileReader(); r.onload=()=>dbApplyCsv(''+r.result, f.name); r.readAsText(f); }
-function dbApplyCsv(text, fname){
-  let grid; try{ grid=csvParse(text); }catch(_){ showToast('⚠ Could not read CSV'); return; }
-  if(!grid||grid.length<2){ showToast('⚠ CSV is empty'); return; }
-  const head=grid[0].map(h=>(''+h).trim().toLowerCase()); const ti=head.indexOf('table'), vi=head.indexOf('value_json');
-  if(ti<0||vi<0){ showToast('⚠ CSV needs "table" and "value_json" columns'); return; }
-  const found=[];
-  for(let i=1;i<grid.length;i++){ const row=grid[i]; if(!row||!row[ti]) continue; const k=(''+row[ti]).trim(); if(NX_CLOUD_KEYS.indexOf(k)<0) continue; const val=row[vi]; try{ JSON.parse(val); }catch(_){ continue; } found.push([k,val]); }
-  if(!found.length){ showToast('⚠ No valid database rows found in CSV'); return; }
-  confirmModal('Upload & replace database','This loads '+found.length+' databases straight into every page (ready for calculation) and pushes to the cloud for all devices. A safety backup is taken first.',found.map(([k,val])=>({k:nxDbName(k),v:nxJsonCount(val)+' records'})),async ()=>{
-    await dbBackupNow(true); found.forEach(([k,val])=>localStorage.setItem(k, val)); closeModal(); nxRerenderAll(); showToast('⬆️ Uploaded '+found.length+' databases'); try{ go('devdb'); }catch(_){}
+function dbDownloadBlob(content, ext, mime){
+  const blob=new Blob([content],{type:mime}); const url=URL.createObjectURL(blob);
+  const ts=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-'); const a=document.createElement('a'); a.href=url; a.download='FN-database-'+ts+'.'+ext; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function dbDownloadAll(){ dbDownloadBlob('﻿'+dbBuildCsv(),'csv','text/csv;charset=utf-8;'); showToast('⬇️ Database CSV downloaded'); }
+function dbDownloadSql(){ dbDownloadBlob(dbBuildSql(),'sql','application/sql;charset=utf-8;'); showToast('⬇️ Database SQL downloaded'); }
+function dbDownloadPick(){
+  customModal({icon:'⬇️',title:'Download all databases',desc:'Choose a file format',bodyHtml:`<div class="db-btns" style="margin:4px 0">
+     <button type="button" class="db-btn db-download" onclick="closeModal();dbDownloadAll()"><span class="db-ic">📄</span><span class="db-l"><b>CSV file</b><small>Spreadsheet-friendly (.csv)</small></span></button>
+     <button type="button" class="db-btn db-backup" onclick="closeModal();dbDownloadSql()"><span class="db-ic">🗃</span><span class="db-l"><b>SQL file</b><small>Database dump (.sql)</small></span></button>
+   </div>`,footButtons:[{label:t('mClose'),cls:'ghost',onClick:closeModal}]});
+}
+/* ---- Parse files (both formats → [ [table, value_json], ... ]) ---- */
+function dbParseCsv(text){
+  const grid=csvParse(text); if(!grid||grid.length<2) return [];
+  const head=grid[0].map(h=>(''+h).trim().toLowerCase()); const ti=head.indexOf('table'), vi=head.indexOf('value_json'); if(ti<0||vi<0) return [];
+  const out=[]; for(let i=1;i<grid.length;i++){ const row=grid[i]; if(!row||!row[ti]) continue; out.push([(''+row[ti]).trim(), row[vi]]); } return out;
+}
+function dbParseSql(text){
+  const out=[]; const re=/INSERT\s+INTO\s+[`"\[]?nx_database[`"\]]?\s*(?:\([^)]*\))?\s*VALUES\s*\(/gi; let m;
+  while((m=re.exec(text))){
+    let i=re.lastIndex;
+    const readStr=()=>{ while(i<text.length&&/\s/.test(text[i]))i++; if(text[i]!=="'")return null; i++; let s=''; while(i<text.length){ const c=text[i]; if(c==="'"){ if(text[i+1]==="'"){ s+="'"; i+=2; continue; } i++; break; } s+=c; i++; } return s; };
+    const key=readStr(); while(i<text.length&&text[i]!==',')i++; i++; const json=readStr();
+    if(key!=null&&json!=null) out.push([key.trim(), json]);
+    re.lastIndex=i;
+  }
+  return out;
+}
+function dbUploadFile(f){
+  if(!f) return;
+  const isSql=/\.sql$/i.test(f.name), isCsv=/\.csv$/i.test(f.name)||f.type==='text/csv';
+  if(!isSql&&!isCsv){ showToast('⚠ Please choose a .csv or .sql file'); return; }
+  const r=new FileReader(); r.onload=()=>dbApplyFile(''+r.result, f.name); r.readAsText(f);
+}
+function dbApplyFile(text, fname){
+  const isSql = /\.sql$/i.test(fname||'') || (!/\.csv$/i.test(fname||'') && /INSERT\s+INTO/i.test(text.slice(0,5000)));
+  const fmt = isSql?'SQL':'CSV';
+  let parsed; try{ parsed = isSql ? dbParseSql(text) : dbParseCsv(text); }catch(_){ parsed=[]; }
+  const found = (parsed||[]).filter(([k,val])=>{ if(NX_CLOUD_KEYS.indexOf(k)<0) return false; try{ JSON.parse(val); return true; }catch(_){ return false; } });
+  if(!found.length){ showToast('⚠ No valid database rows found in the '+fmt+' file'); return; }
+  confirmModal('Upload & replace database','This loads '+found.length+' databases from the '+fmt+' file straight into every page (ready for calculation) and pushes to the cloud for all devices. A safety backup is taken first.',found.map(([k,val])=>({k:nxDbName(k),v:nxJsonCount(val)+' records'})),async ()=>{
+    await dbBackupNow(true); found.forEach(([k,val])=>localStorage.setItem(k, val)); closeModal(); nxRerenderAll(); showToast('⬆️ Uploaded '+found.length+' databases from '+fmt); try{ go('devdb'); }catch(_){}
   });
 }
 function dbWireDrop(){
