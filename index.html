@@ -1389,7 +1389,22 @@ tr.lc-row:hover>td{background:var(--hover)}
 .db-status.ok{background:rgba(20,154,90,.15);color:var(--green)}
 .db-status.local{background:rgba(245,158,11,.16);color:#c2740a}
 .db-sec-head{margin:16px 0 2px;font-weight:800;font-size:12.5px;color:var(--primary);text-transform:uppercase;letter-spacing:.4px}
+.db-acts{display:flex;gap:6px;flex-wrap:wrap}
 .db-code{max-height:340px;overflow:auto;background:var(--inset-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:'Orbitron','Rajdhani',ui-monospace,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--txt)}
+.db-diff{max-height:52vh;overflow:auto}
+.db-diff-sec{margin-bottom:12px}
+.db-diff-h{font-weight:800;font-size:12.5px;margin-bottom:5px}
+.db-diff-row{padding:5px 10px;border-radius:8px;background:var(--inset-bg);margin-bottom:4px;font-size:13px}
+.db-diff-item{border:1px solid var(--line);border-radius:10px;padding:8px 11px;margin-bottom:7px}
+.db-diff-lbl{font-weight:700;margin-bottom:5px}
+.db-diff-field{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;padding:3px 0}
+.dff-name{font-weight:700;color:var(--muted);min-width:88px}
+.dff-from{background:rgba(229,72,72,.13);color:#c0392b;padding:2px 7px;border-radius:6px;text-decoration:line-through;text-decoration-color:rgba(192,57,43,.55)}
+.dff-arrow{color:var(--muted);font-weight:800}
+.dff-to{background:rgba(20,154,90,.15);color:#149a5a;padding:2px 7px;border-radius:6px;font-weight:700}
+.db-viewchg{display:inline-block;margin-left:6px;font-size:11px;font-weight:800;color:var(--primary);white-space:nowrap}
+tr.dl-row{cursor:pointer;transition:background .12s}
+tr.dl-row:hover{background:var(--hover)}
 .lv-left-row .n.redtext{color:var(--red)}
 /* OT month-list + breakdown view button */
 .otb-view{white-space:nowrap;color:var(--primary);border-color:var(--line2);font-size:11px;padding:3px 9px}
@@ -8443,11 +8458,55 @@ function nxAudit(k, before, after, who, role){
   try{
     if(NX_CLOUD_KEYS.indexOf(k)<0) return;
     const log=nxAuditRead();
-    log.unshift({ t:Date.now(), u:who||'—', r:role||'', k, cB:nxJsonCount(before), cA:nxJsonCount(after) });
+    log.unshift({ t:Date.now(), u:who||'—', r:role||'', k, cB:nxJsonCount(before), cA:nxJsonCount(after), d:nxDiff(before, after) });
     if(log.length>NX_AUDIT_MAX) log.length=NX_AUDIT_MAX;
     _nxOrigSetItem(NX_AUDIT_KEY, JSON.stringify(log));
     if(nxCurrentView()==='devlog'){ try{ renderDevLog(); }catch(_){} }
   }catch(_){}
+}
+/* ---- Value-level before/after diff (added / removed / changed fields) ---- */
+function nxShortVal(v){ if(v==null) return ''; const s=(typeof v==='object')?JSON.stringify(v):(''+v); return s.length>90?s.slice(0,90)+'…':s; }
+function nxLabelOf(o){ if(o==null||typeof o!=='object') return ''+ (o==null?'':o); return o.name||o.workNo||o.prNo||o.code||o.title||o.empName||o.id||''; }
+function nxDiff(beforeStr, afterStr){
+  let A=null,B=null; try{A=JSON.parse(beforeStr);}catch(_){}
+  try{B=JSON.parse(afterStr);}catch(_){}
+  const diff={a:[],rm:[],ch:[],more:0}; const CAP=15,FCAP=15;
+  const toMap=(x)=>{ const m={}; if(Array.isArray(x)){ const hasId=x.some(o=>o&&o.id!=null); x.forEach((o,i)=>{ m[hasId&&o&&o.id!=null?('id:'+o.id):('#'+i)]=o; }); } else if(x&&typeof x==='object'){ Object.keys(x).forEach(kk=>m['key:'+kk]=x[kk]); } return m; };
+  const MA=toMap(A), MB=toMap(B); const keys=new Set([...Object.keys(MA),...Object.keys(MB)]);
+  keys.forEach(kk=>{
+    const inA=kk in MA, inB=kk in MB;
+    if(inA&&!inB){ diff.rm.length<CAP?diff.rm.push({label:nxLabelOf(MA[kk])||kk}):diff.more++; }   /* in before, gone in after => removed */
+    else if(!inA&&inB){ diff.a.length<CAP?diff.a.push({label:nxLabelOf(MB[kk])||kk}):diff.more++; } /* new in after => added */
+    else {
+      const oa=MA[kk], ob=MB[kk];
+      if(JSON.stringify(oa)!==JSON.stringify(ob)){
+        const fields=[];
+        if(oa&&ob&&typeof oa==='object'&&typeof ob==='object'&&!Array.isArray(oa)&&!Array.isArray(ob)){
+          new Set([...Object.keys(oa),...Object.keys(ob)]).forEach(f=>{ if(JSON.stringify(oa[f])!==JSON.stringify(ob[f])){ if(fields.length<FCAP) fields.push({f, from:nxShortVal(oa[f]), to:nxShortVal(ob[f])}); } });
+        } else { fields.push({f:'value', from:nxShortVal(oa), to:nxShortVal(ob)}); }
+        diff.ch.length<CAP?diff.ch.push({label:nxLabelOf(ob)||nxLabelOf(oa)||kk, fields}):diff.more++;
+      }
+    }
+  });
+  return diff;
+}
+function nxRenderDiff(d){
+  if(!d) return '<div class="muted-line">No detailed diff recorded for this change.</div>';
+  let h='';
+  const sec=(title,color,items)=> items&&items.length?`<div class="db-diff-sec"><div class="db-diff-h" style="color:${color}">${title} (${items.length})</div>${items.map(x=>`<div class="db-diff-row">${escapeHtml(x.label||'—')}</div>`).join('')}</div>`:'';
+  h+=sec('➕ Added','var(--green)', d.a);
+  h+=sec('➖ Removed','var(--red)', d.rm);
+  if(d.ch&&d.ch.length){ h+=`<div class="db-diff-sec"><div class="db-diff-h">✏️ Changed (${d.ch.length})</div>`+d.ch.map(c=>`<div class="db-diff-item"><div class="db-diff-lbl">${escapeHtml(c.label||'—')}</div>${(c.fields||[]).map(f=>`<div class="db-diff-field"><span class="dff-name">${escapeHtml(f.f)}</span><span class="dff-from">${escapeHtml(f.from===''?'∅':f.from)}</span><span class="dff-arrow">→</span><span class="dff-to">${escapeHtml(f.to===''?'∅':f.to)}</span></div>`).join('')}</div>`).join('')+`</div>`; }
+  if(d.more) h+='<div class="muted-line">…and '+d.more+' more change(s) not shown.</div>';
+  if(!h) h='<div class="muted-line">No field-level changes detected.</div>';
+  return h;
+}
+const NX_DB_PAGE={ nx_works:'spectator', nx_details:'spectator', nx_vendors:'vendors', nx_customers:'customers', nx_workswitch:'workanalysis', nx_stock:'stocklist', nx_withdraws:'withdrawlog', nx_returns:'withdrawlog', nx_employees:'employees', nx_positions:'permission', nx_leaves:'leaveconfirm', nx_ta_devices:'timeattend', nx_ta_logs:'timeattend', nx_caldays:'calendar', nx_payslips:'salary', nx_ot:'otmgmt', nx_otrates:'otmgmt', nx_pr:'prlist', nx_defaults:'benefit' };
+function dbGotoPage(k){ const v=NX_DB_PAGE[k]; if(v){ try{ go(v); }catch(_){} } else showToast('No page mapped for this database'); }
+function dbShowChange(ts, k){
+  const e=nxAuditRead().find(x=>x.t==ts && x.k===k); if(!e){ showToast('Change detail not found (older than the log limit).'); return; }
+  const body=`<div class="card-sub" style="margin-bottom:8px">Database <b>${escapeHtml(nxDbName(e.k))}</b> · <b>${nxDbPath(e.k)}</b><br>Saved by <b>${escapeHtml(e.u)}</b>${e.r?(' ('+escapeHtml(e.r)+')'):''} · ${nxAbsTime(e.t)} · ${e.cB==null?'—':e.cB} → ${e.cA==null?'—':e.cA} records</div><div class="db-diff">${nxRenderDiff(e.d)}</div>`;
+  customModal({icon:'🕓',title:'Change detail — before & after',desc:nxDbName(e.k),bodyHtml:body,footButtons:[{label:'Go to page ↗',cls:'ghost',onClick:()=>{ closeModal(); dbGotoPage(e.k); }},{label:t('mClose'),cls:'primary',onClick:closeModal}]});
 }
 function nxRelTime(ts){ const s=Math.max(0,Math.floor((Date.now()-ts)/1000)); if(s<60) return s+'s ago'; const m=Math.floor(s/60); if(m<60) return m+'m ago'; const h=Math.floor(m/60); if(h<24) return h+'h ago'; return Math.floor(h/24)+'d ago'; }
 function nxAbsTime(ts){ try{ const loc=LANG==='th'?'th-TH':'en-GB'; return new Date(ts).toLocaleString(loc,{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'}); }catch(_){ return ''+ts; } }
@@ -8470,7 +8529,7 @@ function renderDevLog(){
     const delta=(e.cA!=null&&e.cB!=null)?(e.cA-e.cB):null;
     const dtxt=delta==null?'':(delta>0?` <span style="color:var(--green)">(+${delta})</span>`:(delta<0?` <span style="color:var(--red)">(${delta})</span>`:' <span class="muted-line">(edited)</span>'));
     const role=e.r?` · <span class="muted-line">${escapeHtml(e.r)}</span>`:'';
-    return `<tr><td><b>${nxRelTime(e.t)}</b><div class="ot-sub2">${nxAbsTime(e.t)}</div></td><td>${escapeHtml(e.u)}${role}</td><td><b>${escapeHtml(nxDbName(e.k))}</b><div><button type="button" class="db-path" onclick="dbShowValue('${e.k}')">${nxDbPath(e.k)}</button></div></td><td>${e.cB==null?'—':e.cB} → ${e.cA==null?'—':e.cA} records${dtxt}</td></tr>`;
+    return `<tr class="dl-row" onclick="dbShowChange(${e.t},'${e.k}')"><td><b>${nxRelTime(e.t)}</b><div class="ot-sub2">${nxAbsTime(e.t)}</div></td><td>${escapeHtml(e.u)}${role}</td><td><b>${escapeHtml(nxDbName(e.k))}</b><div><button type="button" class="db-path" onclick="event.stopPropagation();dbShowValue('${e.k}')">${nxDbPath(e.k)}</button></div></td><td>${e.cB==null?'—':e.cB} → ${e.cA==null?'—':e.cA} records${dtxt}<span class="db-viewchg">before/after ▸</span></td></tr>`;
   }).join('');
 }
 function devLogClearView(){ confirmModal('Clear log view','This clears the change-log entries shown on THIS device only. Your data and cloud backups are not affected.',[],()=>{ _nxOrigSetItem(NX_AUDIT_KEY,'[]'); closeModal(); renderDevLog(); showToast('Log view cleared'); }); }
@@ -8491,7 +8550,8 @@ function renderDevDb(){
     g.keys.forEach(([k,name])=>{
       const raw=localStorage.getItem(k); const cnt=nxJsonCount(raw); const lc=dbLastChange(k);
       const meta=lc?`<b>${escapeHtml(lc.u)}</b> · ${nxRelTime(lc.t)}`:'no changes yet';
-      html+=`<div class="db-row"><div class="db-name"><b>${escapeHtml(name)}</b><div><button type="button" class="db-path" onclick="dbShowValue('${k}')">${nxDbPath(k)}</button></div></div><div class="db-meta">Last save: ${meta}</div><div class="db-status ${ready?'ok':'local'}">${ready?'☁ synced':'● local'}</div><div class="db-cnt">${cnt==null?'—':cnt}</div></div>`;
+      const hist=lc?`<button type="button" class="btn-mini" onclick="dbShowChange(${lc.t},'${k}')">🕓 History</button>`:`<button type="button" class="btn-mini" disabled style="opacity:.45">🕓 History</button>`;
+      html+=`<div class="db-row"><div class="db-name"><b>${escapeHtml(name)}</b><div><button type="button" class="db-path" onclick="dbShowValue('${k}')">${nxDbPath(k)}</button></div></div><div class="db-meta">Last save: ${meta}</div><div class="db-status ${ready?'ok':'local'}">${ready?'☁ synced':'● local'}</div><div class="db-cnt">${cnt==null?'—':cnt}</div><div class="db-acts">${hist}<button type="button" class="btn-mini" onclick="dbGotoPage('${k}')">↗ Page</button></div></div>`;
     });
   });
   wrap.innerHTML=html||'<div class="muted-line" style="padding:16px">No databases in this section.</div>';
@@ -8610,20 +8670,23 @@ function dbClearOpen(){
   _dbClearDownloaded=false;
   const body=`<div class="card-sub" style="color:var(--red);margin-bottom:10px">⚠ This empties every current database on all devices. Your cloud backups are KEPT, and a fresh cloud backup is taken right before clearing.</div>
     <div style="border:1.5px solid var(--line2);border-radius:12px;padding:14px;background:var(--inset-bg)">
-      <div style="font-weight:800;margin-bottom:4px">Required first: download a CSV backup</div>
-      <div class="card-sub" style="margin-bottom:10px">You must download a CSV of all databases before you can confirm. Keep it safe.</div>
-      <button type="button" class="db-btn db-download" style="width:100%" onclick="dbClearDownload()"><span class="db-ic">⬇️</span><span class="db-l"><b>Download all databases (CSV)</b><small>Required to enable Confirm</small></span></button>
-      <div id="dbClearStat" style="margin-top:10px;font-weight:700;font-size:13px;color:var(--muted)">◻ CSV not downloaded yet — Confirm is locked.</div>
+      <div style="font-weight:800;margin-bottom:4px">Required first: download a backup</div>
+      <div class="card-sub" style="margin-bottom:10px">You must download a full backup (CSV or SQL) of all databases before you can confirm. Keep the file safe.</div>
+      <div class="db-btns" style="margin:0 0 4px">
+        <button type="button" class="db-btn db-download" onclick="dbClearDownload('csv')"><span class="db-ic">📄</span><span class="db-l"><b>Download CSV</b><small>Required — or SQL →</small></span></button>
+        <button type="button" class="db-btn db-backup" onclick="dbClearDownload('sql')"><span class="db-ic">🗃</span><span class="db-l"><b>Download SQL</b><small>Required — or CSV ←</small></span></button>
+      </div>
+      <div id="dbClearStat" style="margin-top:10px;font-weight:700;font-size:13px;color:var(--muted)">◻ No backup downloaded yet — Confirm is locked.</div>
     </div>`;
   customModal({icon:'🗑',title:'Clear all running data',desc:'Databases: '+NX_CLOUD_KEYS.length+' tables',bodyHtml:body,footButtons:[
     {label:t('mCancel'),cls:'ghost',onClick:closeModal},
     {label:'🗑 Confirm clear',cls:'primary',id:'dbClearConfirm',disabled:true,onClick:dbClearConfirm}
   ]});
 }
-function dbClearDownload(){
-  dbDownloadAll();
+function dbClearDownload(fmt){
+  if(fmt==='sql') dbDownloadSql(); else dbDownloadAll();
   _dbClearDownloaded=true;
-  const stat=document.getElementById('dbClearStat'); if(stat){ stat.innerHTML='✅ CSV downloaded — you can now confirm.'; stat.style.color='var(--green)'; }
+  const stat=document.getElementById('dbClearStat'); if(stat){ stat.innerHTML='✅ '+(fmt==='sql'?'SQL':'CSV')+' backup downloaded — you can now confirm.'; stat.style.color='var(--green)'; }
   const btn=document.getElementById('dbClearConfirm'); if(btn){ btn.disabled=false; btn.style.opacity=''; btn.style.pointerEvents=''; }
 }
 function dbClearConfirm(){
