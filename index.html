@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>F N Technology · Work Management System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1402,6 +1405,9 @@ tr.lc-row:hover>td{background:var(--hover)}
 .cn-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .cn-dot.on{background:#2fe36f;box-shadow:0 0 7px #2fe36f}
 .cn-dot.off{background:#94a3b8}
+.cn-build{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;vertical-align:middle;letter-spacing:.2px}
+.cn-build.ok{background:rgba(47,227,111,.16);color:#1a8f4c;border:1px solid rgba(47,227,111,.4)}
+.cn-build.old{background:rgba(245,158,11,.16);color:#b45309;border:1px solid rgba(245,158,11,.45)}
 .cn-meter{height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin:5px 0}
 .cn-meter-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#16a34a,#0906d7);min-width:2px;transition:width .5s}
 .db-code{max-height:340px;overflow:auto;background:var(--inset-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:'Orbitron','Rajdhani',ui-monospace,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--txt)}
@@ -8736,6 +8742,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
+const NX_BUILD='2026.08.07-g';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -8782,7 +8789,7 @@ async function nxPresenceBeat(loggingOut){
   if(!s.loggedIn) return;
   if(!_nxLoginAt) _nxLoginAt=Date.now();
   const dev=nxDeviceInfo(); const ip=_nxIP||{ip:'',city:'',region:'',country:'',org:''}; const sig=nxDeviceSignals();
-  try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', user:s.user||'—', role:s.role||'', empId:s.empId||'', did:nxDeviceId(), dname:nxDeviceName(), device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, screen:sig.screen||'', cores:sig.cores||'', mem:sig.mem||'', gpu:sig.gpu||'', tz:sig.tz||'', touch:sig.touch||'', ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt }); }catch(_){}
+  try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', build:NX_BUILD, user:s.user||'—', role:s.role||'', empId:s.empId||'', did:nxDeviceId(), dname:nxDeviceName(), device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, screen:sig.screen||'', cores:sig.cores||'', mem:sig.mem||'', gpu:sig.gpu||'', tz:sig.tz||'', touch:sig.touch||'', ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt }); }catch(_){}
 }
 async function nxListPresence(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_pr_')===0) out.push(d.data()); }); out.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)); return out; }catch(_){ return []; } }
 async function nxPrunePresence(){ const col=nxPresenceCol(); if(!col) return; const now=Date.now(); try{ const list=await nxListPresence(); for(const p of list){ if(now-(p.lastSeen||0) > 2*86400000){ try{ await col.doc('_pr_'+p.sid).delete(); }catch(_){} } } }catch(_){} }
@@ -8794,7 +8801,7 @@ function nxFmtBytes(b){ if(b==null) return '—'; if(b<1024) return b+' B'; if(b
 function nxRecordSize(){ try{ const today=todayStr(); let hist=[]; try{ hist=JSON.parse(localStorage.getItem('nx_size_hist')||'[]'); }catch(_){} const b=nxDataBytes(); const last=hist[hist.length-1]; if(last&&last.d===today){ last.b=b; } else hist.push({d:today,b}); if(hist.length>180) hist=hist.slice(-180); _nxOrigSetItem('nx_size_hist', JSON.stringify(hist)); return hist; }catch(_){ return []; } }
 function nxDaysToFull(){ let hist=[]; try{ hist=JSON.parse(localStorage.getItem('nx_size_hist')||'[]'); }catch(_){} const cur=nxDataBytes(); if(hist.length<2) return {perDay:0,days:null,note:'need ≥2 days of history'}; const first=hist[0],last=hist[hist.length-1]; const span=Math.max(1,(new Date(last.d)-new Date(first.d))/86400000); const perDay=(last.b-first.b)/span; if(perDay<=0) return {perDay,days:null,note:'stable — not growing'}; return {perDay, days:Math.floor((NX_DB_MAX_BYTES-cur)/perDay), note:''}; }
 /* ---- Login history (each account login captured as its own doc) ---- */
-async function nxLogLogin(){ const col=nxPresenceCol(); if(!col) return; let s; try{s=DB.session()||{};}catch(_){s={};} if(!s.loggedIn) return; const ip=_nxIP||{}; const dev=nxDeviceInfo(); const ts=Date.now(); const id='_lg_'+ts+'_'+Math.floor(Math.random()*1e5).toString(36); try{ await col.doc(id).set({ kind:'login', user:s.user||'—', role:s.role||'', dname:nxDeviceName(), did:nxDeviceId(), device:dev.type, name:dev.name, ip:ip.ip||'', city:ip.city||'', country:ip.country||'', t:ts }); }catch(_){} }
+async function nxLogLogin(retries){ retries=(retries==null)?10:retries; let s; try{s=DB.session()||{};}catch(_){s={};} if(!s.loggedIn) return; const col=nxPresenceCol(); if(!col){ if(retries>0) setTimeout(()=>{ nxLogLogin(retries-1); }, 1500); return; } const ip=_nxIP||{}; const dev=nxDeviceInfo(); const ts=Date.now(); const id='_lg_'+ts+'_'+Math.floor(Math.random()*1e5).toString(36); try{ await col.doc(id).set({ kind:'login', user:s.user||'—', role:s.role||'', build:NX_BUILD, dname:nxDeviceName(), did:nxDeviceId(), device:dev.type, name:dev.name, ip:ip.ip||'', city:ip.city||'', country:ip.country||'', t:ts }); }catch(_){} }
 async function nxListLogins(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_lg_')===0) out.push(Object.assign({_id:d.id}, d.data())); }); out.sort((a,b)=>(b.t||0)-(a.t||0)); return out; }catch(_){ return []; } }
 async function nxPruneLogins(keep){ const col=nxPresenceCol(); if(!col) return; try{ const list=await nxListLogins(); for(let i=keep;i<list.length;i++){ try{ await col.doc(list[i]._id).delete(); }catch(_){} } }catch(_){} }
 async function initDevConn(){
@@ -8820,13 +8827,15 @@ async function renderDevConn(){
     const status=p.online?(isOn?'🟢 Logged in':'🟠 Idle'):'⚪ Logged out';
     const ava=(p.user||'?').trim().slice(0,1).toUpperCase(); const me=p.sid===nxSid()?' <span class="muted-line">(this device)</span>':'';
     const devLabel = p.dname ? ('<b>🖥 '+escapeHtml(p.dname)+'</b> · ') : '';
-    return `<div class="cn-row"><div class="cn-user"><span class="att-avatar">${escapeHtml(ava)}</span><div><b>${escapeHtml(p.user||'—')}</b>${me}<div class="ot-sub2">${devLabel}${escapeHtml(p.role||'')} · ${escapeHtml(p.device||'')} · ${escapeHtml(p.name||'')}</div></div></div><div class="cn-loc muted-line">${escapeHtml([p.city,p.country].filter(Boolean).join(', ')||'—')}${p.ip?(' · '+escapeHtml(p.ip)):''}</div><div class="cn-stat"><span class="cn-dot ${isOn?'on':'off'}"></span>${escapeHtml(seen)}</div><div class="cn-stat">${status}</div></div>`;
+    const bTag = p.build ? (p.build===NX_BUILD ? ('<span class="cn-build ok">v'+escapeHtml(p.build)+'</span>') : ('<span class="cn-build old" title="Older app version — this device should hard-refresh to update">v'+escapeHtml(p.build)+' ⚠</span>')) : '<span class="cn-build old" title="Old app version (pre-versioning) — hard-refresh to update">old ⚠</span>';
+    return `<div class="cn-row"><div class="cn-user"><span class="att-avatar">${escapeHtml(ava)}</span><div><b>${escapeHtml(p.user||'—')}</b>${me} ${bTag}<div class="ot-sub2">${devLabel}${escapeHtml(p.role||'')} · ${escapeHtml(p.device||'')} · ${escapeHtml(p.name||'')}</div></div></div><div class="cn-loc muted-line">${escapeHtml([p.city,p.country].filter(Boolean).join(', ')||'—')}${p.ip?(' · '+escapeHtml(p.ip)):''}</div><div class="cn-stat"><span class="cn-dot ${isOn?'on':'off'}"></span>${escapeHtml(seen)}</div><div class="cn-stat">${status}</div></div>`;
   }).join('') : '<div class="muted-line" style="padding:14px">No sessions recorded yet. Other devices appear here when they open the app.</div>'; }
   const dev=nxDeviceInfo(); const ip=_nxIP||{}; const sig=nxDeviceSignals(); const dnm=nxDeviceName();
   const sub=document.getElementById('cnDevNameSub'); if(sub) sub.innerHTML = dnm ? ('This device: <b>🖥 '+escapeHtml(dnm)+'</b>') : 'This device is <b>unnamed</b> — give it a name so you can recognise it →';
   const dgrid=document.getElementById('cnDevice');
   if(dgrid){ dgrid.innerHTML=[
     ['Device name', dnm||'— (unnamed)'], ['Device ID', (nxDeviceId()||'—').slice(0,18)+'…'],
+    ['App build', 'v'+NX_BUILD+' (this device)'],
     ['Device type',dev.type],['OS / Browser',dev.name],
     ['Public IP',ip.ip||'—'],['Location',[ip.city,ip.region,ip.country].filter(Boolean).join(', ')||'—'],['Network / ISP',ip.org||'—'],
     ['Screen',sig.screen||'—'],['CPU cores',sig.cores||'—'],['Memory',sig.mem||'—'],['GPU',sig.gpu||'—'],['Timezone',sig.tz||'—'],['Touch',sig.touch||'—'],
@@ -8848,13 +8857,15 @@ async function renderDevConn(){
       ['Data used','~'+nxFmtBytes(cur)+' of 1 GiB'],
       ['Est. days to full', daysTxt],
       ['Tables',NX_CLOUD_KEYS.length],['Total records',totalRecords],
+      ['App build','v'+NX_BUILD],
+      ['Devices needing update',(function(){ const stale=list.filter(p=>p.build!==NX_BUILD).length; return stale? (stale+' on older version ⚠') : 'all up to date ✓'; })()],
       ['Last cloud backup',bkTs?nxRelTime(bkTs):'—'],['Backups retained','up to 60 snapshots'],
       ['Plan / expiry','Spark (free) · no expiry']
     ].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join('');
   }
   /* recent account logins */
   try{ const logins=await nxListLogins(); const lb=document.getElementById('cnLoginBody');
-    if(lb){ lb.innerHTML = logins.length ? logins.slice(0,120).map(l=>`<tr><td><b>${nxRelTime(l.t)}</b><div class="ot-sub2">${nxAbsTime(l.t)}</div></td><td><b>${escapeHtml(l.user||'—')}</b>${l.role?(' · <span class="muted-line">'+escapeHtml(l.role)+'</span>'):''}</td><td>${l.dname?('🖥 '+escapeHtml(l.dname)+' · '):''}${escapeHtml(l.device||'')} ${escapeHtml(l.name||'')}</td><td class="muted-line">${escapeHtml([l.city,l.country].filter(Boolean).join(', ')||'—')}${l.ip?(' · '+escapeHtml(l.ip)):''}</td></tr>`).join('') : '<tr><td colspan="4" class="muted-line" style="padding:14px">No logins recorded yet. Logins from every device appear here once they open this updated app.</td></tr>'; }
+    if(lb){ lb.innerHTML = logins.length ? logins.slice(0,120).map(l=>`<tr><td><b>${nxRelTime(l.t)}</b><div class="ot-sub2">${nxAbsTime(l.t)}</div></td><td><b>${escapeHtml(l.user||'—')}</b>${l.role?(' · <span class="muted-line">'+escapeHtml(l.role)+'</span>'):''}${l.build?(' <span class="cn-build '+(l.build===NX_BUILD?'ok':'old')+'">v'+escapeHtml(l.build)+'</span>'):''}</td><td>${l.dname?('🖥 '+escapeHtml(l.dname)+' · '):''}${escapeHtml(l.device||'')} ${escapeHtml(l.name||'')}</td><td class="muted-line">${escapeHtml([l.city,l.country].filter(Boolean).join(', ')||'—')}${l.ip?(' · '+escapeHtml(l.ip)):''}</td></tr>`).join('') : '<tr><td colspan="4" class="muted-line" style="padding:14px">No logins recorded yet. Logins from every device appear here once they open this updated app.</td></tr>'; }
   }catch(_){}
 }
 
