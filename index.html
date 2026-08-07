@@ -3194,8 +3194,8 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <div id="cnSessionsList"></div>
     </div>
     <div class="card">
-      <h2 style="margin:0 0 4px"><span class="dot"></span>This Device</h2>
-      <div class="card-sub">Connection details for the device you are using right now</div>
+      <div class="ta-head"><div><h2 style="margin:0"><span class="dot"></span>This Device</h2><div class="card-sub" id="cnDevNameSub">Connection details for the device you are using right now</div></div>
+        <div class="ta-actions"><button type="button" class="btn-mini" onclick="nxSetDeviceName()">🖥 Name / rename this device</button></div></div>
       <div id="cnDevice" class="cn-grid"></div>
     </div>
     <div class="card">
@@ -8739,6 +8739,30 @@ function nxDeviceInfo(){
   let type='Desktop'; if(/iPad|Tablet/i.test(ua)||(/Android/i.test(ua)&&!/Mobile/i.test(ua)))type='Tablet'; else if(/Mobi|iPhone|Android.*Mobile/i.test(ua))type='Mobile';
   return { type, os, browser:br, name: br+' on '+os };
 }
+/* Stable per-browser device id (persists across sessions until site data cleared) */
+function nxDeviceId(){ let id=''; try{ id=localStorage.getItem('nx_device_id')||''; }catch(_){}
+  if(!id){ id='dev_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e9).toString(36); try{ _nxOrigSetItem('nx_device_id', id); }catch(_){} }
+  return id; }
+function nxDeviceName(){ try{ return localStorage.getItem('nx_device_name')||''; }catch(_){ return ''; } }
+function nxGpu(){ try{ const c=document.createElement('canvas'); const gl=c.getContext('webgl')||c.getContext('experimental-webgl'); if(!gl) return ''; const dbg=gl.getExtension('WEBGL_debug_renderer_info'); return (dbg?gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER))||''; }catch(_){ return ''; } }
+function nxDeviceSignals(){ const s={};
+  try{ s.screen=(screen.width&&screen.height)?(screen.width+'×'+screen.height+(window.devicePixelRatio?(' @'+window.devicePixelRatio+'x'):'')):''; }catch(_){}
+  try{ s.cores=navigator.hardwareConcurrency||''; }catch(_){}
+  try{ s.mem=navigator.deviceMemory?(navigator.deviceMemory+' GB'):''; }catch(_){}
+  try{ s.tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''; }catch(_){}
+  try{ s.lang=navigator.language||''; }catch(_){}
+  try{ s.touch=(('ontouchstart' in window)||navigator.maxTouchPoints>0)?('Yes'+(navigator.maxTouchPoints?(' ('+navigator.maxTouchPoints+')'):'')):'No'; }catch(_){}
+  try{ s.gpu=nxGpu(); }catch(_){}
+  return s;
+}
+function nxSetDeviceName(){
+  const cur=nxDeviceName();
+  const body=`<div class="vform"><div class="field full"><label>Device name (a label you'll recognise)</label><input id="devNameInput" maxlength="40" placeholder="e.g. Front-desk tablet · Mot's laptop" value="${escapeAttr(cur)}"></div></div><div class="card-sub">Shows in the Connectivity list so you can tell devices apart. Stored on this device.</div>`;
+  customModal({icon:'🖥',title:'Name this device',desc:'Give this device a friendly name',bodyHtml:body,footButtons:[
+    {label:t('mCancel'),cls:'ghost',onClick:closeModal},
+    {label:'💾 Save name',cls:'primary',onClick:()=>{ const v=(gv('devNameInput')||'').trim(); try{ _nxOrigSetItem('nx_device_name', v); }catch(_){} closeModal(); try{ nxPresenceBeat(); }catch(_){} try{ if(nxCurrentView()==='devconn') renderDevConn(); }catch(_){} showToast(v?('Device named: '+v):'Device name cleared'); }}
+  ]});
+}
 async function nxFetchIP(){
   if(_nxIP) return _nxIP;
   try{ const r=await fetch('https://ipwho.is/',{cache:'no-store'}); const j=await r.json(); if(j&&j.success!==false){ _nxIP={ip:j.ip||'',city:j.city||'',region:j.region||'',country:j.country||'',org:(j.connection&&j.connection.org)||j.org||''}; return _nxIP; } }catch(_){}
@@ -8751,8 +8775,8 @@ async function nxPresenceBeat(loggingOut){
   let s; try{ s=DB.session()||{}; }catch(_){ s={}; }
   if(!s.loggedIn) return;
   if(!_nxLoginAt) _nxLoginAt=Date.now();
-  const dev=nxDeviceInfo(); const ip=_nxIP||{ip:'',city:'',region:'',country:'',org:''};
-  try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', user:s.user||'—', role:s.role||'', empId:s.empId||'', device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt }); }catch(_){}
+  const dev=nxDeviceInfo(); const ip=_nxIP||{ip:'',city:'',region:'',country:'',org:''}; const sig=nxDeviceSignals();
+  try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', user:s.user||'—', role:s.role||'', empId:s.empId||'', did:nxDeviceId(), dname:nxDeviceName(), device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, screen:sig.screen||'', cores:sig.cores||'', mem:sig.mem||'', gpu:sig.gpu||'', tz:sig.tz||'', touch:sig.touch||'', ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt }); }catch(_){}
 }
 async function nxListPresence(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_pr_')===0) out.push(d.data()); }); out.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)); return out; }catch(_){ return []; } }
 async function nxPrunePresence(){ const col=nxPresenceCol(); if(!col) return; const now=Date.now(); try{ const list=await nxListPresence(); for(const p of list){ if(now-(p.lastSeen||0) > 2*86400000){ try{ await col.doc('_pr_'+p.sid).delete(); }catch(_){} } } }catch(_){} }
@@ -8776,11 +8800,19 @@ async function renderDevConn(){
     const seen=isOn?'online now':('last seen '+nxRelTime(p.lastSeen||0));
     const status=p.online?(isOn?'🟢 Logged in':'🟠 Idle'):'⚪ Logged out';
     const ava=(p.user||'?').trim().slice(0,1).toUpperCase(); const me=p.sid===nxSid()?' <span class="muted-line">(this device)</span>':'';
-    return `<div class="cn-row"><div class="cn-user"><span class="att-avatar">${escapeHtml(ava)}</span><div><b>${escapeHtml(p.user||'—')}</b>${me}<div class="ot-sub2">${escapeHtml(p.role||'')} · ${escapeHtml(p.device||'')} · ${escapeHtml(p.name||'')}</div></div></div><div class="cn-loc muted-line">${escapeHtml([p.city,p.country].filter(Boolean).join(', ')||'—')}${p.ip?(' · '+escapeHtml(p.ip)):''}</div><div class="cn-stat"><span class="cn-dot ${isOn?'on':'off'}"></span>${escapeHtml(seen)}</div><div class="cn-stat">${status}</div></div>`;
+    const devLabel = p.dname ? ('<b>🖥 '+escapeHtml(p.dname)+'</b> · ') : '';
+    return `<div class="cn-row"><div class="cn-user"><span class="att-avatar">${escapeHtml(ava)}</span><div><b>${escapeHtml(p.user||'—')}</b>${me}<div class="ot-sub2">${devLabel}${escapeHtml(p.role||'')} · ${escapeHtml(p.device||'')} · ${escapeHtml(p.name||'')}</div></div></div><div class="cn-loc muted-line">${escapeHtml([p.city,p.country].filter(Boolean).join(', ')||'—')}${p.ip?(' · '+escapeHtml(p.ip)):''}</div><div class="cn-stat"><span class="cn-dot ${isOn?'on':'off'}"></span>${escapeHtml(seen)}</div><div class="cn-stat">${status}</div></div>`;
   }).join('') : '<div class="muted-line" style="padding:14px">No sessions recorded yet. Other devices appear here when they open the app.</div>'; }
-  const dev=nxDeviceInfo(); const ip=_nxIP||{};
+  const dev=nxDeviceInfo(); const ip=_nxIP||{}; const sig=nxDeviceSignals(); const dnm=nxDeviceName();
+  const sub=document.getElementById('cnDevNameSub'); if(sub) sub.innerHTML = dnm ? ('This device: <b>🖥 '+escapeHtml(dnm)+'</b>') : 'This device is <b>unnamed</b> — give it a name so you can recognise it →';
   const dgrid=document.getElementById('cnDevice');
-  if(dgrid){ dgrid.innerHTML=[['Device type',dev.type],['Device / OS',dev.name],['Public IP',ip.ip||'—'],['Location',[ip.city,ip.region,ip.country].filter(Boolean).join(', ')||'—'],['Network / ISP',ip.org||'—'],['Logged in as',(function(){try{return (DB.session()||{}).user||'—';}catch(_){return '—';}})()]].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join(''); }
+  if(dgrid){ dgrid.innerHTML=[
+    ['Device name', dnm||'— (unnamed)'], ['Device ID', (nxDeviceId()||'—').slice(0,18)+'…'],
+    ['Device type',dev.type],['OS / Browser',dev.name],
+    ['Public IP',ip.ip||'—'],['Location',[ip.city,ip.region,ip.country].filter(Boolean).join(', ')||'—'],['Network / ISP',ip.org||'—'],
+    ['Screen',sig.screen||'—'],['CPU cores',sig.cores||'—'],['Memory',sig.mem||'—'],['GPU',sig.gpu||'—'],['Timezone',sig.tz||'—'],['Touch',sig.touch||'—'],
+    ['Logged in as',(function(){try{return (DB.session()||{}).user||'—';}catch(_){return '—';}})()]
+  ].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join(''); }
   const totalRecords=NX_CLOUD_KEYS.reduce((n,k)=>{ const c=nxJsonCount(localStorage.getItem(k)); return n+(c||0); },0);
   const bkTs=parseInt(localStorage.getItem('nx_lastbk_ts')||'0');
   const hgrid=document.getElementById('cnHealth');
