@@ -1316,6 +1316,28 @@ tr.lc-row:hover>td{background:var(--hover)}
 .bill-tab:hover{transform:translateY(-2px)}
 .bill-tab.active{border-color:var(--primary);background:var(--primary);color:#fff}
 #billPageWrap .bill-page2{margin-top:0;border-top:none;padding-top:0}
+/* ===== Payslip / bill detail — responsive on phones & small tablets ===== */
+@media(max-width:600px){
+  .bill{padding:16px 13px 18px;font-size:12.5px}
+  .bill-top{flex-wrap:wrap;gap:10px}
+  .bill-meta{text-align:left;width:100%}
+  .bl-title{font-size:12.5px}
+  .bill-emp{gap:10px}
+  .bill-table th,.bill-table td{padding:6px 3px}
+  /* Summary: keep two columns and guarantee the amount column always fits */
+  .bill-sum-table{table-layout:fixed;width:100%}
+  .bill-sum-table th:first-child,.bill-sum-table td:first-child{width:60%;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+  .bill-sum-table th:last-child,.bill-sum-table td:last-child{width:40%;white-space:nowrap;text-align:right}
+  /* OT calculation list → stacked cards so no column is ever cut off */
+  .bill-ot-table thead{display:none}
+  .bill-ot-table tbody{display:block}
+  .bill-ot-table tr{display:block;border:1px solid #e6e8f2;border-radius:11px;padding:7px 12px;margin-bottom:9px;background:#fafbff}
+  .bill-ot-table td{display:flex;justify-content:space-between;align-items:baseline;gap:14px;border:none;padding:4px 0;text-align:right;white-space:normal}
+  .bill-ot-table td::before{content:attr(data-label);color:#66708f;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;text-align:left;flex:0 0 auto}
+  .bill-ot-table td.bill-amt{font-family:'Orbitron';font-weight:800;color:#0906d7;border-top:1px dashed #e6e8f2;margin-top:3px;padding-top:7px}
+  .bill-ot-table td[colspan]{display:block;text-align:center}
+  .bill-ot-table td[colspan]::before{content:none}
+}
 .lv-left-row .n.redtext{color:var(--red)}
 /* OT month-list + breakdown view button */
 .otb-view{white-space:nowrap;color:var(--primary);border-color:var(--line2);font-size:11px;padding:3px 9px}
@@ -7011,7 +7033,7 @@ function buildBillPages(e,ymOverride){
       <div><span>${t('blEmployee')}</span><b>${escapeHtml(e.name)}</b></div>
       <div><span>${t('blAttendance')}</span><b>${m.workedDays}/${m.totalDays} ${t('dayUnit')} · ${m.punctual?t('goodResp'):(m.lateDays+' '+t('dayUnit')+' '+t('blLate'))}</b></div>
     </div>
-    <table class="bill-table"><thead><tr><th>${t('blDesc')}</th><th>${t('blAmount')}</th></tr></thead><tbody>${items}</tbody></table>
+    <table class="bill-table bill-sum-table"><thead><tr><th>${t('blDesc')}</th><th>${t('blAmount')}</th></tr></thead><tbody>${items}</tbody></table>
     <div class="bill-total"><span>${t('bfPkgLbl')}</span><b>${fmtTHB(d.monthly)}</b></div>
     <div class="bill-bonus"><span>✨ ${t('blSpecialBonus')}</span><b>${fmtTHB(d.bonus)}</b></div>
     <div class="bill-grand"><span>${t('blGrand')}</span><b>${fmtTHB(d.monthly+d.bonus)}</b></div>
@@ -7019,7 +7041,7 @@ function buildBillPages(e,ymOverride){
   </div>`;
   // Page 2 — OT day-by-day detail for the month
   const otRows=otRowsForMonth(e);
-  const otItems = otRows.length ? otRows.map(r=>`<tr><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.from)} – ${escapeHtml(r.to)}</td><td>${r.h} ${t('hrUnit')}</td><td>${r.sp?t('otSpecialRate'):t('otNormalRate')}</td><td>${r.rate}×</td><td style="text-align:right">${fmtTHB(r.pay)}</td></tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:#889;padding:16px">${t('otNoMonth')}</td></tr>`;
+  const otItems = otRows.length ? otRows.map(r=>`<tr><td data-label="${t('otColDate')}">${escapeHtml(r.date)}</td><td data-label="${t('otColTime')}">${escapeHtml(r.from)} – ${escapeHtml(r.to)}</td><td data-label="${t('otColHrs')}">${r.h} ${t('hrUnit')}</td><td data-label="${t('otColType')}">${r.sp?t('otSpecialRate'):t('otNormalRate')}</td><td data-label="${t('blRate')}">${r.rate}×</td><td data-label="${t('blAmount')}" class="bill-amt">${fmtTHB(r.pay)}</td></tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:#889;padding:16px">${t('otNoMonth')}</td></tr>`;
   const page2=`<div class="bill bill-page2">
     <div class="bill-top">
       <div class="bill-brand"><span class="bl-logo">F<span style="color:#77e947">N</span></span><div><div class="bl-co">F N Technology</div><div class="bl-cosub">${t('blCoSub')}</div></div></div>
@@ -7029,7 +7051,7 @@ function buildBillPages(e,ymOverride){
       <div><span>${t('blEmployee')}</span><b>${escapeHtml(e.name)}</b></div>
       <div><span>${t('bfOtLbl')}</span><b>${fmtTHB(d.otPay)} · ${d.otHours} ${t('hrUnit')}</b></div>
     </div>
-    <table class="bill-table"><thead><tr><th>${t('otColDate')}</th><th>${t('otColTime')}</th><th>${t('otColHrs')}</th><th>${t('otColType')}</th><th>${t('blRate')}</th><th style="text-align:right">${t('blAmount')}</th></tr></thead><tbody>${otItems}</tbody></table>
+    <table class="bill-table bill-ot-table"><thead><tr><th>${t('otColDate')}</th><th>${t('otColTime')}</th><th>${t('otColHrs')}</th><th>${t('otColType')}</th><th>${t('blRate')}</th><th style="text-align:right">${t('blAmount')}</th></tr></thead><tbody>${otItems}</tbody></table>
     <div class="bill-total"><span>${t('bfOtTotal')}</span><b>${fmtTHB(d.otPay)}</b></div>
     <div class="bill-foot">${t('blFoot')} · ${dateStr} · ${t('blPage')} 2</div>
   </div>`;
