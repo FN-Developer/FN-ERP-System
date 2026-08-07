@@ -1402,6 +1402,8 @@ tr.lc-row:hover>td{background:var(--hover)}
 .cn-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .cn-dot.on{background:#2fe36f;box-shadow:0 0 7px #2fe36f}
 .cn-dot.off{background:#94a3b8}
+.cn-meter{height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin:5px 0}
+.cn-meter-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#16a34a,#0906d7);min-width:2px;transition:width .5s}
 .db-code{max-height:340px;overflow:auto;background:var(--inset-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:'Orbitron','Rajdhani',ui-monospace,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--txt)}
 .db-diff{max-height:52vh;overflow:auto}
 .db-diff-sec{margin-bottom:12px}
@@ -3192,6 +3194,10 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     <div class="card">
       <div class="ta-head"><div><h2 style="margin:0"><span class="dot"></span>Who's Logged In</h2><div class="card-sub">Current sessions · online / last-seen · login &amp; logout status</div></div></div>
       <div id="cnSessionsList"></div>
+    </div>
+    <div class="card">
+      <div class="ta-head"><div><h2 style="margin:0"><span class="dot"></span>Recent Account Logins</h2><div class="card-sub">Every login captured across devices — account, device, time (newest first)</div></div></div>
+      <div class="table-wrap"><table class="ta-table"><thead><tr><th>Time</th><th>Account</th><th>Device</th><th>Location · IP</th></tr></thead><tbody id="cnLoginBody"></tbody></table></div>
     </div>
     <div class="card">
       <div class="ta-head"><div><h2 style="margin:0"><span class="dot"></span>This Device</h2><div class="card-sub" id="cnDevNameSub">Connection details for the device you are using right now</div></div>
@@ -7878,7 +7884,7 @@ function doLogin(){
   if(err) err.style.display='none';
   DB.saveSession(sess);
   const lp=document.getElementById('lgPass'); if(lp) lp.value='';
-  _nxLoginAt=Date.now(); try{ nxFetchIP().then(()=>nxPresenceBeat()).catch(()=>{}); }catch(_){}
+  _nxLoginAt=Date.now(); try{ nxFetchIP().then(()=>{ nxPresenceBeat(); nxLogLogin(); }).catch(()=>{ try{ nxLogLogin(); }catch(_){} }); }catch(_){}
   nxSound('signin'); checkSession(); applyLang(); go('home'); showToast(t('lgWelcome')+' '+sess.user);
 }
 function logout(){ nxSound('logout'); try{ nxPresenceBeat(true); }catch(_){} _nxLoginAt=null; DB.clearSession(); checkSession(); const u=document.getElementById('lgUser'); if(u) u.value=''; }
@@ -8780,10 +8786,23 @@ async function nxPresenceBeat(loggingOut){
 }
 async function nxListPresence(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_pr_')===0) out.push(d.data()); }); out.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)); return out; }catch(_){ return []; } }
 async function nxPrunePresence(){ const col=nxPresenceCol(); if(!col) return; const now=Date.now(); try{ const list=await nxListPresence(); for(const p of list){ if(now-(p.lastSeen||0) > 2*86400000){ try{ await col.doc('_pr_'+p.sid).delete(); }catch(_){} } } }catch(_){} }
+/* ---- Storage estimate + days-to-full projection ---- */
+const NX_DB_MAX_BYTES=1073741824;   /* Firestore free (Spark) stored-data limit: 1 GiB */
+function nxByteLen(str){ try{ return new Blob([str]).size; }catch(_){ return (str||'').length; } }
+function nxDataBytes(){ let n=0; NX_CLOUD_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) n+=nxByteLen(v)+k.length+32; }); return n; }
+function nxFmtBytes(b){ if(b==null) return '—'; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; if(b<1073741824) return (b/1048576).toFixed(2)+' MB'; return (b/1073741824).toFixed(3)+' GB'; }
+function nxRecordSize(){ try{ const today=todayStr(); let hist=[]; try{ hist=JSON.parse(localStorage.getItem('nx_size_hist')||'[]'); }catch(_){} const b=nxDataBytes(); const last=hist[hist.length-1]; if(last&&last.d===today){ last.b=b; } else hist.push({d:today,b}); if(hist.length>180) hist=hist.slice(-180); _nxOrigSetItem('nx_size_hist', JSON.stringify(hist)); return hist; }catch(_){ return []; } }
+function nxDaysToFull(){ let hist=[]; try{ hist=JSON.parse(localStorage.getItem('nx_size_hist')||'[]'); }catch(_){} const cur=nxDataBytes(); if(hist.length<2) return {perDay:0,days:null,note:'need ≥2 days of history'}; const first=hist[0],last=hist[hist.length-1]; const span=Math.max(1,(new Date(last.d)-new Date(first.d))/86400000); const perDay=(last.b-first.b)/span; if(perDay<=0) return {perDay,days:null,note:'stable — not growing'}; return {perDay, days:Math.floor((NX_DB_MAX_BYTES-cur)/perDay), note:''}; }
+/* ---- Login history (each account login captured as its own doc) ---- */
+async function nxLogLogin(){ const col=nxPresenceCol(); if(!col) return; let s; try{s=DB.session()||{};}catch(_){s={};} if(!s.loggedIn) return; const ip=_nxIP||{}; const dev=nxDeviceInfo(); const ts=Date.now(); const id='_lg_'+ts+'_'+Math.floor(Math.random()*1e5).toString(36); try{ await col.doc(id).set({ kind:'login', user:s.user||'—', role:s.role||'', dname:nxDeviceName(), did:nxDeviceId(), device:dev.type, name:dev.name, ip:ip.ip||'', city:ip.city||'', country:ip.country||'', t:ts }); }catch(_){} }
+async function nxListLogins(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_lg_')===0) out.push(Object.assign({_id:d.id}, d.data())); }); out.sort((a,b)=>(b.t||0)-(a.t||0)); return out; }catch(_){ return []; } }
+async function nxPruneLogins(keep){ const col=nxPresenceCol(); if(!col) return; try{ const list=await nxListLogins(); for(let i=keep;i<list.length;i++){ try{ await col.doc(list[i]._id).delete(); }catch(_){} } }catch(_){} }
 async function initDevConn(){
   await nxFetchIP().catch(()=>{});
   try{ await nxPresenceBeat(); }catch(_){}
   try{ nxPrunePresence(); }catch(_){}
+  try{ nxRecordSize(); }catch(_){}
+  try{ nxPruneLogins(150); }catch(_){}
   await renderDevConn();
   if(_cnTimer) clearInterval(_cnTimer);
   _cnTimer=setInterval(()=>{ if(nxCurrentView()!=='devconn'){ clearInterval(_cnTimer); _cnTimer=null; return; } renderDevConn(); }, 20000);
@@ -8815,8 +8834,28 @@ async function renderDevConn(){
   ].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join(''); }
   const totalRecords=NX_CLOUD_KEYS.reduce((n,k)=>{ const c=nxJsonCount(localStorage.getItem(k)); return n+(c||0); },0);
   const bkTs=parseInt(localStorage.getItem('nx_lastbk_ts')||'0');
+  nxRecordSize();
+  const cur=nxDataBytes(); const pct=(cur/NX_DB_MAX_BYTES)*100; const d2f=nxDaysToFull();
+  const daysTxt = d2f.days!=null ? ('≈ '+d2f.days.toLocaleString()+' days'+(d2f.perDay>0?(' · +'+nxFmtBytes(Math.round(d2f.perDay))+'/day'):'')) : d2f.note;
   const hgrid=document.getElementById('cnHealth');
-  if(hgrid){ hgrid.innerHTML=[['Connection',(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready)?'🟢 Connected':'🔴 Offline'],['Project',(typeof FIREBASE_CONFIG!=='undefined'&&FIREBASE_CONFIG.projectId)||'—'],['Region','asia-southeast1 (Singapore)'],['Tables',NX_CLOUD_KEYS.length],['Total records',totalRecords],['Last cloud backup',bkTs?nxRelTime(bkTs):'—'],['Backups retained','up to 60 snapshots'],['Plan / expiry','Spark (free) · no expiry']].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join(''); }
+  if(hgrid){
+    const meter=`<div class="cn-cell" style="grid-column:1/-1"><span>Storage used (estimated)</span><div class="cn-meter"><div class="cn-meter-fill" style="width:${Math.max(0.3,Math.min(100,pct)).toFixed(2)}%"></div></div><b>${nxFmtBytes(cur)} / ${nxFmtBytes(NX_DB_MAX_BYTES)} · ${pct<0.01?'<0.01':pct.toFixed(2)}%</b></div>`;
+    hgrid.innerHTML=meter+[
+      ['Connection',(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready)?'🟢 Connected':'🔴 Offline'],
+      ['Project',(typeof FIREBASE_CONFIG!=='undefined'&&FIREBASE_CONFIG.projectId)||'—'],
+      ['Region','asia-southeast1 (Singapore)'],
+      ['Data available','Max 1 GiB (1024 MiB) · Firestore free tier'],
+      ['Data used','~'+nxFmtBytes(cur)+' of 1 GiB'],
+      ['Est. days to full', daysTxt],
+      ['Tables',NX_CLOUD_KEYS.length],['Total records',totalRecords],
+      ['Last cloud backup',bkTs?nxRelTime(bkTs):'—'],['Backups retained','up to 60 snapshots'],
+      ['Plan / expiry','Spark (free) · no expiry']
+    ].map(([k,v])=>`<div class="cn-cell"><span>${escapeHtml(k)}</span><b>${escapeHtml(''+v)}</b></div>`).join('');
+  }
+  /* recent account logins */
+  try{ const logins=await nxListLogins(); const lb=document.getElementById('cnLoginBody');
+    if(lb){ lb.innerHTML = logins.length ? logins.slice(0,120).map(l=>`<tr><td><b>${nxRelTime(l.t)}</b><div class="ot-sub2">${nxAbsTime(l.t)}</div></td><td><b>${escapeHtml(l.user||'—')}</b>${l.role?(' · <span class="muted-line">'+escapeHtml(l.role)+'</span>'):''}</td><td>${l.dname?('🖥 '+escapeHtml(l.dname)+' · '):''}${escapeHtml(l.device||'')} ${escapeHtml(l.name||'')}</td><td class="muted-line">${escapeHtml([l.city,l.country].filter(Boolean).join(', ')||'—')}${l.ip?(' · '+escapeHtml(l.ip)):''}</td></tr>`).join('') : '<tr><td colspan="4" class="muted-line" style="padding:14px">No logins recorded yet. Logins from every device appear here once they open this updated app.</td></tr>'; }
+  }catch(_){}
 }
 
 seed();
@@ -8885,6 +8924,7 @@ setTimeout(()=>{ try{ nxFetchIP().then(()=>nxPresenceBeat()).catch(()=>{}); }cat
 setInterval(()=>{ try{ nxPresenceBeat(); }catch(_){} }, 45000);
 window.addEventListener('beforeunload',()=>{ try{ nxPresenceBeat(true); }catch(_){} });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{ nxPresenceBeat(); }catch(_){} } });
+setTimeout(()=>{ try{ nxRecordSize(); }catch(_){} }, 5000);   /* record daily data-size for the days-to-full projection */
 
 /* ===== Block pinch-zoom / double-tap magnify (tablets & touch screens) =====
    Only multi-finger pinch and double-tap zoom are prevented; single-finger
