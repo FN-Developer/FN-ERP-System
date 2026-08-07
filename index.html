@@ -720,6 +720,41 @@ th.col-focus{background:var(--grad)!important;color:var(--on-grad)!important}
 td.col-focus{background:var(--chip-bg)}
 .ck-date{padding:9px 11px;border-radius:9px;border:1px solid var(--line2);background:var(--input-bg);color:var(--txt);font-family:inherit;font-size:13.5px;width:158px;transition:.15s}
 .ck-date:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--focus-ring)}
+/* Custom mm/dd/yy date picker (shipping / received) */
+.nxdp{position:relative;display:inline-flex;align-items:center;vertical-align:middle}
+.field .nxdp{width:100%}
+.nxdp .nxdp-disp{padding-right:30px;min-width:118px}
+.field .nxdp .nxdp-disp{width:100%}
+.nxdp .nxdp-ic{position:absolute;right:9px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:15px;line-height:1;opacity:.85;user-select:none}
+.nxdp .nxdp-ic:hover{opacity:1}
+.nxdp.nxdp-locked .nxdp-ic{display:none}
+.nxdp.nxdp-locked .nxdp-disp{cursor:default}
+/* Developer settings — date format picker */
+.ds-current{margin:14px 0 6px;font-size:14px;font-weight:700;color:var(--txt)}
+.ds-current .ds-ex{color:var(--primary);font-family:'Orbitron','Rajdhani',monospace;margin-left:6px}
+.ds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-top:12px}
+.ds-tile{border:2px solid var(--line2);border-radius:14px;padding:14px 16px;cursor:pointer;background:var(--input-bg);transition:.15s;text-align:left;display:flex;flex-direction:column;gap:5px}
+.ds-tile:hover{border-color:var(--primary);transform:translateY(-1px)}
+.ds-tile.on{border-color:var(--primary);background:linear-gradient(120deg,rgba(9,6,215,.08),rgba(8,145,178,.08));box-shadow:0 0 0 3px var(--focus-ring)}
+.ds-tile .ds-lbl{font-weight:800;font-size:13px;letter-spacing:.3px;color:var(--txt)}
+.ds-tile .ds-ex2{font-family:'Orbitron','Rajdhani',monospace;font-size:18px;font-weight:700;color:var(--primary)}
+.ds-tile .ds-chk{font-size:12px;font-weight:700;color:var(--green);height:14px}
+.ds-note{margin-top:16px;font-size:12.5px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line2);padding-top:12px}
+.nxdp-pop{position:absolute;z-index:100000;background:var(--panel-solid,#fff);color:var(--txt,#0b1230);border:1px solid var(--line2,#d7dae8);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.28);padding:12px;width:266px;font-family:inherit}
+.nxdp-pop .nxdp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.nxdp-pop .nxdp-nav{border:none;background:var(--input-bg,#eef);color:var(--txt,#0b1230);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;font-weight:800;line-height:1}
+.nxdp-pop .nxdp-nav:hover{background:var(--primary,#0906d7);color:#fff}
+.nxdp-pop .nxdp-title{font-weight:800;font-size:14px}
+.nxdp-pop .nxdp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.nxdp-pop .nxdp-dow{font-size:10.5px;font-weight:800;color:var(--muted,#889);text-align:center;padding:3px 0;text-transform:uppercase}
+.nxdp-pop .nxdp-day{border:none;background:transparent;color:var(--txt,#0b1230);height:32px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.nxdp-pop .nxdp-day:hover{background:var(--input-bg,#e8ebff)}
+.nxdp-pop .nxdp-day.nxdp-empty{visibility:hidden;cursor:default}
+.nxdp-pop .nxdp-day.nxdp-today{outline:2px solid var(--cyan,#0891b2);outline-offset:-2px}
+.nxdp-pop .nxdp-day.nxdp-sel{background:var(--primary,#0906d7);color:#fff}
+.nxdp-pop .nxdp-foot{display:flex;justify-content:space-between;margin-top:9px;gap:8px}
+.nxdp-pop .nxdp-foot button{flex:1;border:1px solid var(--line2,#d7dae8);background:transparent;color:var(--txt,#0b1230);padding:6px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700}
+.nxdp-pop .nxdp-foot button:hover{border-color:var(--primary,#0906d7);color:var(--primary,#0906d7)}
 .ck-badge-static{position:static;display:inline-block}
 tr.row-blink td{animation:rowBlink 0.9s ease-in-out infinite}
 tr.row-blink td:first-child{box-shadow:inset 4px 0 0 var(--primary)}
@@ -951,6 +986,22 @@ tr.ck-alert-hl>td:first-child{animation:alertHlIn 1.4s ease-out}
 .dept-pick .dp-ic{font-size:13px;opacity:.7}
 .dept-pick select{border:none;background:transparent;color:var(--txt);font-family:'Rajdhani';font-weight:700;font-size:13.5px;padding:5px 6px;cursor:pointer}
 .dept-pick select:focus{outline:none}
+/* Department chip + Set-Department button on the Employees & Position list */
+.dept-chip{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.2px;color:#0e7490;background:linear-gradient(100deg,rgba(8,145,178,.14),rgba(9,6,215,.12));border:1px solid rgba(8,145,178,.4)}
+/* read-only department row inside the click-person popup */
+.pa-dept{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;margin-bottom:14px;border-radius:12px;background:linear-gradient(100deg,rgba(8,145,178,.10),rgba(9,6,215,.08));border:1px solid var(--line2)}
+.pa-dept-k{font-weight:800;font-size:13.5px;color:var(--txt)}
+.pa-dept-v{font-weight:800;font-size:14.5px;color:#0e7490}
+.btn-mini.dept-btn{border-color:transparent;color:#fff;background:linear-gradient(120deg,#0906d7,#0891b2);font-weight:800;box-shadow:0 2px 8px rgba(9,6,215,.28)}
+.btn-mini.dept-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+/* Decorated department dropdown inside the popup */
+.dept-cur{margin:2px 0 12px;font-size:15px;font-weight:800;color:var(--txt)}
+.dept-select-wrap{position:relative;display:flex;align-items:center}
+.dept-select-wrap .dsw-ic{position:absolute;left:12px;font-size:16px;pointer-events:none;opacity:.85}
+.dept-select-wrap .dsw-chev{position:absolute;right:12px;font-size:16px;font-weight:800;pointer-events:none;color:var(--primary)}
+.dept-select{width:100%;appearance:none;-webkit-appearance:none;padding:12px 36px 12px 40px;border-radius:12px;border:2px solid var(--line2);background:var(--input-bg);color:var(--txt);font-family:'Rajdhani',inherit;font-weight:800;font-size:15px;letter-spacing:.2px;cursor:pointer;transition:.15s}
+.dept-select:hover{border-color:var(--primary)}
+.dept-select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--focus-ring)}
 /* ===== Purchase request form ===== */
 .pr-items-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 0 10px}
 .pr-items-head h3{margin:0;font-size:16px}
@@ -2104,6 +2155,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <a class="dd-item sub" data-nav="devlog" onclick="go('devlog')"><span class="ic">🗒</span><span class="dd-txt"><span>Current Log · บันทึกล่าสุด</span></span></a>
           <a class="dd-item sub" data-nav="devdb" onclick="go('devdb')"><span class="ic">🗄</span><span class="dd-txt"><span>List of Database · ฐานข้อมูล</span></span></a>
           <a class="dd-item sub" data-nav="devconn" onclick="go('devconn')"><span class="ic">📡</span><span class="dd-txt"><span>Database Connectivity</span></span></a>
+          <a class="dd-item sub" data-nav="devset" onclick="go('devset')"><span class="ic">⚙️</span><span class="dd-txt"><span>Settings · ตั้งค่า</span></span></a>
         </div>
       </div>
 
@@ -2241,12 +2293,12 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         <div class="grid two" style="margin-top:18px">
           <div class="field" id="f-custName">
             <label><span data-i18n="lblCustName">Cust Name (Company)</span> <span class="req">*</span></label>
-            <input type="text" id="custName" placeholder="e.g. Siam Electric Co., Ltd.">
-            <div class="err" data-i18n="errCustName">Please enter the customer name.</div>
+            <select id="custName" onchange="onCreateCustChange()"></select>
+            <div class="err" data-i18n="errCustName">Please select the customer.</div>
           </div>
           <div class="field" id="f-custCode">
             <label><span data-i18n="lblCode">Code</span> <span class="req">*</span></label>
-            <input type="text" id="custCode" placeholder="e.g. C001">
+            <input type="text" id="custCode" placeholder="e.g. C001" readonly>
             <div class="err" data-i18n="errCode">Please enter the code.</div>
           </div>
         </div>
@@ -3217,6 +3269,18 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     </div>
   </section>
 
+  <!-- ============ DEVELOPER SETTINGS ============ -->
+  <section class="view" id="view-devset">
+    <div class="page-head"><div class="bar"></div><div class="ph-txt"><h1>SETTINGS</h1><p>Developer-only app settings for this website · ตั้งค่าเว็บไซต์ (เฉพาะผู้พัฒนา)</p></div></div>
+    <div class="card">
+      <h2 style="margin:0 0 4px"><span class="dot"></span>Date display format · รูปแบบการแสดงวันที่</h2>
+      <div class="card-sub">Choose how every date is shown across the whole website. Stored dates never change — only the way they appear. This setting applies to all devices.</div>
+      <div class="ds-current" id="dsCurrent"></div>
+      <div class="ds-grid" id="dsFmtGrid"></div>
+      <div class="ds-note">📅 The calendar pickers for Shipping &amp; Received, and every date shown in tables, reports, bills and logs, follow this format. New dates created later use it automatically.</div>
+    </div>
+  </section>
+
   <div class="footer-note"><span class="lf" style="color:#0906d7;font-weight:700">F</span> <span class="ln" style="color:#77e947;font-weight:700">N</span> Technology &nbsp;|&nbsp; <span data-i18n="footer">Enterprise Work Management System</span> &nbsp;|&nbsp; v1.1</div>
 </main>
 
@@ -3297,7 +3361,7 @@ const FIREBASE_CONFIG = {
 };
 
 /* Shared data keys — these sync to the cloud (everyone sees the same data). */
-const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr'];
+const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments'];
 
 /* One-time seed / migration guard flags — set locally once the cloud is the
    source of truth, so demo-seeders & clean-up migrations never overwrite or
@@ -3329,11 +3393,25 @@ localStorage.setItem = function(k, v){
    so a single malformed entry can NEVER crash startup (a crash would silently
    disable cloud sync and leave a device looking normal but not syncing). Runs
    before any boot render, and again after each cloud pull. */
-const NX_ARRAY_KEYS  = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_positions','nx_ta_devices','nx_ta_logs','nx_pr'];
+const NX_ARRAY_KEYS  = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_positions','nx_ta_devices','nx_ta_logs','nx_pr','nx_departments'];
 const NX_OBJECT_KEYS = ['nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_payslips'];
+/* Removed detail fields (CNC/Turning/Milling/Labor) — strip their leftover data
+   from stored work details so the removed columns never resurface anywhere. */
+const NX_DEAD_DETAIL_KEYS=['cnc','turning','milling','labor'];
+let _nxDetailsStripped=false;
+function nxStripDetailFields(){
+  const raw=localStorage.getItem('nx_details'); if(raw==null) return false;
+  let arr; try{ arr=JSON.parse(raw); }catch(_){ return false; }
+  if(!Array.isArray(arr)) return false;
+  let changed=false;
+  arr.forEach(d=>{ if(d&&typeof d==='object'){ NX_DEAD_DETAIL_KEYS.forEach(k=>{ if(k in d){ delete d[k]; changed=true; } }); } });
+  if(changed){ try{ _nxOrigSetItem('nx_details', JSON.stringify(arr)); _nxDetailsStripped=true; }catch(_){} }
+  return changed;
+}
 function nxSanitizeLocal(){
   NX_ARRAY_KEYS.forEach(k=>{ const raw=localStorage.getItem(k); if(raw==null) return; let ok=false; try{ ok=Array.isArray(JSON.parse(raw)); }catch(_){ ok=false; } if(!ok){ try{ _nxOrigSetItem(k,'[]'); }catch(_){} } });
   NX_OBJECT_KEYS.forEach(k=>{ const raw=localStorage.getItem(k); if(raw==null) return; let ok=false; try{ const p=JSON.parse(raw); ok=(p&&typeof p==='object'&&!Array.isArray(p)); }catch(_){ ok=false; } if(!ok){ try{ _nxOrigSetItem(k,'{}'); }catch(_){} } });
+  try{ nxStripDetailFields(); }catch(_){}
 }
 try{ nxSanitizeLocal(); }catch(_){}
 
@@ -3413,6 +3491,7 @@ const NX_CLOUD = {
       this.col = firebase.firestore().collection('nx_state');
       await this.pull();
       this.ready = true;
+      try{ if(_nxDetailsStripped){ this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
       try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       this.listen();
       nxCloudBadge('online');
@@ -3544,6 +3623,193 @@ function bizDays(from,to){ if(!from||!to) return 0; let a=new Date(from+'T00:00:
 function isSpecialDay(date){ return !!DB.calDays()[date]; }         // special day OR company holiday → special OT rate
 function calDayType(date){ return DB.calDays()[date]||''; }
 function otHoursCalc(from,to){ if(!from||!to) return 0; const a=String(from).split(':'),b=String(to).split(':'); if(a.length<2||b.length<2) return 0; let mins=((+b[0])*60+(+b[1]))-((+a[0])*60+(+a[1])); if(mins<0) mins+=1440; return Math.round(mins/60*100)/100; }
+/* Universal display date formatter — the display pattern is a Developer setting
+   (nx_datefmt, synced). Storage stays yyyy-mm-dd; only the display changes.
+   Order token: m=month d=day y=year(2 or 4 digits) · sep=separator. */
+const NX_DATE_PATTERNS={
+  'mm/dd/yy':   {label:'MM/DD/YY',        ex:'08/04/26',   order:'mdy', sep:'/', yr:2},
+  'mm/dd/yyyy': {label:'MM/DD/YYYY',      ex:'08/04/2026', order:'mdy', sep:'/', yr:4},
+  'dd/mm/yy':   {label:'DD/MM/YY',        ex:'04/08/26',   order:'dmy', sep:'/', yr:2},
+  'dd/mm/yyyy': {label:'DD/MM/YYYY',      ex:'04/08/2026', order:'dmy', sep:'/', yr:4},
+  'yyyy-mm-dd': {label:'YYYY-MM-DD (ISO)',ex:'2026-08-04', order:'ymd', sep:'-', yr:4},
+  'dd-mm-yyyy': {label:'DD-MM-YYYY',      ex:'04-08-2026', order:'dmy', sep:'-', yr:4},
+  'dd.mm.yyyy': {label:'DD.MM.YYYY',      ex:'04.08.2026', order:'dmy', sep:'.', yr:4}
+};
+const NX_DATE_FMT_DEFAULT='mm/dd/yy';
+let _nxFmtKey=null,_nxFmtObj=null;
+function nxCurFmt(){
+  let raw; try{ raw=localStorage.getItem('nx_datefmt'); }catch(_){ raw=null; }
+  raw=raw||NX_DATE_FMT_DEFAULT;
+  if(raw===_nxFmtKey && _nxFmtObj) return _nxFmtObj;
+  _nxFmtKey=raw; _nxFmtObj=NX_DATE_PATTERNS[raw]||NX_DATE_PATTERNS[NX_DATE_FMT_DEFAULT];
+  return _nxFmtObj;
+}
+function nxFmtParts(y,m,d){
+  const p=nxCurFmt();
+  const yy=p.yr===2?String(y).slice(-2):String(y).padStart(4,'0');
+  const map={y:yy,m:String(m).padStart(2,'0'),d:String(d).padStart(2,'0')};
+  return p.order.split('').map(k=>map[k]).join(p.sep);
+}
+function nxFmtD(v){
+  if(v==null||v==='') return '';
+  const s=String(v).trim();
+  const m=s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(m){ return nxFmtParts(+m[1],+m[2],+m[3]); }
+  const d=new Date(s);
+  if(!isNaN(d.getTime())) return nxFmtParts(d.getFullYear(),d.getMonth()+1,d.getDate());
+  return s;
+}
+function nxFmtDDash(v){ return nxFmtD(v)||'-'; }
+/* date + time for logs/audits — date part as mm/dd/yy, keep the clock time */
+function nxFmtDT(v){
+  if(v==null||v==='') return '';
+  const d=new Date(v); if(isNaN(d.getTime())) return nxFmtD(v)||String(v);
+  const time=d.toLocaleTimeString(LANG==='th'?'th-TH':'en-US',{hour:'2-digit',minute:'2-digit'});
+  return nxFmtD(d.toISOString().slice(0,10))+' '+time;
+}
+/* weekday word + mm/dd/yy — for day-view banners so the date still reads mm/dd/yy */
+function nxFmtDW(dateOrIso,longWeekday){
+  let d;
+  if(dateOrIso instanceof Date) d=dateOrIso;
+  else if(/^\d{4}-\d{2}-\d{2}/.test(String(dateOrIso))) d=new Date(String(dateOrIso).slice(0,10)+'T00:00:00');
+  else d=new Date(dateOrIso);
+  if(isNaN(d.getTime())) return String(dateOrIso);
+  const loc=LANG==='th'?'th-TH':'en-US';
+  const wd=d.toLocaleDateString(loc,{weekday:longWeekday?'long':'short'});
+  return wd+' '+nxFmtD(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+}
+/* ---- Global mm/dd/yy display enforcement ----
+   Every stored date is yyyy-mm-dd. Rather than reformat 60+ render sites by hand,
+   we convert any bare yyyy-mm-dd that appears as *visible text* into mm/dd/yy.
+   Native <input type="date"> values live in element attributes (not text nodes),
+   so pickers keep their yyyy-mm-dd value and only the displayed text changes.
+   The transform is idempotent (mm/dd/yy no longer matches), so re-sweeps are safe. */
+const NX_DATE_RX=/(^|[^\d\/-])(\d{4})-(\d{2})-(\d{2})(?![\d-])/g;
+function nxDateText(str){ return str.replace(NX_DATE_RX,(m,pre,y,mo,d)=>pre+nxFmtParts(+y,+mo,+d)); }
+function nxSweepTextNode(n){ const v=n.nodeValue; if(!v||v.indexOf('-')<0) return; const nv=nxDateText(v); if(nv!==v) n.nodeValue=nv; }
+function nxDateSweep(root){
+  if(!root) return;
+  if(root.nodeType===3){ nxSweepTextNode(root); return; }
+  if(root.nodeType!==1) return;
+  const tag=root.nodeName; if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA') return;
+  let walker;
+  try{ walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode(n){ const p=n.parentNode; if(!p) return NodeFilter.FILTER_REJECT; const pt=p.nodeName; if(pt==='SCRIPT'||pt==='STYLE'||pt==='TEXTAREA'||pt==='OPTION') return NodeFilter.FILTER_REJECT; return (n.nodeValue&&n.nodeValue.indexOf('-')>=0)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT; }}); }
+  catch(_){ return; }
+  const hits=[]; let node; while(node=walker.nextNode()) hits.push(node);
+  hits.forEach(nxSweepTextNode);
+}
+let _nxDateObs=null;
+function nxStartDateObserver(){
+  try{
+    if(!document.body || typeof MutationObserver==='undefined') return;
+    nxDateSweep(document.body);
+    try{ nxUpgradeDates(document.body); }catch(_){}
+    if(_nxDateObs) return;
+    _nxDateObs=new MutationObserver(muts=>{
+      const seen=new Set();
+      muts.forEach(m=>{ if(m.addedNodes) m.addedNodes.forEach(n=>{ if(!seen.has(n)){ seen.add(n); nxDateSweep(n); try{ nxUpgradeDates(n); }catch(_){} } }); });
+    });
+    _nxDateObs.observe(document.body,{childList:true,subtree:true});
+  }catch(_){}
+}
+/* ================= Custom mm/dd/yy date picker (shipping / received) =================
+   Native <input type="date"> shows dates in the device's locale and can't be forced to
+   mm/dd/yy. For the Shipping/Received fields we swap the native input for a custom
+   calendar that DISPLAYS mm/dd/yy while the underlying element keeps its id and holds
+   the value as yyyy-mm-dd — so every existing reader (.value) and onchange handler keeps
+   working unchanged. */
+const NXDP_SELECTOR='#as_ship,#as_recv,#d-shipDate,#d-recvDate,#sf_date,input.ck-date';
+function nxIsoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function nxdpSyncDisplay(inp){ if(inp&&inp.__disp){ inp.__disp.value = inp.value ? nxFmtD(inp.value) : ''; } }
+function nxUpgradeDateInput(inp){
+  try{
+    if(!inp || inp.__nxdp) return;
+    if((inp.getAttribute('type')||inp.type)!=='date') return;
+    inp.__nxdp=true;
+    const disp=document.createElement('input');
+    disp.type='text'; disp.readOnly=true; disp.className=inp.className; disp.classList.add('nxdp-disp');
+    disp.placeholder='mm/dd/yy'; disp.setAttribute('inputmode','none'); disp.setAttribute('autocomplete','off');
+    disp.value = inp.value ? nxFmtD(inp.value) : '';
+    disp.style.cursor='pointer';
+    const wrap=document.createElement('span'); wrap.className='nxdp';
+    const ic=document.createElement('span'); ic.className='nxdp-ic'; ic.textContent='📅';
+    const parent=inp.parentNode; if(!parent) { inp.__nxdp=false; return; }
+    parent.insertBefore(wrap, inp);
+    inp.type='hidden';
+    wrap.appendChild(inp); wrap.appendChild(disp); wrap.appendChild(ic);
+    inp.__disp=disp;
+    const open=(e)=>{ if(wrap.classList.contains('nxdp-locked')) return; if(e){ e.preventDefault(); e.stopPropagation(); } nxdpOpen(inp); };
+    disp.addEventListener('click',open); ic.addEventListener('click',open);
+  }catch(_){ }
+}
+function nxUpgradeDates(root){
+  if(!root || root.nodeType!==1) return;
+  try{
+    if(root.matches && root.matches(NXDP_SELECTOR)) nxUpgradeDateInput(root);
+    if(root.querySelectorAll) root.querySelectorAll(NXDP_SELECTOR).forEach(nxUpgradeDateInput);
+  }catch(_){ }
+}
+let _nxdpTarget=null, _nxdpView=null, _nxdpEl=null;
+function nxdpEnsureEl(){
+  if(_nxdpEl) return _nxdpEl;
+  _nxdpEl=document.createElement('div'); _nxdpEl.className='nxdp-pop'; _nxdpEl.style.display='none';
+  document.body.appendChild(_nxdpEl);
+  return _nxdpEl;
+}
+function nxdpOpen(inp){
+  _nxdpTarget=inp; nxdpEnsureEl();
+  const iso=inp.value||''; let base;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(iso)) base=new Date(iso+'T00:00:00'); else base=new Date();
+  _nxdpView=new Date(base.getFullYear(), base.getMonth(), 1);
+  nxdpRender();
+  const disp=inp.__disp||inp; const r=disp.getBoundingClientRect();
+  _nxdpEl.style.display='block';
+  const popW=_nxdpEl.offsetWidth||266, popH=_nxdpEl.offsetHeight||300;
+  let left=window.scrollX+r.left; let top=window.scrollY+r.bottom+6;
+  if(left+popW>window.scrollX+document.documentElement.clientWidth-8) left=window.scrollX+document.documentElement.clientWidth-popW-8;
+  if(left<window.scrollX+6) left=window.scrollX+6;
+  if(r.bottom+popH>document.documentElement.clientHeight-8 && r.top>popH) top=window.scrollY+r.top-popH-6;
+  _nxdpEl.style.left=left+'px'; _nxdpEl.style.top=top+'px';
+}
+function nxdpClose(){ if(_nxdpEl) _nxdpEl.style.display='none'; _nxdpTarget=null; }
+function nxdpRender(){
+  if(!_nxdpEl||!_nxdpView) return;
+  const y=_nxdpView.getFullYear(), m=_nxdpView.getMonth();
+  const loc=LANG==='th'?'th-TH':'en-US';
+  const title=_nxdpView.toLocaleDateString(loc,{month:'long',year:'numeric'});
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const selIso=_nxdpTarget&&_nxdpTarget.value||'';
+  const todayIso=nxIsoOf(new Date());
+  const dow=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let cells='';
+  for(let i=0;i<first;i++) cells+='<button type="button" class="nxdp-day nxdp-empty"></button>';
+  for(let d=1;d<=days;d++){ const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    let cls='nxdp-day'; if(iso===selIso) cls+=' nxdp-sel'; else if(iso===todayIso) cls+=' nxdp-today';
+    cells+='<button type="button" class="'+cls+'" data-iso="'+iso+'">'+d+'</button>'; }
+  _nxdpEl.innerHTML=
+    '<div class="nxdp-head"><button type="button" class="nxdp-nav" data-nav="-1">‹</button><span class="nxdp-title">'+title+'</span><button type="button" class="nxdp-nav" data-nav="1">›</button></div>'+
+    '<div class="nxdp-grid">'+dow.map(x=>'<span class="nxdp-dow">'+x+'</span>').join('')+cells+'</div>'+
+    '<div class="nxdp-foot"><button type="button" data-act="today">Today</button><button type="button" data-act="clear">Clear</button></div>';
+  _nxdpEl.querySelectorAll('.nxdp-nav').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); _nxdpView=new Date(y,m+parseInt(b.getAttribute('data-nav')),1); nxdpRender(); }));
+  _nxdpEl.querySelectorAll('.nxdp-day[data-iso]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); nxdpPick(b.getAttribute('data-iso')); }));
+  _nxdpEl.querySelector('[data-act=today]').addEventListener('click',e=>{ e.stopPropagation(); nxdpPick(todayIso); });
+  _nxdpEl.querySelector('[data-act=clear]').addEventListener('click',e=>{ e.stopPropagation(); nxdpPick(''); });
+}
+function nxdpPick(iso){
+  const inp=_nxdpTarget; if(!inp){ nxdpClose(); return; }
+  inp.value=iso; nxdpSyncDisplay(inp);
+  try{ inp.dispatchEvent(new Event('input',{bubbles:true})); }catch(_){}
+  try{ inp.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+  nxdpClose();
+}
+document.addEventListener('click',function(e){ if(!_nxdpEl||_nxdpEl.style.display==='none') return; if(_nxdpEl.contains(e.target)) return; if(e.target.closest && e.target.closest('.nxdp')) return; nxdpClose(); },true);
+window.addEventListener('resize',nxdpClose);
+
+/* start the date sweep + picker upgrades now that all their helpers are defined */
+try{ nxStartDateObserver(); }catch(_){}
+if(typeof document!=='undefined' && document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',()=>{ try{ nxStartDateObserver(); }catch(_){} }); }
+if(typeof window!=='undefined'){ window.addEventListener('load',()=>{ try{ nxStartDateObserver(); }catch(_){} }); }
 function todayStr(){ const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
 function currentYM(){ const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); }
 function ymLabel(ym){ if(!ym) return ''; const loc=LANG==='th'?'th-TH':'en-US'; return new Date(ym+'-01T00:00:00').toLocaleDateString(loc,{month:'long',year:'numeric'}); }
@@ -3666,11 +3932,7 @@ const FIELDS = [
   {key:'estUnitPrice', en:"Est. Unit Price (ราคาประเมิน/หน่วย)", th:"ราคาประเมิน/หน่วย (Est.)", req:false, type:'number'},
   {key:'unitPrice', en:"Actual Unit Price (ราคาจริง/หน่วย)",    th:"ราคาจริง/หน่วย (Actual)",  req:true,  type:'number'},
   {key:'total',     en:"Total Amount (จำนวนเงิน)",      th:"จำนวนเงิน (Total Amount)",    req:true,  type:'number'},
-  {key:'group',     en:"Group (หมวดหมู่)",              th:"หมวดหมู่ (Group)",           req:true},
-  {key:'cnc',       en:"CNC",                           th:"CNC (ซีเอ็นซี)",             req:false},
-  {key:'turning',   en:"กลึง (Turning)",                th:"กลึง (Turning)",             req:false},
-  {key:'milling',   en:"MILLING",                       th:"มิลลิ่ง (Milling)",          req:false},
-  {key:'labor',     en:"ค่าแรง (Labor)",                th:"ค่าแรง (Labor)",             req:true,  type:'number'}
+  {key:'group',     en:"Group (หมวดหมู่)",              th:"หมวดหมู่ (Group)",           req:true}
 ];
 
 /* =================== i18n =================== */
@@ -4020,12 +4282,27 @@ const I18N = {
   empDeptPick:{en:"— set department —",th:"— เลือกแผนก —"},
   empDeptSet:{en:"Department set",th:"ตั้งแผนกแล้ว"},
   empDeptCleared:{en:"Department cleared",th:"ล้างแผนกแล้ว"},
+  empDeptNone:{en:"— not set —",th:"— ยังไม่ได้ตั้ง —"},
   "dept_Design Engineer":{en:"Design Engineer",th:"วิศวกรออกแบบ"},
   "dept_Software Developer":{en:"Software Developer",th:"นักพัฒนาซอฟต์แวร์"},
   "dept_Production":{en:"Production",th:"ฝ่ายผลิต"},
   "dept_Automation":{en:"Automation",th:"ระบบอัตโนมัติ"},
   "dept_Purchase":{en:"Purchase",th:"จัดซื้อ"},
   "dept_Store":{en:"Store",th:"คลังสินค้า"},
+  "dept_Purchasing":{en:"Purchasing",th:"ฝ่ายจัดซื้อ"},
+  "dept_Sales":{en:"Sales",th:"ฝ่ายขาย"},
+  "dept_Developer":{en:"Developer",th:"นักพัฒนา"},
+  "dept_Assembly":{en:"Assembly",th:"ฝ่ายประกอบ"},
+  permSetDept:{en:"Set Department",th:"ตั้งแผนก"},
+  permDeptDesc:{en:"Assign this account to a department.",th:"กำหนดแผนกให้บัญชีนี้"},
+  deptAddNew:{en:"Add Department…",th:"เพิ่มแผนก…"},
+  deptAddTitle:{en:"Add Department",th:"เพิ่มแผนก"},
+  deptAddDesc:{en:"Create a new department for future use.",th:"สร้างแผนกใหม่สำหรับใช้ในอนาคต"},
+  deptAddConfirm:{en:"Add & Confirm",th:"เพิ่มและยืนยัน"},
+  deptName:{en:"Department name",th:"ชื่อแผนก"},
+  deptNamePh:{en:"e.g. Quality Control",th:"เช่น ฝ่ายควบคุมคุณภาพ"},
+  deptErr:{en:"Please enter a department name (or it already exists).",th:"กรุณากรอกชื่อแผนก (หรือมีอยู่แล้ว)"},
+  deptAdded:{en:"Department added",th:"เพิ่มแผนกแล้ว"},
   prTitle:{en:"PURCHASE REQUEST",th:"ใบขอจัดซื้อ"},
   prLead:{en:"ใบขอจัดซื้อ — raise a request for items to purchase, manufacture, repair or replace.",th:"ใบขอจัดซื้อ — สร้างคำขอสำหรับจัดซื้อ สั่งทำ ซ่อม หรือทดแทนสินค้า"},
   prFormHead:{en:"New Purchase Request",th:"สร้างใบขอจัดซื้อ"},
@@ -4483,7 +4760,7 @@ const I18N = {
   waBudgetSaved:{en:"Budget updated",th:"อัปเดตงบประมาณแล้ว"},
   waCost:{en:"Cost",th:"ต้นทุน"},
   waMargin:{en:"Margin",th:"กำไร"},
-  waCostChart:{en:"Material vs Labor cost",th:"ต้นทุนวัสดุ เทียบ ค่าแรง"},
+  waCostChart:{en:"Material cost",th:"ต้นทุนวัสดุ"},
   waCostChartSub:{en:"What makes up the project cost.",th:"องค์ประกอบของต้นทุนโครงการ"},
   waMaterial:{en:"Material cost",th:"ต้นทุนวัสดุ"},
   waLaborC:{en:"Labor cost",th:"ค่าแรง"},
@@ -4813,6 +5090,8 @@ function applyLang(){
   document.getElementById('langCode').textContent = LANG==='en' ? 'TH' : 'EN';
   const l2=document.getElementById('langLabel2'); if(l2) l2.textContent = LANG==='en' ? 'ไทย' : 'English';
   buildDetailFields();
+  try{ if(document.getElementById('custName')&&document.getElementById('custName').tagName==='SELECT') fillCreateCustSelect(); }catch(_){}
+  try{ renderDevSettings(); }catch(_){}
   refreshWorkSelect();
   renderSpectator();
   renderTimeline();
@@ -4860,9 +5139,10 @@ function go(view){
   if(['salary','otreg','leave','purchaserequest'].includes(view)) document.getElementById('grp-personal')?.classList.add('open');
   if(['prlist'].includes(view)) document.getElementById('grp-purchase')?.classList.add('open');
   if(['workanalysis','stockanalysis','empanalysis'].includes(view)) document.getElementById('grp-analysis')?.classList.add('open');
-  if(['devlog','devdb','devconn'].includes(view)) document.getElementById('grp-devmgmt')?.classList.add('open');
+  if(['devlog','devdb','devconn','devset'].includes(view)) document.getElementById('grp-devmgmt')?.classList.add('open');
   document.getElementById('navmenu').classList.remove('open');
   const hbg=document.getElementById('homeBg'); if(hbg) hbg.classList.toggle('show',view==='home');
+  if(view==='create'){ initCreate(); }
   if(view==='detail'){ refreshWorkSelect(); refreshSupplierSelect(); }
   if(view==='spectator'){ onFilterTypeChange(); renderSpectator(); }
   if(view==='timeline'){ renderTimeline(); }
@@ -4894,6 +5174,7 @@ function go(view){
   if(view==='devlog'){ initDevLog(); }
   if(view==='devdb'){ initDevDb(); }
   if(view==='devconn'){ initDevConn(); }
+  if(view==='devset'){ renderDevSettings(); }
   if(view==='stock' && stockTarget){
     const id={add:'stk-add',list:'stk-list',withdraw:'stk-withdraw'}[stockTarget]; stockTarget=null;
     setTimeout(()=>{ const el=document.getElementById(id); if(el){ leadTo(el); el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),3400); } },300);
@@ -4998,11 +5279,45 @@ document.getElementById('createForm').addEventListener('submit',function(e){
     upsertCustomer(custName,custCode);
     closeModal(); successModal(t('workCreated'),t('workCreatedSub'));
     document.getElementById('createForm').reset();
+    _createCustPrev=''; fillCreateCustSelect('');
     refreshWorkSelect(); renderSpectator(); renderTimeline(); renderCustomers(); computeAlerts();
   });
 });
+document.getElementById('createForm').addEventListener('reset',function(){ setTimeout(()=>{ _createCustPrev=''; fillCreateCustSelect(''); },0); });
 function val(id){ return document.getElementById(id).value.trim(); }
 function markValid(fid,cond){ const f=document.getElementById(fid); f.classList.toggle('invalid',!cond); return cond; }
+/* ---- Cust Name dropdown on Work Creation ---- */
+const CUST_ADD_SENTINEL='__add_customer__';
+function fillCreateCustSelect(selName){
+  const sel=document.getElementById('custName'); if(!sel) return;
+  const cur = (selName!=null)?selName:sel.value;
+  const cs=DB.customers().slice().sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const ph = LANG==='en'?'— Select customer —':'— เลือกลูกค้า —';
+  const add = LANG==='en'?'➕ Add new customer…':'➕ เพิ่มลูกค้าใหม่…';
+  let html=`<option value="" disabled${cur?'':' selected'}>${escapeHtml(ph)}</option>`;
+  cs.forEach(c=>{ html+=`<option value="${escapeAttr(c.name)}"${c.name===cur?' selected':''}>${escapeHtml(c.name)}${c.code?(' ('+escapeHtml(c.code)+')'):''}</option>`; });
+  html+=`<option value="${CUST_ADD_SENTINEL}">${escapeHtml(add)}</option>`;
+  sel.innerHTML=html;
+  syncCreateCustCode();
+}
+function syncCreateCustCode(){
+  const sel=document.getElementById('custName'); const code=document.getElementById('custCode'); if(!sel||!code) return;
+  const c=DB.customers().find(x=>x.name===sel.value);
+  code.value = c?(c.code||''):'';
+}
+let _createCustPrev='';
+function onCreateCustChange(){
+  const sel=document.getElementById('custName'); if(!sel) return;
+  if(sel.value===CUST_ADD_SENTINEL){
+    sel.value=_createCustPrev||'';
+    openCustomerForm('',false,function(rec){ fillCreateCustSelect(rec.name); _createCustPrev=rec.name; markValid('f-custName',true); markValid('f-custCode',true); });
+    return;
+  }
+  _createCustPrev=sel.value;
+  syncCreateCustCode();
+  if(sel.value){ markValid('f-custName',true); markValid('f-custCode',true); }
+}
+function initCreate(){ fillCreateCustSelect(document.getElementById('custName')?.value||''); }
 
 /* =================== DETAIL FORM =================== */
 function buildDetailFields(){
@@ -5484,7 +5799,7 @@ function renderCheck(){
     else if(st.level==='warn'){ sb='st-warn'; stx=t('stWarnTxt'); }
     else if(st.level==='none'){ sb='st-none'; stx=t('stNoneTxt'); }
     const fu=(d.followUps||[]); const last=fu.length?fu[fu.length-1]:null;
-    const lastTxt = last ? '🕑 '+t('followedOn')+' '+new Date(last.ts).toLocaleDateString() : t('notFollowed');
+    const lastTxt = last ? '🕑 '+t('followedOn')+' '+nxFmtDT(last.ts) : t('notFollowed');
     const needFollow = (st.level==='lost'||st.level==='urgent'||st.level==='warn') && !last;
     const isAlert = (st.level==='lost'||st.level==='urgent'||st.level==='warn'||st.level==='none');
     const tr=document.createElement('tr'); tr.id='ck-'+d.id;
@@ -5595,7 +5910,7 @@ function openFollowUp(id){
     </div>`;
 
   const fu=(d.followUps||[]).slice().reverse();
-  const histHtml = fu.length ? fu.map(f=>`<div class="fu-item"><span class="fu-ts">${new Date(f.ts).toLocaleString()}</span><span class="fu-note">${escapeHtml(f.note||t('followNoNote'))}</span></div>`).join('') : `<div class="muted-line">${t('noFollow')}</div>`;
+  const histHtml = fu.length ? fu.map(f=>`<div class="fu-item"><span class="fu-ts">${nxFmtDT(f.ts)}</span><span class="fu-note">${escapeHtml(f.note||t('followNoNote'))}</span></div>`).join('') : `<div class="muted-line">${t('noFollow')}</div>`;
 
   const body = `
     <div class="mod-section"><h5>📇 ${t('contactInfo')}</h5>${contactHtml}</div>
@@ -5779,7 +6094,9 @@ function openWorkInDetail(x){
   const s=document.getElementById('selWorkNo'); if(s){ s.value=wn; onSelectWork(); }
   setTimeout(()=>leadTo(document.querySelector('#view-detail .readout')||s),340);
 }
-function openCustomerForm(arg,isEdit){
+let _custFormCb=null;
+function openCustomerForm(arg,isEdit,onSaved){
+  _custFormCb = (typeof onSaved==='function') ? onSaved : null;
   let c={name:'',code:''}; const oldB64=arg||'';
   if(isEdit){ const nm=ub64(arg); const f=DB.customers().find(x=>x.name===nm); if(f) c=Object.assign(c,f); }
   const body=`<div class="vform">
@@ -5815,6 +6132,7 @@ function saveCustomer(isEdit,oldB64){
     if(i>=0) cs[i]=Object.assign(cs[i],rec); else cs.push(rec); DB.saveCustomers(cs);
   }
   closeModal(); showToast(t('custSaved')); renderCustomers(); refreshWorkSelect(); renderSpectator(); onSelectWork();
+  if(_custFormCb){ const cb=_custFormCb; _custFormCb=null; try{ cb(rec); }catch(_){} }
 }
 function delCustomer(x){ const nm=ub64(x); DB.saveCustomers(DB.customers().filter(c=>c.name!==nm)); renderCustomers(); showToast(t('custDeleted')); }
 
@@ -6116,7 +6434,7 @@ function lgPickSuggest(i){ document.getElementById('lgInput').value=lgSuggestIte
 function hideLgSuggest(){ const b=document.getElementById('lgSuggest'); if(b) b.classList.remove('show'); }
 function lgKey(e){ const box=document.getElementById('lgSuggest'); const items=[...box.querySelectorAll('.s-item')]; if(e.key==='ArrowDown'){e.preventDefault();lgSuggestIndex=Math.min(lgSuggestIndex+1,items.length-1);}else if(e.key==='ArrowUp'){e.preventDefault();lgSuggestIndex=Math.max(lgSuggestIndex-1,0);}else if(e.key==='Enter'){if(lgSuggestIndex>=0){e.preventDefault();lgPickSuggest(lgSuggestIndex);}return;}else if(e.key==='Escape'){hideLgSuggest();return;}else return; items.forEach((it,i)=>it.classList.toggle('hi',i===lgSuggestIndex)); }
 function lgPickChange(){ document.getElementById('lgInput').value=''; hideLgSuggest(); renderWithdrawLog(); }
-function dtFmt(iso){ if(!iso) return ''; try{ return new Date(iso).toLocaleString(); }catch(e){ return iso; } }
+function dtFmt(iso){ if(!iso) return ''; try{ return nxFmtDT(iso); }catch(e){ return iso; } }
 function renderWithdrawLog(){
   const body=document.getElementById('lgBody'); if(!body) return;
   const mv=allMovements();
@@ -6225,13 +6543,13 @@ function mgUnit(m){ const e=matEstUnit(m); return {__hasEst:e>0,__mg:matMarginUn
 function mgTot(m){ const e=matEstUnit(m); return {__hasEst:e>0,__mg:matMarginTotal(m)}; }
 function workDetails(wn){ return DB.details().filter(d=>d.workNo===wn); }
 function workMaterial(wn){ return workDetails(wn).reduce((s,d)=>s+(parseFloat(d.total)||0),0); }
-function workLabor(wn){ return workDetails(wn).reduce((s,d)=>s+(parseFloat(d.labor)||0),0); }
-function workCost(wn){ return workMaterial(wn)+workLabor(wn); }
+function workLabor(wn){ return 0; }  /* labor field removed — project cost is materials-only */
+function workCost(wn){ return workMaterial(wn); }
 function workBudget(wn){ const w=DB.works().find(x=>x.workNo===wn); if(w&&w.budget!=null&&w.budget!=='') return parseFloat(w.budget)||0; return Math.round(workCost(wn)*1.4/100)*100; }
 function workMargin(wn){ return workBudget(wn)-workCost(wn); }
 /* estimate-side totals (based on estimate unit prices, before discounts) */
 function workEstMaterial(wn){ return workDetails(wn).reduce((s,d)=>{ const e=matEstUnit(d); return s+(e>0? e*matQty(d) : (parseFloat(d.total)||0)); },0); }
-function workEstCost(wn){ return workEstMaterial(wn)+workLabor(wn); }
+function workEstCost(wn){ return workEstMaterial(wn); }
 /* budget (customer payment) is fixed at quote time from the estimate — same in both scenarios */
 function workEstBudget(wn){ return workBudget(wn); }
 function workEstMargin(wn){ return workEstBudget(wn)-workEstCost(wn); }
@@ -6297,7 +6615,7 @@ function renderWorkProject(){
       <div class="wa-fig"><span class="wf-l">${t('waMargin')}</span><span class="wf-v" style="color:${marCls}">${fmtTHB(mar)}</span><span class="wf-pct" style="color:${marCls}">${pct.toFixed(1)}%</span></div>
     </div>
     <div class="an-grid" style="margin-top:14px">
-      <div class="chart-card"><h3>${t('waCostChart')}</h3><div class="csub">${t('waCostChartSub')}</div>${vBars([{label:t('waMaterial'),value:Math.round(mat),color:'#0891b2'},{label:t('waLaborC'),value:Math.round(lab),color:'#d97706'}],fmtTHB)}<div class="wa-total-line">${t('waTotalCost')}: <b>${fmtTHB(cost)}</b></div></div>
+      <div class="chart-card"><h3>${t('waCostChart')}</h3><div class="csub">${t('waCostChartSub')}</div>${vBars([{label:t('waMaterial'),value:Math.round(mat),color:'#0891b2'}],fmtTHB)}<div class="wa-total-line">${t('waTotalCost')}: <b>${fmtTHB(cost)}</b></div></div>
       <div class="chart-card"><h3>${t('waBudChart')}</h3><div class="csub">${t('waBudChartSub')}</div>${vBars([{label:t('waBudget'),value:Math.round(bud),color:'#d9a406'},{label:t('waCost'),value:Math.round(cost),color:'#e5484d'},{label:t('waMargin'),value:Math.round(mar),color:'#16a34a'}],fmtTHB)}<div class="wa-total-line">${t('waMargin')}: <b style="color:${marCls}">${fmtTHB(mar)}</b></div></div>
     </div>
     <div class="wa-btns">
@@ -6355,7 +6673,7 @@ function waLaborPopup(wn){
 }
 function waMarginPopup(wn){
   const dets=workDetails(wn); const groups={};
-  dets.forEach(d=>{ const g=d.group||d.list||'—'; groups[g]=groups[g]||{c:0}; groups[g].c+=(parseFloat(d.total)||0)+(parseFloat(d.labor)||0); });
+  dets.forEach(d=>{ const g=d.group||d.list||'—'; groups[g]=groups[g]||{c:0}; groups[g].c+=(parseFloat(d.total)||0); });
   const bud=workBudget(wn), cost=workCost(wn);
   const keys=Object.keys(groups);
   const rows=keys.map(g=>{ const c=groups[g].c; const share=cost>0?c/cost:0; const alloc=bud*share; const mg=alloc-c; return `<tr><td>${escapeHtml(g)}</td><td class="num wa-c-cost">${fmtTHB(Math.round(c))}</td><td class="num wa-c-budget">${fmtTHB(Math.round(alloc))}</td><td class="num wa-c-margin">${fmtTHB(Math.round(mg))}</td></tr>`; }).join('');
@@ -6438,14 +6756,14 @@ function renderEmployees(){
   body.innerHTML='';
   es.forEach(e=>{ const tr=document.createElement('tr');
     const dept=e.department||'';
-    const deptSel=`<span class="dept-pick${dept?' set':''}"><span class="dp-ic">🏷</span><select onchange="empSetDept('${b64(e.id)}',this.value)"><option value="">${t('empDeptPick')}</option>${PR_DEPARTMENTS.map(d=>`<option value="${escapeAttr(d)}"${d===dept?' selected':''}>${escapeHtml(t('dept_'+d)||d)}</option>`).join('')}</select></span>`;
+    const deptSel=`<span class="dept-pick${dept?' set':''}"><span class="dp-ic">🏷</span><select onchange="empSetDept('${b64(e.id)}',this.value)"><option value="">${t('empDeptPick')}</option>${deptOptionsHtml(dept)}</select></span>`;
     tr.innerHTML=`<td><b>${escapeHtml(e.name)}</b></td><td>${escapeHtml(e.age||'—')}</td><td>${escapeHtml(e.birth||'—')}</td><td>${deptSel}</td><td style="white-space:nowrap"><button class="btn-mini" onclick="openEmployeeForm('${b64(e.id)}',true)">✎</button> <button class="btn-mini" style="color:var(--red);border-color:var(--red)" onclick="delEmployee('${b64(e.id)}')">✕</button></td>`; body.appendChild(tr); });
   document.getElementById('empEmpty').style.display=es.length?'none':'block';
 }
 const MIN_HIRE_AGE=18;  // legal minimum working age
 let efDobSel='', efDobView=null;
 function efMaxDob(){ const n=new Date(); return new Date(n.getFullYear()-MIN_HIRE_AGE, n.getMonth(), n.getDate()); }
-function efFmtDob(iso){ const d=new Date(iso+'T00:00:00'); if(isNaN(d.getTime())) return iso; const loc=LANG==='th'?'th-TH':'en-US'; return d.toLocaleDateString(loc,{day:'numeric',month:'short',year:'numeric'}); }
+function efFmtDob(iso){ const d=new Date(iso+'T00:00:00'); if(isNaN(d.getTime())) return iso; return nxFmtD(iso); }
 function openEmployeeForm(idB64,isEdit){
   let e={id:'',name:'',age:'',birth:''};
   if(isEdit){ const id=ub64(idB64); const f=DB.employees().find(x=>x.id===id); if(f) e=Object.assign(e,f); }
@@ -6516,6 +6834,14 @@ function saveEmployee(isEdit,id){
 }
 function delEmployee(x){ const id=ub64(x); DB.saveEmployees(DB.employees().filter(e=>e.id!==id)); renderEmployees(); renderAttendance(); showToast(t('empDeleted')); }
 function empSetDept(x,val){ const id=ub64(x); const es=DB.employees(); const e=es.find(y=>y.id===id); if(!e) return; e.department=val; DB.saveEmployees(es); renderEmployees(); showToast(val?(t('empDeptSet')+': '+(t('dept_'+val)||val)):t('empDeptCleared')); }
+/* ---- Departments (persisted + synced, extendable via Add Department) ---- */
+const DEFAULT_DEPARTMENTS=['Purchasing','Store','Sales','Developer','Design Engineer','Assembly','Production'];
+function getDepartments(){ let list; try{ list=JSON.parse(localStorage.getItem('nx_departments')||'null'); }catch(_){ list=null; } if(!Array.isArray(list)||!list.length) list=DEFAULT_DEPARTMENTS.slice(); return list; }
+function saveDepartments(list){ try{ localStorage.setItem('nx_departments', JSON.stringify(list)); }catch(_){} }
+function ensureDepartments(){ let raw; try{ raw=localStorage.getItem('nx_departments'); }catch(_){ raw=null; } let list=null; try{ list=JSON.parse(raw||'null'); }catch(_){ list=null; } if(!Array.isArray(list)||!list.length) saveDepartments(DEFAULT_DEPARTMENTS.slice()); }
+function addDepartment(name){ name=(name||'').trim(); if(!name) return false; const list=getDepartments(); if(list.some(d=>d.toLowerCase()===name.toLowerCase())) return false; list.push(name); saveDepartments(list); return true; }
+function deptLabel(d){ return d?(t('dept_'+d)||d):''; }
+function deptOptionsHtml(cur){ const list=getDepartments().slice(); if(cur && !list.some(d=>d.toLowerCase()===String(cur).toLowerCase())) list.unshift(cur); return list.map(d=>`<option value="${escapeAttr(d)}"${d===cur?' selected':''}>${escapeHtml(deptLabel(d))}</option>`).join(''); }
 function empDept(empId){ const e=DB.employees().find(x=>x.id===empId); return (e&&e.department)||''; }
 
 /* =================== TEAM ATTENDANCE BOARD =================== */
@@ -6578,7 +6904,7 @@ function renderTimeAttend(){
     rows.push(`<tr class="ta-row" onclick="taPersonDay('${l.empId}','${ds}')" title="${escapeAttr(t('taRowGo'))}"><td>${nm}</td><td class="ta-time">${escapeHtml(l.in||'—')}</td><td class="ta-time">${escapeHtml(l.out||'—')}</td><td>${outM!=null?('<b>'+worked.toFixed(1)+'</b> '+t('hrUnit')):'—'}</td><td>${taOtCell(l)}</td><td>${badge}</td><td class="ta-dev"><span class="ta-method">🔑 ${t('taFingerprint')}</span> · ${escapeHtml(l.device||'—')}</td></tr>`);
   });
   if(logs.length && workday && !future){ emps.forEach(e=>{ if(!byEmp[e.id]){ absent++; rows.push(`<tr class="ta-dim"><td><b>${escapeHtml(e.name)}</b></td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="ck-badge-static st-bad">🚫 ${t('taAbsent')}</span></td><td>—</td></tr>`); } }); }
-  const lbl=document.getElementById('taDayLabel'); if(lbl){ lbl.textContent=d.toLocaleDateString(loc,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+(ds===taTodayStr()?(' · '+t('taTodayTag')):'')+(otTot?(' · '+t('taColOT')+' '+otTot+' '+t('hrUnit')):''); }
+  const lbl=document.getElementById('taDayLabel'); if(lbl){ lbl.textContent=nxFmtDW(d,true)+(ds===taTodayStr()?(' · '+t('taTodayTag')):'')+(otTot?(' · '+t('taColOT')+' '+otTot+' '+t('hrUnit')):''); }
   const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
   set('taPresent',present); set('taLate',late); set('taAbsent',absent); set('taAvg',hc?(hours/hc).toFixed(1):'0'); set('taDevices',DB.taDevices().length);
   document.getElementById('taBody').innerHTML=rows.join('');
@@ -6589,7 +6915,7 @@ function renderTimeAttend(){
 }
 /* per-person, per-day detail popup */
 function taPersonDay(empId,ds){ const e=DB.employees().find(x=>x.id===empId); if(!e) return; const l=DB.taLogs().find(x=>x.empId===empId&&x.date===ds);
-  const loc=LANG==='th'?'th-TH':'en-US'; const dl=new Date(ds+'T00:00:00').toLocaleDateString(loc,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const loc=LANG==='th'?'th-TH':'en-US'; const dl=nxFmtDW(ds,true);
   let inner;
   if(!l){ inner=`<div class="edrow"><span>${t('thStatus')}</span><b class="mg-neg">🚫 ${t('taAbsent')}</b></div>`; }
   else { const late=taIsLate(l.in); const worked=taWorked(l.in,l.out); const otMin=taOtMinutes(l.out); const ot=taOtHours(otMin); const ty=taDayType(ds); const rate=taDayRate(ds);
@@ -6618,7 +6944,7 @@ function renderTaSummary(){
   for(let day=1;day<=dim;day++){ const ds=ym+'-'+pad(day); if(ds>today) break;
     const workday=(typeof isWorkday==='function')?isWorkday(ds):true;
     const l=DB.taLogs().find(x=>x.empId===empId&&x.date===ds);
-    const dlabel=new Date(ds+'T00:00:00').toLocaleDateString(loc,{weekday:'short',day:'2-digit',month:'short'});
+    const dlabel=nxFmtDW(ds,false);
     if(l){ const lateF=taIsLate(l.in); const worked=taWorked(l.in,l.out); const ot=taOtHours(taOtMinutes(l.out)); present++; if(lateF)late++; otH+=ot;
       const badge=lateF?`<span class="ck-badge-static st-warn">⏰ ${t('taLate')}</span>`:`<span class="ck-badge-static st-ok">✔ ${t('taOnTime')}</span>`;
       rows.push(`<tr class="ta-row" onclick="taPersonDay('${empId}','${ds}')" title="${escapeAttr(t('taRowGo'))}"><td>${dlabel}</td><td class="ta-time">${escapeHtml(l.in)}</td><td class="ta-time">${escapeHtml(l.out)}</td><td><b>${worked.toFixed(1)}</b> ${t('hrUnit')}</td><td>${ot>0?('<b>'+ot+'</b> '+t('hrUnit')):'—'}</td><td>${badge}</td></tr>`);
@@ -7038,7 +7364,7 @@ function renderLeaveConfirm(){
   body.innerHTML = list.length ? list.map(l=>{
     const conf=l.status==='confirmed';
     const dates=escapeHtml(l.from)+((l.to&&l.to!==l.from)?(' → '+escapeHtml(l.to)):'');
-    const reqDate=l.createdAt?new Date(l.createdAt).toLocaleDateString(LANG==='th'?'th-TH':'en-US'):'—';
+    const reqDate=l.createdAt?nxFmtD(String(l.createdAt).slice(0,10)):'—';
     const badge=conf
       ? `<span class="tl-status ck-badge-static st-ok">✔ ${t('lcConfirmedBy')}: ${escapeHtml(l.approver||'—')}</span>`
       : `<span class="tl-status ck-badge-static st-warn">${t('leaveWaiting')}</span>`;
@@ -7204,7 +7530,7 @@ function buildBillPages(e,ymOverride){
   const d=empBenefit(e); const m=empAtt(e);
   const loc=LANG==='th'?'th-TH':'en-US';
   const baseDate=ymOverride?new Date(ymOverride+'-01T00:00:00'):new Date();
-  const monthLabel=baseDate.toLocaleDateString(loc,{month:'long',year:'numeric'}); const dateStr=new Date().toLocaleDateString(loc,{day:'numeric',month:'short',year:'numeric'});
+  const monthLabel=baseDate.toLocaleDateString(loc,{month:'long',year:'numeric'}); const dateStr=nxFmtD(todayStr());
   const line=(label,val,cls)=>`<tr class="${cls||''}"><td>${label}</td><td>${fmtTHB(val)}</td></tr>`;
   let items='';
   items+=line(t('blBase'),d.base);
@@ -7232,7 +7558,7 @@ function buildBillPages(e,ymOverride){
   </div>`;
   // Page 2 — OT day-by-day detail for the month
   const otRows=otRowsForMonth(e);
-  const otItems = otRows.length ? otRows.map(r=>`<tr><td data-label="${t('otColDate')}">${escapeHtml(r.date)}</td><td data-label="${t('otColTime')}">${escapeHtml(r.from)} – ${escapeHtml(r.to)}</td><td data-label="${t('otColHrs')}">${r.h} ${t('hrUnit')}</td><td data-label="${t('otColType')}">${r.sp?t('otSpecialRate'):t('otNormalRate')}</td><td data-label="${t('blRate')}">${r.rate}×</td><td data-label="${t('blAmount')}" class="bill-amt">${fmtTHB(r.pay)}</td></tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:#889;padding:16px">${t('otNoMonth')}</td></tr>`;
+  const otItems = otRows.length ? otRows.map(r=>`<tr><td data-label="${t('otColDate')}">${escapeHtml(nxFmtD(r.date))}</td><td data-label="${t('otColTime')}">${escapeHtml(r.from)} – ${escapeHtml(r.to)}</td><td data-label="${t('otColHrs')}">${r.h} ${t('hrUnit')}</td><td data-label="${t('otColType')}">${r.sp?t('otSpecialRate'):t('otNormalRate')}</td><td data-label="${t('blRate')}">${r.rate}×</td><td data-label="${t('blAmount')}" class="bill-amt">${fmtTHB(r.pay)}</td></tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:#889;padding:16px">${t('otNoMonth')}</td></tr>`;
   const page2=`<div class="bill bill-page2">
     <div class="bill-top">
       <div class="bill-brand"><span class="bl-logo">F<span style="color:#77e947">N</span></span><div><div class="bl-co">F N Technology</div><div class="bl-cosub">${t('blCoSub')}</div></div></div>
@@ -7304,7 +7630,7 @@ function renderSalaryMain(){
   if(!e){ main.innerHTML=`<div class="perm-lock"><div class="pl-ic">💼</div><div class="pl-title" data-i18n="salNoEmp">No personal salary</div><div class="pl-sub" data-i18n="salNoEmpSub">You're signed in as an admin account without an employee profile. Log in with an employee account to view a personal salary.</div></div>`; return; }
   const slip=(DB.payslips()[e.id]||{})[ym];
   if(!slip){ main.innerHTML=`<div class="sal-wait"><div class="sw-ic">⏳</div><div class="sw-title">${t('salWaitTitle')}</div><div class="sw-sub">${t('salWaitSub').replace('%m',ymLabel(ym))}</div></div>`; return; }
-  const card=document.createElement('div'); card.className='card'; card.innerHTML=`<div class="sal-pub-tag">✅ ${t('salPublished')} · ${slip.publishedAt?new Date(slip.publishedAt).toLocaleDateString():''}</div><div id="salSlip"></div>`;
+  const card=document.createElement('div'); card.className='card'; card.innerHTML=`<div class="sal-pub-tag">✅ ${t('salPublished')} · ${slip.publishedAt?nxFmtD(String(slip.publishedAt).slice(0,10)):''}</div><div id="salSlip"></div>`;
   main.innerHTML=''; main.appendChild(card);
   renderPayslip(document.getElementById('salSlip'),{page1:slip.page1,page2:slip.page2},'sl');
 }
@@ -7406,7 +7732,7 @@ function initOtReg(){
   if(sel){ sel.innerHTML=es.map(e=>`<option value="${e.id}">${escapeHtml(e.name)}</option>`).join(''); const my=sessionEmp(); if(my) otRegEmp=my.id; else if((!otRegEmp||!es.some(e=>e.id===otRegEmp))&&es[0]) otRegEmp=es[0].id; if(otRegEmp) sel.value=otRegEmp; sel.disabled=!!my; sel.title=my?t('lockedToYou'):''; }
   otWorkSel=[]; otWorkBuild(); otWorkAfter();
   const td=todayStr(); const loc=LANG==='th'?'th-TH':'en-US';
-  const el=document.getElementById('otToday'); if(el) el.textContent=new Date(td+'T00:00:00').toLocaleDateString(loc,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const el=document.getElementById('otToday'); if(el) el.textContent=nxFmtDW(td,true);
   const tag=document.getElementById('otDayTag'); if(tag){ const ty=calDayType(td); tag.textContent=ty?((ty==='holiday'?t('calHoliday'):t('calSpecial'))+' · '+t('otSpecialRate')):t('otNormalRate'); tag.className='ot-daytag '+(ty?'sp':''); }
   renderOtReg();
 }
@@ -7556,7 +7882,7 @@ function otMonthHtml(){
 function otWeekHtml(){
   const base=new Date(); const dow=(base.getDay()+6)%7; const monday=new Date(base.getFullYear(),base.getMonth(),base.getDate()-dow);
   const loc=LANG==='th'?'th-TH':'en-US'; const dows=['Mo','Tu','We','Th','Fr','Sa','Su'];
-  let h=otBackBtn()+`<div class="cal-head" style="margin-top:10px"><b>${t('otWeek')} · ${monday.toLocaleDateString(loc,{day:'numeric',month:'short'})}</b></div><div class="ot-week-grid">`;
+  let h=otBackBtn()+`<div class="cal-head" style="margin-top:10px"><b>${t('otWeek')} · ${nxFmtD(monday.getFullYear()+'-'+String(monday.getMonth()+1).padStart(2,'0')+'-'+String(monday.getDate()).padStart(2,'0'))}</b></div><div class="ot-week-grid">`;
   for(let i=0;i<7;i++){ const dd=new Date(monday); dd.setDate(monday.getDate()+i); const ds=dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0'); const sp=isSpecialDay(ds); const today=ds===todayStr();
     h+=`<div class="ot-wcell ${sp?'sp':''} ${today?'today':''}"><div class="oc-wday">${dows[i]} ${dd.getDate()}</div><div class="oc-names">${otNameChips(ds)||`<span class="oc-empty">—</span>`}</div></div>`; }
   return h+'</div>';
@@ -7737,7 +8063,7 @@ function allowedSet(){
   return pos.perms||{};
 }
 const ADMIN_ONLY_PAGES=['permission','account'];
-const DEV_ONLY_PAGES=['devlog','devdb','devconn'];   // Developer role only — NOT in the permission system, cannot be granted to anyone else
+const DEV_ONLY_PAGES=['devlog','devdb','devconn','devset'];   // Developer role only — NOT in the permission system, cannot be granted to anyone else
 function isDeveloper(){ try{ return DB.role()==='Developer'; }catch(_){ return false; } }
 function pageAllowed(view){ if(DEV_ONLY_PAGES.indexOf(view)>=0) return isDeveloper(); if(ADMIN_ONLY_PAGES.indexOf(view)>=0) return isCEO(); const a=allowedSet(); if(!a) return true; if(allPageKeys().indexOf(view)<0) return true; return !!a[view]; }
 function applyAccess(){
@@ -7774,10 +8100,53 @@ function renderPermEmployees(){
     <div class="acc-act"><button type="button" class="btn-mini" onclick="event.stopPropagation();permAssignOpen('${e.id}')">${t('permSet')}</button></div>
   </div>`).join(''):`<div class="muted-line" style="padding:16px">${t('empNoData')}</div>`;
 }
+function permDeptOpen(id,preselect){
+  const e=DB.employees().find(x=>x.id===id); if(!e) return;
+  const cur=(preselect!=null?preselect:(e.department||''));
+  const body=`<div class="vform">
+    <div class="dept-cur" id="pdCur">${cur?('🏷 '+escapeHtml(deptLabel(cur))):('<span class="muted-line">'+t('empDeptPick')+'</span>')}</div>
+    <div class="field full"><label>${t('permSetDept')}</label>
+      <div class="dept-select-wrap"><span class="dsw-ic">🏷</span>
+        <select id="pdDept" class="dept-select" onchange="permDeptSelChange('${id}')">
+          <option value="">${t('empDeptPick')}</option>
+          ${deptOptionsHtml(cur)}
+          <option value="__add__">➕ ${t('deptAddNew')}</option>
+        </select>
+        <span class="dsw-chev">⌄</span>
+      </div>
+    </div>
+  </div>`;
+  customModal({icon:'🏷',title:t('permSetDept')+' — '+escapeHtml(e.name),desc:t('permDeptDesc'),bodyHtml:body,footButtons:[
+    {label:t('mCancel'),cls:'ghost',onClick:closeModal},
+    {label:'💾 '+t('save'),cls:'primary',onClick:()=>permDeptSave(id)}
+  ]});
+}
+function permDeptSelChange(id){
+  const sel=document.getElementById('pdDept'); if(!sel) return;
+  if(sel.value==='__add__'){ permDeptAddOpen(id); return; }
+  const cur=document.getElementById('pdCur'); if(cur) cur.innerHTML=sel.value?('🏷 '+escapeHtml(deptLabel(sel.value))):('<span class="muted-line">'+t('empDeptPick')+'</span>');
+}
+function permDeptAddOpen(id){
+  const body=`<div class="vform"><div class="field full"><label>${t('deptName')} <span class="req">*</span></label><input id="ndDept" placeholder="${escapeAttr(t('deptNamePh'))}" autocomplete="off"></div>
+    <div id="ndErr" class="redtext" style="display:none;margin-top:10px;font-size:13px;font-weight:600">${t('deptErr')}</div></div>`;
+  customModal({icon:'🏷',title:t('deptAddTitle'),desc:t('deptAddDesc'),bodyHtml:body,footButtons:[
+    {label:t('mCancel'),cls:'ghost',onClick:()=>permDeptOpen(id)},
+    {label:'➕ '+t('deptAddConfirm'),cls:'primary',onClick:()=>{ const n=gv('ndDept'); if(!addDepartment(n)){ const er=document.getElementById('ndErr'); if(er) er.style.display='block'; const inp=document.getElementById('ndDept'); if(inp) inp.style.borderColor='var(--red)'; return; } showToast(t('deptAdded')+': '+n); permDeptOpen(id, n.trim()); }}
+  ]});
+  setTimeout(()=>{ const inp=document.getElementById('ndDept'); if(inp) inp.focus(); },60);
+}
+function permDeptSave(id){
+  const sel=document.getElementById('pdDept'); const val=sel?sel.value:''; if(val==='__add__') return;
+  const es=DB.employees(); const e=es.find(x=>x.id===id); if(e){ e.department=val; DB.saveEmployees(es); }
+  closeModal(); showToast(val?(t('empDeptSet')+': '+deptLabel(val)):t('empDeptCleared'));
+  renderPermEmployees(); try{ renderEmployees(); }catch(_){}
+}
 function permAssignOpen(id){
   const e=DB.employees().find(x=>x.id===id); if(!e) return;
   const opts=`<option value="">${t('permNoPos')}</option>`+DB.positions().map(p=>`<option value="${p.id}" ${e.positionId===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('');
-  const body=`<div class="vform"><div class="field full"><label>${t('permSetPos')}</label><select id="paPos">${opts}</select></div></div>`;
+  const dept=e.department||'';
+  const deptRow=`<div class="pa-dept"><span class="pa-dept-k">🏷 ${t('empDept')}</span><span class="pa-dept-v">${dept?escapeHtml(deptLabel(dept)):('<span class="muted-line">'+t('empDeptNone')+'</span>')}</span></div>`;
+  const body=`<div class="vform">${deptRow}<div class="field full"><label>${t('permSetPos')}</label><select id="paPos">${opts}</select></div></div>`;
   customModal({icon:'🔑',title:t('permAssignTitle')+' — '+escapeHtml(e.name),desc:t('permAssignDesc'),bodyHtml:body,footButtons:[
     {label:t('mCancel'),cls:'ghost',onClick:closeModal},
     {label:'💾 '+t('save'),cls:'primary',onClick:()=>permAssignSave(id)}
@@ -8051,17 +8420,22 @@ function setStockDateLabels(on){
   if(!shipDiv||!recvDiv) return;
   const shipLbl=shipDiv.querySelector('label'), recvLbl=recvDiv.querySelector('label');
   const shipIn=document.getElementById('d-shipDate'), recvIn=document.getElementById('d-recvDate');
+  const lock=(inp,txt)=>{ if(!inp) return;
+    if(inp.__nxdp){ inp.value=txt; if(inp.__disp){ inp.__disp.value=txt; } if(inp.parentNode&&inp.parentNode.classList) inp.parentNode.classList.add('nxdp-locked'); }
+    else { inp.type='text'; inp.readOnly=true; inp.value=txt; } };
+  const unlock=(inp)=>{ if(!inp) return;
+    if(inp.__nxdp){ inp.value=''; if(inp.__disp){ inp.__disp.value=''; } if(inp.parentNode&&inp.parentNode.classList) inp.parentNode.classList.remove('nxdp-locked'); }
+    else { inp.type='date'; inp.readOnly=false; inp.value=''; } };
   if(on){
     if(!shipLbl.dataset.orig) shipLbl.dataset.orig=shipLbl.innerHTML;
     if(!recvLbl.dataset.orig) recvLbl.dataset.orig=recvLbl.innerHTML;
     shipLbl.innerHTML='9. '+t('stockWithdraw'); recvLbl.innerHTML='10. '+t('stockWithdraw');
-    if(shipIn){ shipIn.type='text'; shipIn.readOnly=true; shipIn.value=t('stockWithdraw'); }
-    if(recvIn){ recvIn.type='text'; recvIn.readOnly=true; recvIn.value=detailStockPick?(detailStockPick.qty+' '+detailStockPick.unit+' · '+detailStockPick.list):t('stockWithdraw'); }
+    lock(shipIn, t('stockWithdraw'));
+    lock(recvIn, detailStockPick?(detailStockPick.qty+' '+detailStockPick.unit+' · '+detailStockPick.list):t('stockWithdraw'));
   } else {
     if(shipLbl.dataset.orig){ shipLbl.innerHTML=shipLbl.dataset.orig; delete shipLbl.dataset.orig; }
     if(recvLbl.dataset.orig){ recvLbl.innerHTML=recvLbl.dataset.orig; delete recvLbl.dataset.orig; }
-    if(shipIn){ shipIn.type='date'; shipIn.readOnly=false; shipIn.value=''; }
-    if(recvIn){ recvIn.type='date'; recvIn.readOnly=false; recvIn.value=''; }
+    unlock(shipIn); unlock(recvIn);
   }
 }
 
@@ -8286,11 +8660,11 @@ const DM={
       {k:'qty',h:'Qty'},{k:'brand',h:'Brand'},{k:'heat',h:'Heat'},{k:'supplier',h:'Supplier'},
       {k:'shipDate',h:'ShipDate'},{k:'recvDate',h:'RecvDate'},{k:'poNo',h:'PONo'},
       {k:'estUnitPrice',h:'EstUnitPrice'},{k:'unitPrice',h:'UnitPrice'},{k:'total',h:'Total'},
-      {k:'group',h:'Group'},{k:'cnc',h:'CNC'},{k:'turning',h:'Turning'},{k:'milling',h:'Milling'},{k:'labor',h:'Labor'}
+      {k:'group',h:'Group'}
     ],
     preview:['workNo','list','qty','supplier','poNo','shipDate','group','total'],
     fromCsv:row=>{ const r={id:'imp'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36)};
-      ['workNo','rev','module','list','specific','qty','brand','heat','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total','group','cnc','turning','milling','labor'].forEach(k=>{ r[k]=row[k]!=null?(''+row[k]).trim():''; });
+      ['workNo','rev','module','list','specific','qty','brand','heat','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total','group'].forEach(k=>{ r[k]=row[k]!=null?(''+row[k]).trim():''; });
       if(!r.total && r.qty && r.unitPrice) r.total=String((parseFloat(r.qty)||0)*(parseFloat(r.unitPrice)||0));
       return r; }
   },
@@ -8554,7 +8928,36 @@ function dbShowChange(ts, k){
   customModal({icon:'🕓',title:'Change detail — before & after',desc:nxDbName(e.k),bodyHtml:body,footButtons:[{label:'Go to page ↗',cls:'ghost',onClick:()=>{ closeModal(); dbGotoPage(e.k); }},{label:t('mClose'),cls:'primary',onClick:closeModal}]});
 }
 function nxRelTime(ts){ const s=Math.max(0,Math.floor((Date.now()-ts)/1000)); if(s<60) return s+'s ago'; const m=Math.floor(s/60); if(m<60) return m+'m ago'; const h=Math.floor(m/60); if(h<24) return h+'h ago'; return Math.floor(h/24)+'d ago'; }
-function nxAbsTime(ts){ try{ const loc=LANG==='th'?'th-TH':'en-GB'; return new Date(ts).toLocaleString(loc,{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'}); }catch(_){ return ''+ts; } }
+/* ---- Developer Settings: date display format ---- */
+function renderDevSettings(){
+  const cur=(function(){ try{ return localStorage.getItem('nx_datefmt'); }catch(_){ return null; } })()||NX_DATE_FMT_DEFAULT;
+  const curObj=NX_DATE_PATTERNS[cur]||NX_DATE_PATTERNS[NX_DATE_FMT_DEFAULT];
+  const cc=document.getElementById('dsCurrent');
+  if(cc) cc.innerHTML=(LANG==='en'?'Current format: ':'รูปแบบปัจจุบัน: ')+'<b>'+curObj.label+'</b><span class="ds-ex">'+nxFmtD('2026-08-04')+'</span>';
+  const grid=document.getElementById('dsFmtGrid'); if(!grid) return;
+  grid.innerHTML=Object.keys(NX_DATE_PATTERNS).map(k=>{ const p=NX_DATE_PATTERNS[k]; const on=k===cur;
+    return `<button type="button" class="ds-tile${on?' on':''}" onclick="setDateFmt('${k}')"><span class="ds-lbl">${escapeHtml(p.label)}</span><span class="ds-ex2">${escapeHtml(p.ex)}</span><span class="ds-chk">${on?'✓ '+(LANG==='en'?'In use':'กำลังใช้'):''}</span></button>`;
+  }).join('');
+}
+function setDateFmt(key){
+  if(!NX_DATE_PATTERNS[key]) return;
+  if(!isDeveloper()){ try{ nxViewOnlyToast&&nxViewOnlyToast(); }catch(_){} return; }
+  try{ localStorage.setItem('nx_datefmt', key); }catch(_){}   /* normal setItem → syncs to cloud + audit */
+  _nxFmtKey=null;                                              /* bust formatter cache */
+  applyDateFmtNow();
+  try{ renderDevSettings(); }catch(_){}
+  try{ showToast((LANG==='en'?'Date format set to ':'ตั้งรูปแบบวันที่เป็น ')+NX_DATE_PATTERNS[key].label); }catch(_){}
+}
+/* Re-apply the current format across the app: re-render views (which re-emit stored
+   yyyy-mm-dd so the observer formats them) and refresh every custom-picker display. */
+function applyDateFmtNow(){
+  _nxFmtKey=null;
+  try{ applyLang(); }catch(_){}
+  try{ nxRerenderAll(); }catch(_){}
+  try{ document.querySelectorAll('.nxdp').forEach(w=>{ const h=w.querySelector('input[type=hidden]'); if(h) nxdpSyncDisplay(h); }); }catch(_){}
+  try{ nxDateSweep(document.body); }catch(_){}
+}
+function nxAbsTime(ts){ try{ const d=new Date(ts); const loc=LANG==='th'?'th-TH':'en-GB'; const time=d.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit',second:'2-digit'}); return nxFmtD(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))+' '+time; }catch(_){ return ''+ts; } }
 /* ----- Current Log ----- */
 function initDevLog(){
   const sel=document.getElementById('dlFilter');
@@ -8870,6 +9273,7 @@ async function renderDevConn(){
 }
 
 seed();
+try{ nxStripDetailFields(); }catch(_){}   /* drop CNC/Turning/Milling/Labor from any seeded/existing details */
 seedVendors();
 seedStockHR();
 ensureStockValues();
@@ -8880,6 +9284,7 @@ ensurePositions();
 ensureDevPosition();
 ensureSpectatorPosition();
 ensureEmployeePositions();
+ensureDepartments();
 seedPayslips();
 seedTimeAttend();
 seedPurchase();
