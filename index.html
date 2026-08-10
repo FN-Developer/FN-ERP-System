@@ -3776,6 +3776,29 @@ if(typeof window!=='undefined'){
   window.addEventListener('online',()=>{ nxResyncSoon(false); nxCheckVersion(false); });
   window.addEventListener('load',()=>{ setTimeout(()=>nxCheckVersion(true), 5000); });
 }
+/* ===== Guaranteed live re-render =====
+   The cloud listener keeps localStorage fresh in real time, but a re-render doesn't
+   always fire on the receiving device (background throttling / missed render), so the
+   SCREEN can lag behind the DATA. This cheap watcher (no network) hashes the synced
+   data every ~2s and re-renders the current view the instant it changes — so every
+   device reliably SHOWS live changes, not just stores them. Skipped while the user is
+   typing or a modal is open, so it never interrupts active editing. */
+function nxDataSig(){ let h=5381; try{ for(let i=0;i<NX_CLOUD_KEYS.length;i++){ const v=localStorage.getItem(NX_CLOUD_KEYS[i])||''; h=((h<<5)+h+v.length)>>>0; for(let j=0;j<v.length;j+=71){ h=((h<<5)+h+v.charCodeAt(j))>>>0; } } }catch(_){} return h; }
+let _nxUiSig=null;
+function nxLiveRenderTick(){
+  try{
+    if(typeof document!=='undefined' && document.visibilityState && document.visibilityState!=='visible') return;
+    const sig=nxDataSig();
+    if(_nxUiSig===null){ _nxUiSig=sig; return; }
+    if(sig===_nxUiSig) return;
+    /* don't yank the UI out from under an active edit */
+    const ae=document.activeElement; if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+    const ov=document.getElementById('overlay'); if(ov && ov.classList.contains('show')) return;   // a dialog is open
+    _nxUiSig=sig;
+    try{ nxRerenderAll(); }catch(_){}
+  }catch(_){}
+}
+if(typeof setInterval!=='undefined'){ setInterval(nxLiveRenderTick, 2000); }
 try{ window.NX_CLOUD = NX_CLOUD; }catch(_){}   /* expose for console debugging */
 
 /* =================== DATA LAYER (localStorage = database) =================== */
@@ -9455,7 +9478,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-o';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-p';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
