@@ -3596,7 +3596,10 @@ const NX_CLOUD = {
     }
   },
   listen(){
-    this.col.onSnapshot(qs=>{
+    /* Only subscribe to the data documents (kind=='data'). This keeps the live
+       listener from ever downloading backup snapshots / presence / login docs —
+       which were bloating the channel and stalling real-time sync on mobile. */
+    this.col.where('kind','==','data').onSnapshot(qs=>{
       let changed=false;
       qs.docChanges().forEach(ch=>{
         if(ch.doc.metadata.hasPendingWrites) return;          // our own local write echoing back
@@ -3625,7 +3628,7 @@ const NX_CLOUD = {
     if(!this.col){ return; }
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
     const before = this._pendBefore[k];
-    try{ this.col.doc(k).set({ json:String(v), ts:Date.now(), by, byRole })
+    try{ this.col.doc(k).set({ json:String(v), ts:Date.now(), by, byRole, kind:'data' })
           .then(()=>{ delete this._pendBefore[k]; try{ if(!Object.keys(this._pendBefore).length) nxSaveStatus('saved'); }catch(_){} })
           .catch(e=>{ console.warn('[NX] push failed — reverting', k, e); this._rollback(k, before); }); }
     catch(e){ console.warn('[NX] push error — reverting', k, e); this._rollback(k, before); }
@@ -9239,7 +9242,9 @@ function dbShowValue(k){
   const body=`<div class="card-sub" style="margin-bottom:6px">Path: <b>${nxDbPath(k)}</b> · ${nxJsonCount(raw)} records · ${meta}</div><div class="db-code">${escapeHtml(pretty==null?'(empty)':pretty)}</div>`;
   customModal({icon:'🗄',title:nxDbName(k),desc:'Stored value for this database',bodyHtml:body,footButtons:[{label:'Copy path',cls:'ghost',onClick:()=>{ try{ navigator.clipboard.writeText(nxDbPath(k)); showToast('Path copied'); }catch(_){}}},{label:t('mClose'),cls:'primary',onClick:closeModal}]});
 }
-/* ----- Backup engine (Firebase snapshots stored under nx_state/_bk_*) ----- */
+/* ----- Backup engine (Firebase snapshots stored under nx_state/_bk_*). The
+   real-time listener uses a kind=='data' query, so it never downloads these fat
+   backup snapshots — they no longer weigh down live sync. ----- */
 function dbSnapshot(){ const o={}; NX_CLOUD_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) o[k]=v; }); return o; }
 function dbSnapHash(snap){ let h=5381; const s=JSON.stringify(snap); for(let i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))>>>0; } return s.length+':'+h; }
 async function dbBackupNow(manual){
@@ -9250,7 +9255,7 @@ async function dbBackupNow(manual){
     const ts=Date.now(); let by=''; try{ by=(DB.session()||{}).user||''; }catch(_){}
     await NX_CLOUD.col.doc('_bk_'+ts).set({ snap:JSON.stringify(snap), ts, by, kind:'backup', count:Object.keys(snap).length });
     _nxOrigSetItem('nx_lastbk_hash', hash); _nxOrigSetItem('nx_lastbk_ts', ''+ts);
-    dbPruneBackups(60); if(manual) showToast('💾 Backup saved to cloud'); dbUpdateBackupInfo();
+    dbPruneBackups(40); if(manual) showToast('💾 Backup saved to cloud'); dbUpdateBackupInfo();
   }catch(e){ console.warn('[DB] backup failed',e); if(manual) showToast('⚠ Backup failed'); }
 }
 async function dbListBackups(){
@@ -9373,7 +9378,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-m';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-n';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
