@@ -3475,6 +3475,7 @@ const _nxOrigSetItem = localStorage.setItem.bind(localStorage);
    in-flight read returns the pre-change value and clobbers the fresh local one. */
 let _nxLastLocalTs={};
 let _nxApplyingRemote = false;
+let _nxApplyRemoteAt = 0;   /* when the applying-remote flag was last raised — used to auto-unstick it */
 
 /* ===== Database-first save status ===== */
 let _nxSaveStatusT=0;
@@ -3510,6 +3511,12 @@ localStorage.setItem = function(k, v){
      This is the single choke point every DB.saveX() passes through, so it
      enforces read-only regardless of which button was clicked. Per-device keys
      (session/login, language, theme) are not shared data and stay writable. */
+  /* SELF-HEAL: applying-remote batches are synchronous, so if the flag has been set for
+     more than 3s it is stuck (a throw skipped its reset). Un-stick it — otherwise this device
+     treats its OWN edits as remote and never queues/saves them (the iPhone "can view, can't
+     submit; shows for 1s then resets" symptom). */
+  try{ if(_nxApplyingRemote && (Date.now()-(_nxApplyRemoteAt||0))>3000){ _nxApplyingRemote=false; } }catch(_){}
+  try{ if(NX_CLOUD_KEYS.indexOf(k)>=0){ window.__nxLastSet=k+'|chg='+(localStorage.getItem(k)!==v)+'|apply='+(!!_nxApplyingRemote)+'@'+new Date().toISOString().slice(11,19); } }catch(_){}
   try{ if(!_nxApplyingRemote && NX_CLOUD_KEYS.indexOf(k)>=0 && nxIsViewOnly()){ nxViewOnlyToast(); return; } }catch(_){}
   const _isData = NX_CLOUD_KEYS.indexOf(k)>=0;
   const _before = _isData ? localStorage.getItem(k) : null;
@@ -3709,16 +3716,17 @@ const NX_CLOUD = {
     const results = await Promise.all(NX_CLOUD_KEYS.map(k=> _to(this.col.doc(k).get().then(d=> d.exists?{k, v:d.data()}:null).catch(()=>null), 8000)));
     const present = results.filter(Boolean);
     if(present.length){
-      _nxApplyingRemote = true;
-      present.forEach(({k,v})=>{
-        if(nxDirtyGet().indexOf(k)>=0) return;   // re-checked NOW (a change made during this pull's slow reads): keep local, flushDirty() sends it up
-        /* Reject a cloud copy that is OLDER than a change I made in the last 15 s — it's an
-           in-flight/stale read that would wipe my fresh local edit. */
-        if(v && v.ts && _nxLastLocalTs[k] && v.ts < _nxLastLocalTs[k] && (Date.now()-_nxLastLocalTs[k])<15000) return;
-        if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
-      NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
-      try{ nxSanitizeLocal(); }catch(_){}   /* never let a malformed cloud value break rendering */
-      _nxApplyingRemote = false;
+      _nxApplyingRemote = true; _nxApplyRemoteAt = Date.now();
+      try{
+        present.forEach(({k,v})=>{
+          if(nxDirtyGet().indexOf(k)>=0) return;   // re-checked NOW (a change made during this pull's slow reads): keep local, flushDirty() sends it up
+          /* Reject a cloud copy that is OLDER than a change I made in the last 15 s — it's an
+             in-flight/stale read that would wipe my fresh local edit. */
+          if(v && v.ts && _nxLastLocalTs[k] && v.ts < _nxLastLocalTs[k] && (Date.now()-_nxLastLocalTs[k])<15000) return;
+          if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
+        NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
+        try{ nxSanitizeLocal(); }catch(_){}   /* never let a malformed cloud value break rendering */
+      } finally { _nxApplyingRemote = false; }   /* ALWAYS reset — a throw here used to strand the flag set, after which the device treated its own edits as remote and never saved them (iOS) */
       nxRerenderAll();
     } else {
       /* Empty cloud → seed it once from this device's current data. */
@@ -3745,7 +3753,7 @@ const NX_CLOUD = {
             const base = (NX_CLOUD._pendBefore && (k in NX_CLOUD._pendBefore)) ? NX_CLOUD._pendBefore[k] : null;
             const mineStr = localStorage.getItem(k);
             const merged = nxMergeForWrite(k, base, v.json, mineStr);   // cloud=incoming remote, mine=local
-            if(merged!=null && merged!==mineStr){ _nxApplyingRemote=true; try{ _nxOrigSetItem(k, merged); }catch(_){} _nxApplyingRemote=false; try{ nxDirtyAdd(k); }catch(_){} changed=true; }
+            if(merged!=null && merged!==mineStr){ _nxApplyingRemote=true; _nxApplyRemoteAt=Date.now(); try{ _nxOrigSetItem(k, merged); }catch(_){} _nxApplyingRemote=false; try{ nxDirtyAdd(k); }catch(_){} changed=true; }
           }catch(_){}
           return;
         }
@@ -3753,7 +3761,7 @@ const NX_CLOUD = {
            wipe my just-submitted row (the "appears then disappears" bug on slow connections). */
         if(v && v.ts && _nxLastLocalTs[k] && v.ts < _nxLastLocalTs[k] && (Date.now()-_nxLastLocalTs[k])<15000) return;
         const before=localStorage.getItem(k);
-        _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
+        _nxApplyingRemote = true; _nxApplyRemoteAt=Date.now(); try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
         try{ if(typeof nxAudit==='function') nxAudit(k, before, v.json, v.by||'remote device', v.byRole||''); }catch(_){}
         changed=true;
       });
@@ -9566,7 +9574,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-z2';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-z3';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9614,7 +9622,7 @@ async function nxPresenceBeat(loggingOut){
   if(!_nxLoginAt) _nxLoginAt=Date.now();
   const dev=nxDeviceInfo(); const ip=_nxIP||{ip:'',city:'',region:'',country:'',org:''}; const sig=nxDeviceSignals();
   try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', build:NX_BUILD, user:s.user||'—', role:s.role||'', empId:s.empId||'', did:nxDeviceId(), dname:nxDeviceName(), device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, screen:sig.screen||'', cores:sig.cores||'', mem:sig.mem||'', gpu:sig.gpu||'', tz:sig.tz||'', touch:sig.touch||'', ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt,
-      dxReady:!!(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready), dxDirty:(function(){try{return nxDirtyGet().length}catch(_){return -1}})(), dxDirtyKeys:(function(){try{return nxDirtyGet().slice(0,8).join(',')}catch(_){return ''}})(), dxWriteOK:(window.__nxWriteOK||0), dxWriteFail:(window.__nxWriteFail||0), dxLastErr:String(window.__nxLastWriteErr||''), dxIsIOS:(function(){try{return nxIsIOS()}catch(_){return 'err'}})(), dxLastWrite:String(window.__nxLastWrite||'') }); }catch(_){}
+      dxReady:!!(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready), dxDirty:(function(){try{return nxDirtyGet().length}catch(_){return -1}})(), dxDirtyKeys:(function(){try{return nxDirtyGet().slice(0,8).join(',')}catch(_){return ''}})(), dxWriteOK:(window.__nxWriteOK||0), dxWriteFail:(window.__nxWriteFail||0), dxLastErr:String(window.__nxLastWriteErr||''), dxIsIOS:(function(){try{return nxIsIOS()}catch(_){return 'err'}})(), dxLastWrite:String(window.__nxLastWrite||''), dxLastSet:String(window.__nxLastSet||''), dxApply:!!_nxApplyingRemote }); }catch(_){}
 }
 async function nxListPresence(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_pr_')===0) out.push(d.data()); }); out.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)); return out; }catch(_){ return []; } }
 async function nxPrunePresence(){ const col=nxPresenceCol(); if(!col) return; const now=Date.now(); try{ const list=await nxListPresence(); for(const p of list){ if(now-(p.lastSeen||0) > 2*86400000){ try{ await col.doc('_pr_'+p.sid).delete(); }catch(_){} } } }catch(_){} }
