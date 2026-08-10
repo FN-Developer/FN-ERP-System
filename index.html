@@ -3489,12 +3489,13 @@ function nxSaveStatus(state){
     if(state!=='saving'){ _nxSaveStatusT=setTimeout(()=>{ if(el) el.style.display='none'; }, state==='failed'?4000:1500); }
   }catch(_){}
 }
-/* A logged-in user's data write while OFFLINE is rejected: nothing may appear saved
-   that the database has not accepted. */
-function nxWriteBlocked(){
-  try{ nxSaveStatus('failed'); }catch(_){}
-  try{ showToast('⚠ '+(LANG==='th'?'บันทึกไม่ได้ — ฐานข้อมูลออฟไลน์ เชื่อมต่อแล้วลองใหม่':'Not saved — database is offline. Reconnect and try again.')); }catch(_){}
-}
+/* Outbox: keys with a local change not yet CONFIRMED in the cloud. Persisted per-device
+   so a change survives a reload and keeps retrying until it lands — writes are never
+   blocked or reverted, so a flaky/mobile connection can't lose or freeze a save. */
+function nxDirtyGet(){ try{ const a=JSON.parse(localStorage.getItem('nx_dirty')||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function nxDirtySet(a){ try{ _nxOrigSetItem('nx_dirty', JSON.stringify(a)); }catch(_){} }
+function nxDirtyAdd(k){ const a=nxDirtyGet(); if(a.indexOf(k)<0){ a.push(k); nxDirtySet(a); } }
+function nxDirtyClear(k){ const a=nxDirtyGet(); const i=a.indexOf(k); if(i>=0){ a.splice(i,1); nxDirtySet(a); } }
 
 /* Intercept saves: write locally (unchanged behaviour) then push to cloud.
    NX_CLOUD is referenced lexically (a top-level const is NOT a window property);
@@ -3506,23 +3507,14 @@ localStorage.setItem = function(k, v){
      (session/login, language, theme) are not shared data and stay writable. */
   try{ if(!_nxApplyingRemote && NX_CLOUD_KEYS.indexOf(k)>=0 && nxIsViewOnly()){ nxViewOnlyToast(); return; } }catch(_){}
   const _isData = NX_CLOUD_KEYS.indexOf(k)>=0;
-  /* DATABASE-FIRST: a logged-in user's data change must go through the database.
-     If we're offline, reject it — the change is NOT applied on any device
-     (including this one), so nothing ever looks saved that the database
-     hasn't accepted. Seeds/migrations (run before login) are not affected. */
-  if(_isData && !_nxApplyingRemote){
-    let logged=false; try{ logged=!!(typeof DB!=='undefined' && DB.session() && DB.session().loggedIn); }catch(_){}
-    const cloudOn = (typeof NX_CLOUD!=='undefined' && NX_CLOUD.enabled);
-    const offline = (typeof navigator!=='undefined' && navigator.onLine===false) || (cloudOn && !NX_CLOUD.ready);
-    if(logged && cloudOn && offline){ try{ nxWriteBlocked(); }catch(_){} return; }
-  }
   const _before = _isData ? localStorage.getItem(k) : null;
-  _nxOrigSetItem(k, v);
+  _nxOrigSetItem(k, v);                       // always apply locally (optimistic — never blocked)
   /* Audit log: record every real data change made by a logged-in user. */
   if(_isData && _before!==v){ try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; if(s.loggedIn && typeof nxAudit==='function') nxAudit(k, _before, v, s.user||'—', s.role||''); }catch(_){} }
-  /* Push to the database; the write is provisional until the database confirms it
-     (see _write/_rollback — a refused write is reverted). */
+  /* Queue it (survives reload / offline) and push. It stays queued until the cloud
+     CONFIRMS it, then keeps retrying — a save is never lost and never reverted. */
   if(_isData && !_nxApplyingRemote && _before!==v){
+    try{ nxDirtyAdd(k); }catch(_){}
     try{ if(NX_CLOUD && NX_CLOUD.ready) NX_CLOUD.onLocalWrite(k, v, _before); }catch(_){}
   }
 };
@@ -3630,6 +3622,7 @@ const NX_CLOUD = {
       this.col = firebase.firestore().collection('nx_state');
       await this.pull();
       this.ready = true;
+      try{ this.flushDirty(); }catch(_){}   /* push any edits queued while offline / in a previous session */
       try{ if(_nxDetailsStripped){ this._pendBefore['nx_details']=null; this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
       try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       this.listen();
@@ -3644,8 +3637,10 @@ const NX_CLOUD = {
     const results = await Promise.all(NX_CLOUD_KEYS.map(k=> this.col.doc(k).get().then(d=> d.exists?{k, v:d.data()}:null).catch(()=>null)));
     const present = results.filter(Boolean);
     if(present.length){
+      const dirty=nxDirtyGet();
       _nxApplyingRemote = true;
-      present.forEach(({k,v})=>{ if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
+      present.forEach(({k,v})=>{ if(dirty.indexOf(k)>=0) return;   // keep this device's un-pushed edit; flushDirty() sends it up
+        if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
       NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
       try{ nxSanitizeLocal(); }catch(_){}   /* never let a malformed cloud value break rendering */
       _nxApplyingRemote = false;
@@ -3666,7 +3661,7 @@ const NX_CLOUD = {
         const k=ch.doc.id, v=ch.doc.data();
         if(!v || typeof v.json!=='string') return;
         if(NX_CLOUD_KEYS.indexOf(k)<0) return;
-        if(NX_CLOUD._pendBefore && (k in NX_CLOUD._pendBefore)) return;   // I have an un-pushed edit on this key; my _write will merge it
+        if((NX_CLOUD._pendBefore && (k in NX_CLOUD._pendBefore)) || nxDirtyGet().indexOf(k)>=0) return;   // un-pushed local edit owns this key; flushDirty will merge it up
         if(localStorage.getItem(k)===v.json) return;           // no real change
         const before=localStorage.getItem(k);
         _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
@@ -3678,15 +3673,14 @@ const NX_CLOUD = {
   },
   _pendBefore:{},
   onLocalWrite(k, v, before){
-    if(!this.ready) return;
     if(NX_CLOUD_KEYS.indexOf(k)<0) return;                     // per-device keys never sync
-    if(!(k in this._pendBefore)) this._pendBefore[k]=before;   // remember confirmed value for rollback
+    if(!(k in this._pendBefore)) this._pendBefore[k]=before;   // merge base = value before my edit
     clearTimeout(this._t[k]);
     try{ nxSaveStatus('saving'); }catch(_){}
     this._t[k] = setTimeout(()=> this._write(k, localStorage.getItem(k)), 250);   // debounce bursts
   },
   async _write(k, v, attempt){
-    if(!this.col){ return; }
+    if(!this.col || !this.ready){ return; }
     attempt = attempt||0;
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
     const before = this._pendBefore[k];
@@ -3706,20 +3700,15 @@ const NX_CLOUD = {
       }
     }catch(e){ console.warn('[NX] merge skipped', k, e); }
     try{ this.col.doc(k).set({ json:toWrite, ts:Date.now(), by, byRole, kind:'data' })
-          .then(()=>{ delete this._pendBefore[k]; try{ if(!Object.keys(this._pendBefore).length) nxSaveStatus('saved'); }catch(_){} try{ if(toWrite!==String(v)) nxRerenderAll(); }catch(_){} })
-          .catch(e=>{ if(attempt<2){ console.warn('[NX] push retry', k, attempt+1, e); setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, 700*(attempt+1)); } else { console.warn('[NX] push failed after retries — reverting', k, e); this._rollback(k, before); } }); }
-    catch(e){ if(attempt<2){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, 700*(attempt+1)); } else { console.warn('[NX] push error — reverting', k, e); this._rollback(k, before); } }
+          .then(()=>{ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} try{ if(toWrite!==String(v)) nxRerenderAll(); }catch(_){} })
+          .catch(e=>{ if(attempt<4){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(8000,700*(attempt+1))); } else { console.warn('[NX] push still failing — kept queued, will retry on reconnect', k, e); try{ nxSaveStatus('failed'); }catch(_){} } }); }   /* keep dirty; flushDirty retries — NEVER reverts */
+    catch(e){ if(attempt<4){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(8000,700*(attempt+1))); } else { console.warn('[NX] push error — kept queued', k, e); } }
   },
-  /* Database refused the write → roll the local value back to the last confirmed one,
-     so the app never shows a change the database did not accept. */
-  _rollback(k, before){
-    try{ delete this._pendBefore[k]; }catch(_){}
-    const def = (typeof NX_OBJECT_KEYS!=='undefined' && NX_OBJECT_KEYS.indexOf(k)>=0) ? '{}' : '[]';
-    _nxApplyingRemote = true; try{ _nxOrigSetItem(k, (before==null?def:before)); }catch(_){} _nxApplyingRemote = false;
-    try{ nxSaveStatus('failed'); }catch(_){}
-    try{ nxSanitizeLocal(); }catch(_){}
-    try{ nxRerenderAll(); }catch(_){}
-    try{ showToast('⚠ '+(LANG==='th'?'บันทึกไม่สำเร็จ — ฐานข้อมูลไม่รับ คืนค่าเดิมแล้ว':'Not saved — database refused the change. Reverted.')); }catch(_){}
+  /* Push every queued (un-confirmed) local change up to the cloud. Called on connect,
+     reconnect, focus, and periodically — so an offline/failed save always lands eventually. */
+  flushDirty(){
+    if(!this.ready || !this.col) return;
+    nxDirtyGet().forEach(k=>{ if(NX_CLOUD_KEYS.indexOf(k)<0){ nxDirtyClear(k); return; } const v=localStorage.getItem(k); if(v==null){ nxDirtyClear(k); return; } if(!(k in this._pendBefore)) this._pendBefore[k]=null; this._write(k, v); });
   },
   /* Force a fresh pull from the cloud and re-render — used when a tab regains focus
      (Firestore's live listener pauses in backgrounded tabs and may miss changes),
@@ -3728,7 +3717,7 @@ const NX_CLOUD = {
   async resync(manual){
     if(!this.ready || !this.col || this._resyncing) return;
     this._resyncing=true;
-    try{ if(manual){ nxCloudBadge('connecting'); } await this.pull(); nxCloudBadge('online'); if(manual){ try{ showToast('☁️ '+(LANG==='th'?'ซิงค์แล้ว':'Synced — up to date')); }catch(_){} } }
+    try{ if(manual){ nxCloudBadge('connecting'); } this.flushDirty(); await this.pull(); nxCloudBadge('online'); if(manual){ try{ showToast('☁️ '+(LANG==='th'?'ซิงค์แล้ว':'Synced — up to date')); }catch(_){} } }
     catch(e){ console.warn('[NX] resync failed', e); }
     finally{ this._resyncing=false; }
   }
@@ -3799,6 +3788,9 @@ function nxLiveRenderTick(){
   }catch(_){}
 }
 if(typeof setInterval!=='undefined'){ setInterval(nxLiveRenderTick, 2000); }
+/* Safety net: keep retrying any queued (un-confirmed) save every ~12 s, so a change made
+   during a connection blip always lands without the user doing anything. */
+if(typeof setInterval!=='undefined'){ setInterval(()=>{ try{ if(NX_CLOUD && NX_CLOUD.ready && nxDirtyGet().length) NX_CLOUD.flushDirty(); }catch(_){} }, 12000); }
 try{ window.NX_CLOUD = NX_CLOUD; }catch(_){}   /* expose for console debugging */
 
 /* =================== DATA LAYER (localStorage = database) =================== */
@@ -9478,7 +9470,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-p';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-q';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
