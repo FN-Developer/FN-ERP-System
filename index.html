@@ -3402,6 +3402,66 @@ const FIREBASE_CONFIG = {
 /* Shared data keys — these sync to the cloud (everyone sees the same data). */
 const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments'];
 
+/* ===== Merge-on-write config & engine =====
+   Each table is one JSON blob. A naive overwrite makes concurrent edits clobber each
+   other (person B's save erases person A's new row). Before writing, we re-read the
+   cloud copy and merge in ONLY this device's change, by record identity — so two
+   people editing different rows both survive. Same-row conflicts are last-writer-wins. */
+const NX_MERGE = {
+  nx_works:{type:'arr',id:'workNo'}, nx_details:{type:'arr',id:'id'}, nx_stock:{type:'arr',id:'id'},
+  nx_withdraws:{type:'arr',id:'id'}, nx_employees:{type:'arr',id:'id'}, nx_returns:{type:'arr',id:'id'},
+  nx_leaves:{type:'arr',id:'id'}, nx_ot:{type:'arr',id:'id'}, nx_positions:{type:'arr',id:'id'},
+  nx_ta_devices:{type:'arr',id:'id'}, nx_ta_logs:{type:'arr',id:'id'}, nx_pr:{type:'arr',id:'id'},
+  nx_vendors:{type:'arr',id:'name'}, nx_customers:{type:'arr',id:'name'},
+  nx_departments:{type:'strarr'},
+  nx_otrates:{type:'obj'}, nx_caldays:{type:'obj'}, nx_workswitch:{type:'obj'},
+  nx_defaults:{type:'obj'}, nx_payslips:{type:'obj'}, nx_datefmt:{type:'scalar'}
+};
+function nxMergeArr(base, cloud, mine, idField){
+  const idOf=r=>String(r&&r[idField]);
+  const bIds=new Set(base.map(idOf)), mIds=new Set(mine.map(idOf));
+  const bById=new Map(base.map(r=>[idOf(r),r]));
+  const removals=new Set([...bIds].filter(id=>!mIds.has(id)));      // rows I deleted
+  const edits=new Map(); const adds=[];
+  mine.forEach(r=>{ const id=idOf(r); if(!bIds.has(id)) adds.push(r); else { const bR=bById.get(id); if(bR && JSON.stringify(r)!==JSON.stringify(bR)) edits.set(id,r); } });
+  const out=[]; const placed=new Set();
+  cloud.forEach(r=>{ const id=idOf(r);
+    if(removals.has(id)) return;                                    // I deleted it → drop
+    if(edits.has(id)){ out.push(edits.get(id)); placed.add(id); return; }   // my edit wins
+    out.push(r); placed.add(id);                                    // keep cloud (others' rows/edits)
+  });
+  edits.forEach((r,id)=>{ if(!placed.has(id)){ out.push(r); placed.add(id); } });   // my edit to a row cloud lost
+  adds.forEach(r=>{ const id=idOf(r); if(!placed.has(id)){ out.push(r); placed.add(id); } });   // my new rows
+  return out;
+}
+function nxMergeStrArr(base, cloud, mine){
+  const bSet=new Set(base), mSet=new Set(mine);
+  const removed=new Set(base.filter(x=>!mSet.has(x)));
+  const out=cloud.filter(x=>!removed.has(x));
+  mine.filter(x=>!bSet.has(x)).forEach(x=>{ if(out.indexOf(x)<0) out.push(x); });
+  return out;
+}
+function nxMergeObj(base, cloud, mine){
+  const out=Object.assign({}, cloud);
+  Object.keys(base).forEach(k=>{ if(!(k in mine)) delete out[k]; });                 // my removed keys
+  Object.keys(mine).forEach(k=>{ if(!(k in base) || JSON.stringify(mine[k])!==JSON.stringify(base[k])) out[k]=mine[k]; }); // my added/edited
+  return out;
+}
+/* Returns the merged JSON string (mine merged onto cloud), or null to write as-is. */
+function nxMergeForWrite(k, beforeStr, cloudStr, mineStr){
+  const meta=NX_MERGE[k]; if(!meta || meta.type==='scalar') return null;
+  if(beforeStr==null || cloudStr==null) return null;
+  try{
+    const base=JSON.parse(beforeStr), cloud=JSON.parse(cloudStr), mine=JSON.parse(mineStr);
+    let merged;
+    if(meta.type==='arr'){ if(!Array.isArray(base)||!Array.isArray(cloud)||!Array.isArray(mine)) return null; merged=nxMergeArr(base, cloud, mine, meta.id); }
+    else if(meta.type==='strarr'){ if(!Array.isArray(base)||!Array.isArray(cloud)||!Array.isArray(mine)) return null; merged=nxMergeStrArr(base, cloud, mine); }
+    else if(meta.type==='obj'){ if(typeof base!=='object'||typeof cloud!=='object'||typeof mine!=='object') return null; merged=nxMergeObj(base, cloud, mine); }
+    else return null;
+    return JSON.stringify(merged);
+  }catch(_){ return null; }
+}
+
 /* One-time seed / migration guard flags — set locally once the cloud is the
    source of truth, so demo-seeders & clean-up migrations never overwrite or
    wipe real cloud data on a fresh browser. */
@@ -3606,6 +3666,7 @@ const NX_CLOUD = {
         const k=ch.doc.id, v=ch.doc.data();
         if(!v || typeof v.json!=='string') return;
         if(NX_CLOUD_KEYS.indexOf(k)<0) return;
+        if(NX_CLOUD._pendBefore && (k in NX_CLOUD._pendBefore)) return;   // I have an un-pushed edit on this key; my _write will merge it
         if(localStorage.getItem(k)===v.json) return;           // no real change
         const before=localStorage.getItem(k);
         _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
@@ -3624,14 +3685,30 @@ const NX_CLOUD = {
     try{ nxSaveStatus('saving'); }catch(_){}
     this._t[k] = setTimeout(()=> this._write(k, localStorage.getItem(k)), 250);   // debounce bursts
   },
-  _write(k, v){
+  async _write(k, v, attempt){
     if(!this.col){ return; }
+    attempt = attempt||0;
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
     const before = this._pendBefore[k];
-    try{ this.col.doc(k).set({ json:String(v), ts:Date.now(), by, byRole, kind:'data' })
-          .then(()=>{ delete this._pendBefore[k]; try{ if(!Object.keys(this._pendBefore).length) nxSaveStatus('saved'); }catch(_){} })
-          .catch(e=>{ console.warn('[NX] push failed — reverting', k, e); this._rollback(k, before); }); }
-    catch(e){ console.warn('[NX] push error — reverting', k, e); this._rollback(k, before); }
+    let toWrite = String(v);
+    /* Merge my change onto the CURRENT cloud copy so a concurrent editor's rows aren't lost. */
+    try{
+      if(NX_MERGE[k] && NX_MERGE[k].type!=='scalar'){
+        const cloudDoc = await this.col.doc(k).get();
+        const cloudStr = cloudDoc.exists ? cloudDoc.data().json : null;
+        const merged = nxMergeForWrite(k, before, cloudStr, String(v));
+        if(merged!=null){ toWrite = merged;
+          if(merged!==String(v)){                      // cloud had rows I didn't — reflect them locally now
+            _nxApplyingRemote=true; try{ _nxOrigSetItem(k, merged); }catch(_){} _nxApplyingRemote=false;
+            try{ nxSanitizeLocal(); }catch(_){}
+          }
+        }
+      }
+    }catch(e){ console.warn('[NX] merge skipped', k, e); }
+    try{ this.col.doc(k).set({ json:toWrite, ts:Date.now(), by, byRole, kind:'data' })
+          .then(()=>{ delete this._pendBefore[k]; try{ if(!Object.keys(this._pendBefore).length) nxSaveStatus('saved'); }catch(_){} try{ if(toWrite!==String(v)) nxRerenderAll(); }catch(_){} })
+          .catch(e=>{ if(attempt<2){ console.warn('[NX] push retry', k, attempt+1, e); setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, 700*(attempt+1)); } else { console.warn('[NX] push failed after retries — reverting', k, e); this._rollback(k, before); } }); }
+    catch(e){ if(attempt<2){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, 700*(attempt+1)); } else { console.warn('[NX] push error — reverting', k, e); this._rollback(k, before); } }
   },
   /* Database refused the write → roll the local value back to the last confirmed one,
      so the app never shows a change the database did not accept. */
@@ -9378,7 +9455,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-n';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-o';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
