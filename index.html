@@ -3617,17 +3617,24 @@ const NX_CLOUD = {
     nxCloudBadge('connecting');
     try{
       if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      try{ await firebase.auth().signInAnonymously(); }
+      try{ await Promise.race([ firebase.auth().signInAnonymously(), new Promise(r=>setTimeout(r,5000)) ]); }  /* never hang init on a slow sign-in — Firestore queues ops until auth lands */
       catch(e){ console.warn('[NX] Anonymous sign-in failed — enable Anonymous Auth in Firebase Console → Authentication → Sign-in method.', e); }
       this.col = firebase.firestore().collection('nx_state');
-      await this.pull();
+      /* CRITICAL: mark ready and attach the realtime listener IMMEDIATELY — do NOT block on
+         the initial pull. On a flaky mobile link that pull can hang, which used to leave the
+         device online (heartbeat still beats) but permanently un-synced: ready stayed false,
+         so the listener never attached and writes never flushed. That was the real cause of
+         "I change something and the other device never sees it." */
       this.ready = true;
-      try{ this.flushDirty(); }catch(_){}   /* push any edits queued while offline / in a previous session */
-      try{ if(_nxDetailsStripped){ this._pendBefore['nx_details']=null; this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
-      try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       this.listen();
       try{ this.watchBuild(); }catch(_){}
       nxCloudBadge('online');
+      /* Backfill from the cloud in the background; if it hangs, the live listener and the
+         18s catch-up pull keep this device current anyway. */
+      this.pull().catch(()=>{});
+      try{ this.flushDirty(); }catch(_){}   /* push any edits queued while offline / in a previous session */
+      try{ if(_nxDetailsStripped){ this._pendBefore['nx_details']=null; this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
+      try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       console.info('[NX] Cloud sync active ✓');
       try{ if(typeof showToast==='function') showToast('Cloud sync connected'); }catch(_){}
     }catch(e){ console.error('[NX] Cloud init failed — staying local-only.', e); nxCloudBadge('offline'); }
@@ -3649,8 +3656,11 @@ const NX_CLOUD = {
   },
   async pull(){
     /* Fetch only the known data documents (ignore backup docs stored in the
-       same collection, so page loads never download backup snapshots). */
-    const results = await Promise.all(NX_CLOUD_KEYS.map(k=> this.col.doc(k).get().then(d=> d.exists?{k, v:d.data()}:null).catch(()=>null)));
+       same collection, so page loads never download backup snapshots).
+       Each read is raced against an 8s timeout so ONE slow/hung document can never
+       stall the whole pull (which previously wedged startup on mobile). */
+    const _to=(p,ms)=>Promise.race([p, new Promise(res=>setTimeout(()=>res(null),ms))]);
+    const results = await Promise.all(NX_CLOUD_KEYS.map(k=> _to(this.col.doc(k).get().then(d=> d.exists?{k, v:d.data()}:null).catch(()=>null), 8000)));
     const present = results.filter(Boolean);
     if(present.length){
       const dirty=nxDirtyGet();
@@ -9493,7 +9503,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-u';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-v';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
