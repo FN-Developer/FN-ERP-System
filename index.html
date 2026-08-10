@@ -2181,6 +2181,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <div class="dd-settings">
         <a class="dd-item" onclick="toggleTheme()"><span class="ic" id="themeIcon2">🌙</span><span class="dd-txt"><span data-i18n="setTheme">Theme</span><small id="themeLabel2">Dark</small></span></a>
         <a class="dd-item" onclick="toggleLang()"><span class="ic">🌐</span><span class="dd-txt"><span data-i18n="setLang">Language</span><small id="langLabel2">ไทย</small></span></a>
+        <a class="dd-item" onclick="toggleSound()"><span class="ic" id="soundIcon2">🔊</span><span class="dd-txt"><span data-i18n="setSound">Sound</span><small id="soundLabel2">On</small></span></a>
       </div>
     </div>
   </div>
@@ -4652,6 +4653,7 @@ const I18N = {
   calViewOnly:{en:"View only — the Company Calendar can be edited by CEO and Developer accounts. Other positions can view it here.",th:"ดูอย่างเดียว — ปฏิทินบริษัทแก้ไขได้เฉพาะบัญชี CEO และ Developer ตำแหน่งอื่นดูได้เท่านั้น"},
   setTheme:{en:"Theme",th:"ธีม"},
   setLang:{en:"Language",th:"ภาษา"},
+  setSound:{en:"Sound",th:"เสียง"},
   calRemoved:{en:"Day mark removed",th:"ลบเครื่องหมายวันแล้ว"},
   calSwitchHead:{en:"Switch work day (CEO / Developer)",th:"สลับวันทำงาน (CEO / Developer)"},
   calSwitchSub:{en:"Make any day a work day or a day off — even a weekend or a leave day. A reason is required.",th:"กำหนดให้วันใดก็ได้เป็นวันทำงานหรือวันหยุด แม้เป็นวันหยุดสุดสัปดาห์หรือวันลา ต้องระบุเหตุผล"},
@@ -5157,6 +5159,12 @@ function applyTheme(){
   if(i2) i2.textContent = dark ? '☀️' : '🌙'; if(l2) l2.textContent = lblTxt;
 }
 function toggleTheme(){ THEME = THEME==='dark'?'light':'dark'; localStorage.setItem('nx_theme',THEME); applyTheme(); }
+/* ---- Website sound on/off (per device) ---- */
+function nxSoundOn(){ try{ return localStorage.getItem('nx_sound')!=='off'; }catch(_){ return true; } }
+function applySound(){ const on=nxSoundOn(); const i2=document.getElementById('soundIcon2'), l2=document.getElementById('soundLabel2');
+  if(i2) i2.textContent = on ? '🔊' : '🔇';
+  if(l2) l2.textContent = on ? (LANG==='en'?'On':'เปิด') : (LANG==='en'?'Off':'ปิด'); }
+function toggleSound(){ const on=nxSoundOn(); localStorage.setItem('nx_sound', on?'off':'on'); applySound(); if(!on){ try{ fpAudioPrime(); nxSound('menu'); }catch(_){} } }
 
 function applyLang(){
   document.documentElement.lang = LANG;
@@ -5168,6 +5176,7 @@ function applyLang(){
   buildDetailFields();
   try{ if(document.getElementById('custName')&&document.getElementById('custName').tagName==='SELECT') fillCreateCustSelect(); }catch(_){}
   try{ renderDevSettings(); }catch(_){}
+  try{ applySound(); }catch(_){}
   refreshWorkSelect();
   renderSpectator();
   renderTimeline();
@@ -7286,20 +7295,20 @@ const FP_SCANS=3, FP_MAX_FINGERS=2, FP_QUALITY=['Fair','Good','Great','Excellent
 /* short synthesized beeps (no voice) — a rising "correct" chirp on success, a low tone on fail */
 let _fpAudio=null;
 function fpAudioPrime(){ try{ _fpAudio=_fpAudio||new (window.AudioContext||window.webkitAudioContext)(); if(_fpAudio.state==='suspended') _fpAudio.resume(); }catch(_){}}
-function fpBeep(kind){ try{ if(!_fpAudio) fpAudioPrime(); const ctx=_fpAudio; if(!ctx) return; const now=ctx.currentTime;
+function fpBeep(kind){ try{ if(typeof nxSoundOn==='function'&&!nxSoundOn()) return; if(!_fpAudio) fpAudioPrime(); const ctx=_fpAudio; if(!ctx) return; const now=ctx.currentTime;
   const tone=(freq,start,dur,vol)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=freq; g.gain.setValueAtTime(0.0001,now+start); g.gain.exponentialRampToValueAtTime(vol||0.22,now+start+0.012); g.gain.exponentialRampToValueAtTime(0.0001,now+start+dur); o.connect(g); g.connect(ctx.destination); o.start(now+start); o.stop(now+start+dur+0.03); };
   if(kind==='fail'){ tone(300,0,0.16,0.18); }
   else { tone(880,0,0.09); tone(1320,0.085,0.13); }   // "correct" — two rising notes
 }catch(_){}}
 /* notification chime — a gentle 2-tone ding when a pop-up notification newly appears */
-function nxNotifySound(){ try{ if(!_fpAudio) fpAudioPrime(); const ctx=_fpAudio; if(!ctx||ctx.state!=='running') return; const now=ctx.currentTime;
+function nxNotifySound(){ try{ if(typeof nxSoundOn==='function'&&!nxSoundOn()) return; if(!_fpAudio) fpAudioPrime(); const ctx=_fpAudio; if(!ctx||ctx.state!=='running') return; const now=ctx.currentTime;
   const tone=(f,s,d,v)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,now+s); g.gain.exponentialRampToValueAtTime(v||0.2,now+s+0.015); g.gain.exponentialRampToValueAtTime(0.0001,now+s+d); o.connect(g); g.connect(ctx.destination); o.start(now+s); o.stop(now+s+d+0.03); };
   tone(988,0,0.16); tone(1319,0.14,0.24);   // E6 → B6, soft "ding-ding"
 }catch(_){}}
 const _notifPrev={delivery:0,ot:0,leave:0,pr:0};
 function nxFabChanged(key,n){ if(n>(_notifPrev[key]||0) && n>0) nxNotifySound(); _notifPrev[key]=n; }
 /* general UI sound library — distinct short tones (no voice) */
-function nxSound(kind){ try{ if(!_fpAudio) fpAudioPrime(); const ctx=_fpAudio; if(!ctx||ctx.state!=='running') return; const now=ctx.currentTime;
+function nxSound(kind){ try{ if(typeof nxSoundOn==='function'&&!nxSoundOn()) return; if(!_fpAudio) fpAudioPrime(); const ctx=_fpAudio; if(!ctx||ctx.state!=='running') return; const now=ctx.currentTime;
   const tone=(f,s,d,v,type)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type||'sine'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,now+s); g.gain.exponentialRampToValueAtTime(v||0.2,now+s+0.012); g.gain.exponentialRampToValueAtTime(0.0001,now+s+d); o.connect(g); g.connect(ctx.destination); o.start(now+s); o.stop(now+s+d+0.03); };
   switch(kind){
     case 'type':   tone(1180,0,0.028,0.06,'square'); break;                       // soft key click
@@ -9269,7 +9278,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-h';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-i';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
