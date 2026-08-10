@@ -3626,10 +3626,26 @@ const NX_CLOUD = {
       try{ if(_nxDetailsStripped){ this._pendBefore['nx_details']=null; this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
       try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       this.listen();
+      try{ this.watchBuild(); }catch(_){}
       nxCloudBadge('online');
       console.info('[NX] Cloud sync active ✓');
       try{ if(typeof showToast==='function') showToast('Cloud sync connected'); }catch(_){}
     }catch(e){ console.error('[NX] Cloud init failed — staying local-only.', e); nxCloudBadge('offline'); }
+  },
+  /* Version signal over Firestore (the reliable channel — no HTML/CDN caching involved).
+     Any device on the newest build publishes it to the nx_build doc; every other still-open
+     device gets the snapshot instantly and shows the blocking update gate. This catches stale
+     devices even when their HTTP self-fetch is served a cached copy. */
+  async watchBuild(){
+    if(!this.col || typeof NX_BUILD==='undefined') return;
+    const ref=this.col.doc('nx_build');
+    try{
+      const d=await ref.get();
+      const cv=(d.exists && d.data() && d.data().build)?String(d.data().build):'';
+      if(!cv || NX_BUILD>cv){ try{ ref.set({build:NX_BUILD, kind:'meta', ts:Date.now()}); }catch(_){} }
+      else if(cv>NX_BUILD){ try{ nxShowUpdateBanner(cv); }catch(_){} }
+    }catch(_){}
+    try{ ref.onSnapshot(s=>{ try{ const cv=(s.exists && s.data() && s.data().build)?String(s.data().build):''; if(cv && cv>NX_BUILD){ nxShowUpdateBanner(cv); } }catch(_){} }, ()=>{}); }catch(_){}
   },
   async pull(){
     /* Fetch only the known data documents (ignore backup docs stored in the
@@ -3746,7 +3762,7 @@ function nxShowUpdateBanner(newv){
   const th=(typeof LANG!=='undefined'&&LANG==='th');
   const el=document.createElement('div'); el.id='nxUpdateGate';
   el.style.cssText='position:fixed;inset:0;z-index:2147483646;background:linear-gradient(135deg,#070826,#0a1230 60%,#05122a);display:flex;align-items:center;justify-content:center;padding:24px;';
-  const doUpdate='(function(){try{location.replace(location.pathname+\'?v='+encodeURIComponent(safe)+'\');}catch(e){location.reload();}})()';
+  const doUpdate='(function(){try{location.replace(location.pathname+\'?v='+encodeURIComponent(safe)+'-\'+Date.now());}catch(e){location.reload();}})()';
   el.innerHTML=
     '<div style="max-width:420px;width:100%;text-align:center;color:#fff;font-family:system-ui,Segoe UI,Roboto,sans-serif">'+
       '<div style="font-size:52px;margin-bottom:10px">🔄</div>'+
@@ -6626,23 +6642,30 @@ function submitWithdraw(e){
 function doWithdraw(stockId,qty,meta){
   const s=DB.stock(); const it=s.find(x=>x.id===stockId); if(!it) return false;
   const avail=parseFloat(it.qty)||0; if(qty>avail) return false;
-  it.qty=String(avail-qty); DB.saveStock(s);
+  /* Stock is NOT deducted here — it is cut only after the request is CONFIRMED. */
   const be=DB.employees().find(x=>x.name===(meta.by||'')); const subId=be?be.id:'';
   const w=DB.withdraws(); w.push({id:'wd'+Date.now()+Math.floor(Math.random()*1000),stockId,no:it.no,list:it.list,unit:it.unit,unitPrice:it.unitPrice||'',qty:String(qty),workNo:meta.workNo||'',reason:meta.reason||'',submittedBy:meta.by||'',submittedById:subId,status:'wait',approver:'',approvedAt:'',date:new Date().toISOString()}); DB.saveWithdraws(w);
   return true;
 }
-/* ---- Withdraw request confirmation (deduct-on-submit; reject returns stock) ---- */
+/* ---- Withdraw request confirmation (deduct-on-CONFIRM; reject changes nothing) ---- */
 function wdReqStatus(x){ return (x&&x.status)||'confirmed'; }   /* legacy withdrawals had no status = already done */
 function afterWithdrawChange(){ try{ renderWithdrawReqList(); }catch(_){} try{ renderWithdrawLog(); }catch(_){} try{ renderMyWithdrawStatus(); }catch(_){} try{ computeWithdrawAlert(); }catch(_){} }
 function confirmWithdrawReq(id){ if(!canConfirm('withdraw')){ showToast(t('confNoRight')); return; }
   const w=DB.withdraws(); const x=w.find(y=>y.id===id); if(!x) return;
+  if(wdReqStatus(x)==='confirmed') return;
+  /* Deduct the stock at CONFIRM time (re-check availability, since it may have changed since the request). */
+  const s=DB.stock(); const it=s.find(z=>z.id===x.stockId);
+  const need=parseFloat(x.qty)||0; const have=it?(parseFloat(it.qty)||0):0;
+  if(!it){ showToast((typeof LANG!=='undefined'&&LANG==='th')?'ไม่พบรายการสต๊อกนี้แล้ว':'Stock item no longer exists'); return; }
+  if(need>have){ showToast((typeof LANG!=='undefined'&&LANG==='th')?('สต๊อกไม่พอ (เหลือ '+have+')'):('Not enough stock (only '+have+' left)')); return; }
+  it.qty=String(have-need); DB.saveStock(s);
   x.status='confirmed'; x.approver=whoami(); x.approvedAt=new Date().toISOString(); DB.saveWithdraws(w);
-  afterWithdrawChange(); showToast(t('wdReqConfirmed')); }
+  afterWithdrawChange(); try{ renderStockList(); }catch(_){} showToast(t('wdReqConfirmed')); }
 function rejectWithdrawReq(id){ if(!canConfirm('withdraw')){ showToast(t('confNoRight')); return; }
   const w=DB.withdraws(); const x=w.find(y=>y.id===id); if(!x) return;
-  if(wdReqStatus(x)!=='rejected'){ const s=DB.stock(); const it=s.find(z=>z.id===x.stockId); if(it){ it.qty=String((parseFloat(it.qty)||0)+(parseFloat(x.qty)||0)); DB.saveStock(s); } }  /* return the stock deducted on submit */
+  /* Nothing was deducted at submit time, so rejecting simply marks the request — no stock to return. */
   x.status='rejected'; x.approver=whoami(); x.approvedAt=new Date().toISOString(); DB.saveWithdraws(w);
-  afterWithdrawChange(); try{ renderStockList(); }catch(_){} showToast(t('wdReqRejected')); }
+  afterWithdrawChange(); showToast(t('wdReqRejected')); }
 function computeWithdrawAlert(){ const fab=document.getElementById('wdFab'); if(!fab) return;
   const n=canSeeNotif('withdraw')?DB.withdraws().filter(x=>x.status==='wait').length:0;
   if(n>0){ fab.classList.add('show'); const c=document.getElementById('wdFabCount'); if(c) c.textContent=n; } else fab.classList.remove('show');
@@ -9470,7 +9493,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-s';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-t';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
