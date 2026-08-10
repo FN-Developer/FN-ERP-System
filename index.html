@@ -3780,9 +3780,11 @@ const NX_CLOUD = {
     /* iOS ONLY: the SDK write silently fails to commit on iOS Safari. Send via REST (plain HTTPS),
        which actually reaches the server. Non-iOS devices fall through to the unchanged SDK path. */
     if(nxIsIOS()){
+      try{ window.__nxLastWrite=k+' try@'+new Date().toISOString().slice(11,19); }catch(_){}
       nxRestWrite(k, toWrite, by, byRole).then(ok=>{
-        if(ok){ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} try{ window.__nxWriteOK=(window.__nxWriteOK||0)+1; }catch(_){} }
+        if(ok){ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} try{ window.__nxWriteOK=(window.__nxWriteOK||0)+1; window.__nxLastWrite=k+' OK@'+new Date().toISOString().slice(11,19); }catch(_){} }
         else { try{ window.__nxWriteFail=(window.__nxWriteFail||0)+1; }catch(_){} if(attempt<6){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(6000,500*(attempt+1))); } else { try{ nxSaveStatus('failed'); }catch(_){} } }
+        try{ nxPresenceBeat(); }catch(_){}   /* report the result immediately (don't wait for the 45s beat) */
       });
       return;
     }
@@ -9564,7 +9566,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-z';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-z2';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9612,7 +9614,7 @@ async function nxPresenceBeat(loggingOut){
   if(!_nxLoginAt) _nxLoginAt=Date.now();
   const dev=nxDeviceInfo(); const ip=_nxIP||{ip:'',city:'',region:'',country:'',org:''}; const sig=nxDeviceSignals();
   try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', build:NX_BUILD, user:s.user||'—', role:s.role||'', empId:s.empId||'', did:nxDeviceId(), dname:nxDeviceName(), device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, screen:sig.screen||'', cores:sig.cores||'', mem:sig.mem||'', gpu:sig.gpu||'', tz:sig.tz||'', touch:sig.touch||'', ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt,
-      dxReady:!!(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready), dxDirty:(function(){try{return nxDirtyGet().length}catch(_){return -1}})(), dxDirtyKeys:(function(){try{return nxDirtyGet().slice(0,8).join(',')}catch(_){return ''}})(), dxWriteOK:(window.__nxWriteOK||0), dxWriteFail:(window.__nxWriteFail||0), dxLastErr:String(window.__nxLastWriteErr||'') }); }catch(_){}
+      dxReady:!!(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready), dxDirty:(function(){try{return nxDirtyGet().length}catch(_){return -1}})(), dxDirtyKeys:(function(){try{return nxDirtyGet().slice(0,8).join(',')}catch(_){return ''}})(), dxWriteOK:(window.__nxWriteOK||0), dxWriteFail:(window.__nxWriteFail||0), dxLastErr:String(window.__nxLastWriteErr||''), dxIsIOS:(function(){try{return nxIsIOS()}catch(_){return 'err'}})(), dxLastWrite:String(window.__nxLastWrite||'') }); }catch(_){}
 }
 async function nxListPresence(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_pr_')===0) out.push(d.data()); }); out.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)); return out; }catch(_){ return []; } }
 async function nxPrunePresence(){ const col=nxPresenceCol(); if(!col) return; const now=Date.now(); try{ const list=await nxListPresence(); for(const p of list){ if(now-(p.lastSeen||0) > 2*86400000){ try{ await col.doc('_pr_'+p.sid).delete(); }catch(_){} } } }catch(_){} }
