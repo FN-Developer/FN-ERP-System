@@ -1707,6 +1707,25 @@ tr.dl-row:hover{background:var(--hover)}
 .alert-fab.leave-fab{background:linear-gradient(135deg,#22d3ee,#0891b2);border-color:#7de9f5;box-shadow:0 12px 40px rgba(8,145,178,.5);animation:fabpulseAqua 1.1s ease-in-out infinite}
 .alert-fab.leave-fab .count{color:#0891b2}
 @keyframes fabpulseAqua{0%,100%{box-shadow:0 12px 40px rgba(8,145,178,0.45),0 0 0 0 rgba(34,211,238,0.5)}50%{box-shadow:0 12px 46px rgba(8,145,178,0.72),0 0 0 16px rgba(34,211,238,0)}}
+.alert-fab.wd-fab{background:linear-gradient(135deg,#f43f5e,#be123c);border-color:#fda4b4;box-shadow:0 12px 40px rgba(190,18,60,.5);animation:fabpulseRose 1.1s ease-in-out infinite}
+.alert-fab.wd-fab .count{color:#be123c}
+@keyframes fabpulseRose{0%,100%{box-shadow:0 12px 40px rgba(190,18,60,0.45),0 0 0 0 rgba(244,63,94,0.5)}50%{box-shadow:0 12px 46px rgba(190,18,60,0.72),0 0 0 16px rgba(244,63,94,0)}}
+/* Withdraw request list + status badges */
+.wd-req-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line2);border-radius:12px;margin-bottom:10px;background:var(--inset-bg)}
+.wd-req-row:last-child{margin-bottom:0}
+.wd-req-main{min-width:0}
+.wd-req-sub{margin-top:4px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.wd-req-right{display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.wd-req-acts{display:flex;gap:7px}
+.btn-mini.wd-ok{border-color:transparent;color:#fff;background:linear-gradient(120deg,#16a34a,#15803d);font-weight:800}
+.btn-mini.wd-rej{border-color:var(--red);color:var(--red);font-weight:800}
+.btn-mini.wd-ok:hover{filter:brightness(1.08)}
+.wd-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.2px;white-space:nowrap}
+.wd-badge.wait{color:#b45309;background:rgba(245,158,11,.16);border:1px solid rgba(245,158,11,.45)}
+.wd-badge.ok{color:#15803d;background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.42)}
+.wd-badge.rej{color:#be123c;background:rgba(244,63,94,.14);border:1px solid rgba(244,63,94,.42)}
+.wd-req-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wd-req-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:999px;font-size:13px;font-weight:800;color:#be123c;background:rgba(244,63,94,.13);border:1px solid rgba(244,63,94,.4)}
 /* OT pending card flash when led to */
 .card.hl-flash{animation:cardFlash .8s ease-in-out 4}
 @keyframes cardFlash{0%,100%{box-shadow:var(--shadow-card)}50%{box-shadow:0 0 0 3px #e8590c,0 12px 30px rgba(232,89,12,.4)}}
@@ -2665,6 +2684,11 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         </div>
       </form>
     </div>
+    <div class="card" id="wdMyStatusCard" style="margin-top:22px">
+      <h2><span class="dot"></span><span data-i18n="wdMyStatusHead">My Withdraw Requests — Status</span></h2>
+      <div class="card-sub" data-i18n="wdMyStatusSub">Your withdrawals and their confirmation status.</div>
+      <div id="wdMyStatusList" style="margin-top:14px"></div>
+    </div>
   </section>
 
   <!-- ============ RETURN STOCK ============ -->
@@ -2698,6 +2722,13 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
   <!-- ============ WITHDRAW LOG ============ -->
   <section class="view" id="view-withdrawlog">
     <div class="page-head"><div class="bar"></div><div><h1 data-i18n="logTitle">WITHDRAW LOG</h1><p data-i18n="logLead">Every stock movement — withdrawals and returns.</p></div></div>
+    <div class="card" id="wdReqCard" style="margin-bottom:22px">
+      <div class="wd-req-head">
+        <div><h2 style="margin:0"><span class="dot"></span><span data-i18n="wdReqHead">Withdraw Requests</span></h2><div class="card-sub" data-i18n="wdReqSub">Confirm or reject each withdrawal request. Rejecting returns the stock.</div></div>
+        <span class="wd-req-pill">📤 <span id="wdReqCount">0</span></span>
+      </div>
+      <div id="wdReqList" style="margin-top:14px"></div>
+    </div>
     <div class="stats">
       <div class="stat c1"><div class="ic">📥</div><div class="n" id="lgDepV" style="color:#16a34a">0</div><div class="l" data-i18n="lgDepV">Deposit Value</div></div>
       <div class="stat c4"><div class="ic">📤</div><div class="n" id="lgWdV" style="color:#e5484d">0</div><div class="l" data-i18n="lgWdV">Withdraw Value</div></div>
@@ -3301,6 +3332,11 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     <span><span data-i18n="leaveFabTitle">Leave Confirmation</span><small data-i18n="leaveFabSub">Click to review leave requests</small></span>
     <span class="count" id="leaveFabCount">0</span>
   </button>
+  <button class="alert-fab wd-fab" id="wdFab" onclick="wdFabClick()">
+    <span class="bell">📤</span>
+    <span><span data-i18n="wdFabTitle">Withdraw Request</span><small data-i18n="wdFabSub">Click to review & confirm</small></span>
+    <span class="count" id="wdFabCount">0</span>
+  </button>
   <button class="alert-fab" id="fab" onclick="fabClick()">
     <span class="bell">🔔</span>
     <span><span data-i18n="fabTitle">Delivery Alert!</span><small data-i18n="fabSub">Click to review urgent deliveries</small></span>
@@ -3423,13 +3459,14 @@ function nxCloudBadge(state){
     if(!document.body) return;
     let el=document.getElementById('nxCloudBadge');
     if(!el){ el=document.createElement('div'); el.id='nxCloudBadge';
-      el.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;font:600 12px/1.4 system-ui,Segoe UI,Roboto,sans-serif;padding:5px 11px;border-radius:999px;display:flex;align-items:center;gap:7px;box-shadow:0 2px 10px rgba(0,0,0,.22);user-select:none;opacity:.94;';
+      el.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;font:600 12px/1.4 system-ui,Segoe UI,Roboto,sans-serif;padding:5px 11px;border-radius:999px;display:flex;align-items:center;gap:7px;box-shadow:0 2px 10px rgba(0,0,0,.22);user-select:none;opacity:.94;cursor:pointer;';
+      el.addEventListener('click',()=>{ try{ nxResyncSoon(true); }catch(_){} });
       document.body.appendChild(el);
     }
     const map={
       connecting:{bg:'#6b4e00',fg:'#ffe08a',dot:'#ffd666',txt:'เชื่อมต่อคลาวด์… / Connecting…',ti:'Connecting to cloud sync…'},
-      online:{bg:'#0f5132',fg:'#a7f0c6',dot:'#2fe36f',txt:'ซิงค์คลาวด์ / Cloud synced ✓',ti:'This device is syncing with the cloud in realtime.'},
-      offline:{bg:'#5c1a1a',fg:'#ffc2c2',dot:'#ff5555',txt:'ออฟไลน์ ไม่ซิงค์ / Not syncing',ti:'This device is NOT syncing. Open the website link (not the downloaded file) and reload.'}
+      online:{bg:'#0f5132',fg:'#a7f0c6',dot:'#2fe36f',txt:'ซิงค์คลาวด์ / Cloud synced ✓',ti:'This device is syncing with the cloud in realtime. Tap to force a sync now.'},
+      offline:{bg:'#5c1a1a',fg:'#ffc2c2',dot:'#ff5555',txt:'ออฟไลน์ ไม่ซิงค์ / Not syncing',ti:'This device is NOT syncing. Open the website link (not the downloaded file) and reload. Tap to retry.'}
     };
     const c=map[state]||map.offline;
     el.style.background=c.bg; el.style.color=c.fg; el.title=c.ti;
@@ -3544,8 +3581,28 @@ const NX_CLOUD = {
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
     try{ this.col.doc(k).set({ json:String(v), ts:Date.now(), by, byRole }).catch(e=> console.warn('[NX] push failed', k, e)); }
     catch(e){ console.warn('[NX] push error', k, e); }
+  },
+  /* Force a fresh pull from the cloud and re-render — used when a tab regains focus
+     (Firestore's live listener pauses in backgrounded tabs and may miss changes),
+     and when the user taps the cloud badge. */
+  _resyncing:false,
+  async resync(manual){
+    if(!this.ready || !this.col || this._resyncing) return;
+    this._resyncing=true;
+    try{ if(manual){ nxCloudBadge('connecting'); } await this.pull(); nxCloudBadge('online'); if(manual){ try{ showToast('☁️ '+(LANG==='th'?'ซิงค์แล้ว':'Synced — up to date')); }catch(_){} } }
+    catch(e){ console.warn('[NX] resync failed', e); }
+    finally{ this._resyncing=false; }
   }
 };
+let _nxResyncT=0;
+function nxResyncSoon(manual){ try{ if(!(NX_CLOUD&&NX_CLOUD.ready)) return; clearTimeout(_nxResyncT); _nxResyncT=setTimeout(()=>{ NX_CLOUD.resync(manual); }, manual?0:250); }catch(_){} }
+if(typeof document!=='undefined'){
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') nxResyncSoon(false); });
+}
+if(typeof window!=='undefined'){
+  window.addEventListener('focus',()=>nxResyncSoon(false));
+  window.addEventListener('online',()=>nxResyncSoon(false));
+}
 try{ window.NX_CLOUD = NX_CLOUD; }catch(_){}   /* expose for console debugging */
 
 /* =================== DATA LAYER (localStorage = database) =================== */
@@ -4216,6 +4273,8 @@ const I18N = {
   leaveConfirmed:{en:"Confirmed by",th:"อนุมัติโดย"},
   leaveWaiting:{en:"Waiting",th:"รออนุมัติ"},
   approve:{en:"Approve",th:"อนุมัติ"},
+  confirm:{en:"Confirm",th:"ยืนยัน"},
+  reject:{en:"Reject",th:"ปฏิเสธ"},
   managerName:{en:"Manager (นันทวัน)",th:"ผู้จัดการ (นันทวัน)"},
   leaveApproved:{en:"Leave approved",th:"อนุมัติการลาแล้ว"},
   leaveDeleted:{en:"Leave appointment removed",th:"ลบรายการลาแล้ว"},
@@ -5032,6 +5091,23 @@ const I18N = {
   fabSub:{en:"Click to review urgent deliveries",th:"คลิกเพื่อตรวจสอบการส่งด่วน"},
   leaveFabTitle:{en:"Leave Confirmation",th:"ยืนยันการลา"},
   leaveFabSub:{en:"Click to review leave requests",th:"คลิกเพื่อตรวจคำขอลา"},
+  wdFabTitle:{en:"Withdraw Request",th:"คำขอเบิกของ"},
+  wdFabSub:{en:"Click to review & confirm",th:"คลิกเพื่อตรวจและยืนยัน"},
+  confTypeWithdraw:{en:"Withdraw requests",th:"คำขอเบิกของ"},
+  notifWithdraw:{en:"Withdraw requests",th:"คำขอเบิกของ"},
+  wdReqHead:{en:"Withdraw Requests",th:"รายการคำขอเบิกของ"},
+  wdReqSub:{en:"Confirm or reject each withdrawal request. Rejecting returns the stock.",th:"ยืนยันหรือปฏิเสธคำขอเบิกแต่ละรายการ การปฏิเสธจะคืนของเข้าสต็อก"},
+  wdReqNone:{en:"No withdrawal requests yet.",th:"ยังไม่มีคำขอเบิกของ"},
+  wdReqPending:{en:"pending",th:"รอยืนยัน"},
+  wdReqBy:{en:"by",th:"โดย"},
+  wdReqConfirmed:{en:"Withdrawal confirmed",th:"ยืนยันการเบิกแล้ว"},
+  wdReqRejected:{en:"Withdrawal rejected — stock returned",th:"ปฏิเสธการเบิก — คืนของเข้าสต็อกแล้ว"},
+  wdStWait:{en:"Waiting",th:"รอยืนยัน"},
+  wdStConfirmed:{en:"Confirmed",th:"ยืนยันแล้ว"},
+  wdStRejected:{en:"Rejected",th:"ปฏิเสธแล้ว"},
+  wdMyStatusHead:{en:"My Withdraw Requests — Status",th:"คำขอเบิกของฉัน — สถานะ"},
+  wdMyStatusSub:{en:"Your withdrawals and their confirmation status.",th:"รายการเบิกของคุณและสถานะการยืนยัน"},
+  wdMyNone:{en:"You have no withdrawal requests yet.",th:"คุณยังไม่มีคำขอเบิกของ"},
   permNotifHead:{en:"Notifications visible",th:"การแจ้งเตือนที่มองเห็น"},
   permNotifSub:{en:"Toggle which pop-up notifications this position can see.",th:"เลือกว่าตำแหน่งนี้จะเห็นการแจ้งเตือนแบบใดบ้าง"},
   notifDelivery:{en:"Delivery alerts",th:"แจ้งเตือนการรับของ"},
@@ -5151,9 +5227,9 @@ function go(view){
   if(view==='customers'){ renderCustomers(); }
   if(view==='addstock'){ initAddStock(); }
   if(view==='stocklist'){ renderStockList(); }
-  if(view==='withdraw'){ initWithdraw(); }
+  if(view==='withdraw'){ initWithdraw(); renderMyWithdrawStatus(); }
   if(view==='returnstock'){ initReturn(); }
-  if(view==='withdrawlog'){ renderWithdrawLog(); }
+  if(view==='withdrawlog'){ renderWithdrawLog(); renderWithdrawReqList(); }
   if(view==='employees'){ renderEmployees(); }
   if(view==='attendance'){ renderAttendance(); }
   if(view==='timeattend'){ initTimeAttend(); }
@@ -5632,6 +5708,7 @@ function computeAlerts(){
   computeOtAlert();
   computeLeaveAlert();
   computePrAlert();
+  computeWithdrawAlert();
   return alerts;
 }
 function kpiCap(s,n){ s=String(s||''); return s.length>n?s.slice(0,n-1)+'…':s; }
@@ -6344,15 +6421,62 @@ function submitWithdraw(e){
     closeModal(); successModal(t('withdrawDone'),t('withdrawDoneSub'));
     document.getElementById('withdrawForm').reset(); initWithdraw();
     document.querySelectorAll('#view-withdraw .invalid').forEach(x=>x.classList.remove('invalid'));
-    renderStockList();
+    renderStockList(); renderMyWithdrawStatus(); computeWithdrawAlert();
   });
 }
 function doWithdraw(stockId,qty,meta){
   const s=DB.stock(); const it=s.find(x=>x.id===stockId); if(!it) return false;
   const avail=parseFloat(it.qty)||0; if(qty>avail) return false;
   it.qty=String(avail-qty); DB.saveStock(s);
-  const w=DB.withdraws(); w.push({id:'wd'+Date.now()+Math.floor(Math.random()*1000),stockId,no:it.no,list:it.list,unit:it.unit,unitPrice:it.unitPrice||'',qty:String(qty),workNo:meta.workNo||'',reason:meta.reason||'',submittedBy:meta.by||'',date:new Date().toISOString()}); DB.saveWithdraws(w);
+  const be=DB.employees().find(x=>x.name===(meta.by||'')); const subId=be?be.id:'';
+  const w=DB.withdraws(); w.push({id:'wd'+Date.now()+Math.floor(Math.random()*1000),stockId,no:it.no,list:it.list,unit:it.unit,unitPrice:it.unitPrice||'',qty:String(qty),workNo:meta.workNo||'',reason:meta.reason||'',submittedBy:meta.by||'',submittedById:subId,status:'wait',approver:'',approvedAt:'',date:new Date().toISOString()}); DB.saveWithdraws(w);
   return true;
+}
+/* ---- Withdraw request confirmation (deduct-on-submit; reject returns stock) ---- */
+function wdReqStatus(x){ return (x&&x.status)||'confirmed'; }   /* legacy withdrawals had no status = already done */
+function afterWithdrawChange(){ try{ renderWithdrawReqList(); }catch(_){} try{ renderWithdrawLog(); }catch(_){} try{ renderMyWithdrawStatus(); }catch(_){} try{ computeWithdrawAlert(); }catch(_){} }
+function confirmWithdrawReq(id){ if(!canConfirm('withdraw')){ showToast(t('confNoRight')); return; }
+  const w=DB.withdraws(); const x=w.find(y=>y.id===id); if(!x) return;
+  x.status='confirmed'; x.approver=whoami(); x.approvedAt=new Date().toISOString(); DB.saveWithdraws(w);
+  afterWithdrawChange(); showToast(t('wdReqConfirmed')); }
+function rejectWithdrawReq(id){ if(!canConfirm('withdraw')){ showToast(t('confNoRight')); return; }
+  const w=DB.withdraws(); const x=w.find(y=>y.id===id); if(!x) return;
+  if(wdReqStatus(x)!=='rejected'){ const s=DB.stock(); const it=s.find(z=>z.id===x.stockId); if(it){ it.qty=String((parseFloat(it.qty)||0)+(parseFloat(x.qty)||0)); DB.saveStock(s); } }  /* return the stock deducted on submit */
+  x.status='rejected'; x.approver=whoami(); x.approvedAt=new Date().toISOString(); DB.saveWithdraws(w);
+  afterWithdrawChange(); try{ renderStockList(); }catch(_){} showToast(t('wdReqRejected')); }
+function computeWithdrawAlert(){ const fab=document.getElementById('wdFab'); if(!fab) return;
+  const n=canSeeNotif('withdraw')?DB.withdraws().filter(x=>x.status==='wait').length:0;
+  if(n>0){ fab.classList.add('show'); const c=document.getElementById('wdFabCount'); if(c) c.textContent=n; } else fab.classList.remove('show');
+  nxFabChanged('withdraw',n); }
+function wdFabClick(){ go('withdrawlog'); setTimeout(()=>{ const el=document.getElementById('wdReqCard'); if(el){ leadTo(el); el.classList.remove('hl-flash'); void el.offsetWidth; el.classList.add('hl-flash'); setTimeout(()=>el.classList.remove('hl-flash'),3400); } },400); }
+function wdStatusBadge(st){ return st==='wait'?`<span class="wd-badge wait">🟠 ${t('wdStWait')}</span>`: st==='rejected'?`<span class="wd-badge rej">🔴 ${t('wdStRejected')}</span>`:`<span class="wd-badge ok">🟢 ${t('wdStConfirmed')}</span>`; }
+function renderWithdrawReqList(){
+  const wrap=document.getElementById('wdReqList'); if(!wrap) return;
+  const may=canConfirm('withdraw');
+  const reqs=DB.withdraws().filter(x=>x.status).sort((a,b)=>{ const rank=s=>s==='wait'?0:1; const r=rank(a.status)-rank(b.status); if(r) return r; return (''+(b.date||'')).localeCompare(''+(a.date||'')); });
+  const pending=reqs.filter(x=>x.status==='wait').length;
+  const pc=document.getElementById('wdReqCount'); if(pc) pc.textContent=pending+' '+t('wdReqPending');
+  if(!reqs.length){ wrap.innerHTML=`<div class="muted-line" style="padding:16px">${t('wdReqNone')}</div>`; return; }
+  wrap.innerHTML=reqs.slice(0,60).map(x=>{ const st=x.status;
+    const acts=(may&&st==='wait')?`<div class="wd-req-acts"><button type="button" class="btn-mini wd-ok" onclick="confirmWithdrawReq('${x.id}')">✓ ${t('confirm')}</button><button type="button" class="btn-mini wd-rej" onclick="rejectWithdrawReq('${x.id}')">✕ ${t('reject')}</button></div>`:'';
+    return `<div class="wd-req-row">
+      <div class="wd-req-main"><b>${escapeHtml(x.list||'')}</b> <span class="muted-line">· ${escapeHtml(x.no||'')}</span>
+        <div class="wd-req-sub">📦 ${escapeHtml(x.qty)} ${escapeHtml(x.unit||'')} · 🙋 ${escapeHtml(x.submittedBy||'—')} · ${escapeHtml(x.reason||'—')} · ${nxFmtD((x.date||'').slice(0,10))}${x.approver?(' · '+t('wdReqBy')+' '+escapeHtml(x.approver)):''}</div>
+      </div>
+      <div class="wd-req-right">${wdStatusBadge(st)}${acts}</div>
+    </div>`; }).join('');
+}
+function renderMyWithdrawStatus(){
+  const wrap=document.getElementById('wdMyStatusList'); if(!wrap) return;
+  const me=sessionEmp(); const myName=me?me.name:whoami(); const myId=me?me.id:'';
+  const mine=DB.withdraws().filter(x=> x.status && ((myId&&x.submittedById===myId) || x.submittedBy===myName)).sort((a,b)=>(''+(b.date||'')).localeCompare(''+(a.date||'')));
+  if(!mine.length){ wrap.innerHTML=`<div class="muted-line" style="padding:14px">${t('wdMyNone')}</div>`; return; }
+  wrap.innerHTML=mine.slice(0,40).map(x=>`<div class="wd-req-row">
+      <div class="wd-req-main"><b>${escapeHtml(x.list||'')}</b> <span class="muted-line">· ${escapeHtml(x.no||'')}</span>
+        <div class="wd-req-sub">📦 ${escapeHtml(x.qty)} ${escapeHtml(x.unit||'')} · ${escapeHtml(x.reason||'—')} · ${nxFmtD((x.date||'').slice(0,10))}${x.approver?(' · '+t('wdReqBy')+' '+escapeHtml(x.approver)):''}</div>
+      </div>
+      <div class="wd-req-right">${wdStatusBadge(x.status)}</div>
+    </div>`).join('');
 }
 
 /* =================== RETURN STOCK =================== */
@@ -8200,12 +8324,12 @@ function renderPermToggles(posId){
       ${g.items.map(it=>`<div class="perm-item"><span class="pi-name">${t(it[1])}</span><button type="button" class="tgl ${perms[it[0]]?'on':''}" onclick="permToggle('${posId}','${it[0]}')" aria-pressed="${perms[it[0]]?'true':'false'}"><span class="tgl-dot"></span></button></div>`).join('')}
     </div>`).join('')+`</div>`;
 }
-const CONFIRM_TYPES=[{key:'ot',label:'confTypeOt',ic:'⏱'},{key:'leave',label:'confTypeLeave',ic:'🌴'},{key:'purchase',label:'confTypePurchase',ic:'🧾'}];
+const CONFIRM_TYPES=[{key:'ot',label:'confTypeOt',ic:'⏱'},{key:'leave',label:'confTypeLeave',ic:'🌴'},{key:'purchase',label:'confTypePurchase',ic:'🧾'},{key:'withdraw',label:'confTypeWithdraw',ic:'📤'}];
 function permConfirmToggle(posId,key){ const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.confirm=p.confirm||{}; p.confirm[key]=!p.confirm[key]; DB.savePositions(ps); renderPermToggles(posId); showToast(p.confirm[key]?t('permConfOn'):t('permConfOff')); }
 /* who may confirm a request type: CEO/Developer always, or a position granted that confirmation right */
 function canConfirm(type){ if(isCEO()) return true; const e=sessionEmp(); if(!e) return false; const pos=DB.positions().find(p=>p.id===e.positionId); return !!(pos&&pos.confirm&&pos.confirm[type]); }
 /* which notifications a position sees — CEO/Developer always; others default ON unless a toggle is turned off */
-const NOTIF_TYPES=[{key:'delivery',label:'notifDelivery',ic:'🔔'},{key:'ot',label:'notifOt',ic:'📝'},{key:'leave',label:'notifLeave',ic:'🗓'},{key:'purchase',label:'notifPurchase',ic:'🧾'}];
+const NOTIF_TYPES=[{key:'delivery',label:'notifDelivery',ic:'🔔'},{key:'ot',label:'notifOt',ic:'📝'},{key:'leave',label:'notifLeave',ic:'🗓'},{key:'purchase',label:'notifPurchase',ic:'🧾'},{key:'withdraw',label:'notifWithdraw',ic:'📤'}];
 function canSeeNotif(type){ if(typeof isCEO==='function'&&isCEO()) return true; const e=(typeof sessionEmp==='function')&&sessionEmp(); if(!e) return true; const pos=DB.positions().find(p=>p.id===e.positionId); if(!pos||!pos.notif) return true; return pos.notif[type]!==false; }
 function permNotifToggle(posId,key){ const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.notif=p.notif||{}; const cur=p.notif[key]!==false; p.notif[key]=!cur; DB.savePositions(ps); renderPermToggles(posId); try{computeAlerts();}catch(e){} showToast(p.notif[key]?t('permNotifOn'):t('permNotifOff')); }
 function permToggle(posId,key){ const ps=DB.positions(); const p=ps.find(x=>x.id===posId); if(!p) return; p.perms=p.perms||{}; p.perms[key]=!p.perms[key]; DB.savePositions(ps); renderPermToggles(posId); }
@@ -9145,7 +9269,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.07-g';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-h';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
