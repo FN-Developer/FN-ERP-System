@@ -9493,7 +9493,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-t';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-u';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9679,9 +9679,16 @@ checkSession();
 setInterval(computeAlerts,60000); // re-check every minute
 /* Attach cloud sync last, after all local seeding/rendering is done. */
 try{ NX_CLOUD.init(); }catch(e){ console.warn('[NX] cloud init threw', e); }
-/* Auto-backup to the cloud every 5 minutes — only from a Developer session
-   (avoids every device creating redundant snapshots). Skips if nothing changed. */
-setInterval(()=>{ try{ if(typeof isDeveloper==='function' && isDeveloper()) dbBackupNow(false); }catch(_){} }, 300000);
+/* Auto-backup DISABLED by default — pure real-time. The 5-min auto-backup did a full
+   collection read each cycle (dbPruneBackups→dbListBackups) which could stall the live
+   listener on weak mobile links. Manual "Backup now" still works any time. To re-enable
+   auto-backup, set localStorage nx_autobackup='1'. */
+setInterval(()=>{ try{ if(localStorage.getItem('nx_autobackup')==='1' && typeof isDeveloper==='function' && isDeveloper()) dbBackupNow(false); }catch(_){} }, 300000);
+/* Real-time catch-up safety net: even if a device's live onSnapshot listener silently
+   stalls (mobile backgrounding, network switch, Firestore idle disconnect), pull the
+   latest data every ~18 s while the tab is VISIBLE. pull() skips keys with un-pushed
+   local edits (nx_dirty), so this never clobbers something you just typed. */
+setInterval(()=>{ try{ if(NX_CLOUD && NX_CLOUD.ready && typeof document!=='undefined' && !document.hidden){ NX_CLOUD.pull(); } }catch(_){} }, 18000);
 /* Presence: announce this session (device + IP/location) and heartbeat so the
    Developer's Connectivity page shows who is online / last-seen across devices. */
 setTimeout(()=>{ try{ nxFetchIP().then(()=>nxPresenceBeat()).catch(()=>{}); }catch(_){} }, 4000);
