@@ -3411,16 +3411,30 @@ const NX_GUARD_FLAGS = ['nx_seed_leave','nx_seed_ot','nx_seed_pay','nx_seed_pos'
 const _nxOrigSetItem = localStorage.setItem.bind(localStorage);
 let _nxApplyingRemote = false;
 
-/* ===== Outbox (offline-safe sync) =====
-   Every local change to a shared key is queued here and only cleared once its
-   cloud push is CONFIRMED. On reconnect the device pushes queued changes UP
-   before it pulls DOWN, and pull() never overwrites a still-queued key — so an
-   edit made while offline / on a backgrounded tab can never be silently lost.
-   Stored per-device (nx_dirty), never synced. */
-function nxDirtyGet(){ try{ const a=JSON.parse(localStorage.getItem('nx_dirty')||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
-function nxDirtySet(a){ try{ _nxOrigSetItem('nx_dirty', JSON.stringify(a)); }catch(_){} }
-function nxDirtyAdd(k){ const a=nxDirtyGet(); if(a.indexOf(k)<0){ a.push(k); nxDirtySet(a); } }
-function nxDirtyClear(k){ const a=nxDirtyGet(); const i=a.indexOf(k); if(i>=0){ a.splice(i,1); nxDirtySet(a); } }
+/* ===== Database-first save status ===== */
+let _nxSaveStatusT=0;
+function nxSaveStatus(state){
+  try{
+    if(!document.body) return;
+    let el=document.getElementById('nxSaveStatus');
+    if(!el){ el=document.createElement('div'); el.id='nxSaveStatus';
+      el.style.cssText='position:fixed;left:10px;bottom:44px;z-index:99999;font:700 11.5px/1.3 system-ui,Segoe UI,Roboto,sans-serif;padding:5px 11px;border-radius:999px;display:none;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.22);white-space:nowrap';
+      document.body.appendChild(el);
+    }
+    const map={ saving:{bg:'#334155',fg:'#e2e8f0',t:(LANG==='th'?'กำลังบันทึกลงฐานข้อมูล…':'Saving to database…')},
+                saved:{bg:'#0f5132',fg:'#a7f0c6',t:(LANG==='th'?'บันทึกแล้ว ✓':'Saved to database ✓')},
+                failed:{bg:'#5c1a1a',fg:'#ffc2c2',t:(LANG==='th'?'บันทึกไม่สำเร็จ':'Not saved')} };
+    const c=map[state]||map.saving; el.style.background=c.bg; el.style.color=c.fg; el.style.display='flex'; el.textContent=c.t;
+    clearTimeout(_nxSaveStatusT);
+    if(state!=='saving'){ _nxSaveStatusT=setTimeout(()=>{ if(el) el.style.display='none'; }, state==='failed'?4000:1500); }
+  }catch(_){}
+}
+/* A logged-in user's data write while OFFLINE is rejected: nothing may appear saved
+   that the database has not accepted. */
+function nxWriteBlocked(){
+  try{ nxSaveStatus('failed'); }catch(_){}
+  try{ showToast('⚠ '+(LANG==='th'?'บันทึกไม่ได้ — ฐานข้อมูลออฟไลน์ เชื่อมต่อแล้วลองใหม่':'Not saved — database is offline. Reconnect and try again.')); }catch(_){}
+}
 
 /* Intercept saves: write locally (unchanged behaviour) then push to cloud.
    NX_CLOUD is referenced lexically (a top-level const is NOT a window property);
@@ -3432,15 +3446,24 @@ localStorage.setItem = function(k, v){
      (session/login, language, theme) are not shared data and stay writable. */
   try{ if(!_nxApplyingRemote && NX_CLOUD_KEYS.indexOf(k)>=0 && nxIsViewOnly()){ nxViewOnlyToast(); return; } }catch(_){}
   const _isData = NX_CLOUD_KEYS.indexOf(k)>=0;
+  /* DATABASE-FIRST: a logged-in user's data change must go through the database.
+     If we're offline, reject it — the change is NOT applied on any device
+     (including this one), so nothing ever looks saved that the database
+     hasn't accepted. Seeds/migrations (run before login) are not affected. */
+  if(_isData && !_nxApplyingRemote){
+    let logged=false; try{ logged=!!(typeof DB!=='undefined' && DB.session() && DB.session().loggedIn); }catch(_){}
+    const cloudOn = (typeof NX_CLOUD!=='undefined' && NX_CLOUD.enabled);
+    const offline = (typeof navigator!=='undefined' && navigator.onLine===false) || (cloudOn && !NX_CLOUD.ready);
+    if(logged && cloudOn && offline){ try{ nxWriteBlocked(); }catch(_){} return; }
+  }
   const _before = _isData ? localStorage.getItem(k) : null;
   _nxOrigSetItem(k, v);
   /* Audit log: record every real data change made by a logged-in user. */
   if(_isData && _before!==v){ try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; if(s.loggedIn && typeof nxAudit==='function') nxAudit(k, _before, v, s.user||'—', s.role||''); }catch(_){} }
-  /* Queue the change (offline-safe), then push. Only once the cloud baseline is
-     established (ready): pre-connect writes are seeds/migrations that must defer
-     to the cloud, so they are NOT queued (queuing them could overwrite real data). */
+  /* Push to the database; the write is provisional until the database confirms it
+     (see _write/_rollback — a refused write is reverted). */
   if(_isData && !_nxApplyingRemote && _before!==v){
-    try{ if(NX_CLOUD && NX_CLOUD.ready){ nxDirtyAdd(k); NX_CLOUD.onLocalWrite(k, v); } }catch(_){}
+    try{ if(NX_CLOUD && NX_CLOUD.ready) NX_CLOUD.onLocalWrite(k, v, _before); }catch(_){}
   }
 };
 
@@ -3547,8 +3570,7 @@ const NX_CLOUD = {
       this.col = firebase.firestore().collection('nx_state');
       await this.pull();
       this.ready = true;
-      try{ this.flushDirty(); }catch(_){}   /* push any edits queued while offline (e.g. from a previous session) up first */
-      try{ if(_nxDetailsStripped){ this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
+      try{ if(_nxDetailsStripped){ this._pendBefore['nx_details']=null; this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
       try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       this.listen();
       nxCloudBadge('online');
@@ -3562,10 +3584,8 @@ const NX_CLOUD = {
     const results = await Promise.all(NX_CLOUD_KEYS.map(k=> this.col.doc(k).get().then(d=> d.exists?{k, v:d.data()}:null).catch(()=>null)));
     const present = results.filter(Boolean);
     if(present.length){
-      const dirty=nxDirtyGet();
       _nxApplyingRemote = true;
-      present.forEach(({k,v})=>{ if(dirty.indexOf(k)>=0) return;   /* keep this device's un-pushed edit; flushDirty() will send it up */
-        if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
+      present.forEach(({k,v})=>{ if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
       NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
       try{ nxSanitizeLocal(); }catch(_){}   /* never let a malformed cloud value break rendering */
       _nxApplyingRemote = false;
@@ -3583,7 +3603,6 @@ const NX_CLOUD = {
         const k=ch.doc.id, v=ch.doc.data();
         if(!v || typeof v.json!=='string') return;
         if(NX_CLOUD_KEYS.indexOf(k)<0) return;
-        if(nxDirtyGet().indexOf(k)>=0) return;                 // an un-pushed local edit owns this key; flushDirty() will send it up
         if(localStorage.getItem(k)===v.json) return;           // no real change
         const before=localStorage.getItem(k);
         _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
@@ -3593,24 +3612,34 @@ const NX_CLOUD = {
       if(changed){ try{ nxSanitizeLocal(); }catch(_){} nxRerenderAll(); }
     }, err=> console.warn('[NX] snapshot error', err));
   },
-  onLocalWrite(k, v){
+  _pendBefore:{},
+  onLocalWrite(k, v, before){
     if(!this.ready) return;
     if(NX_CLOUD_KEYS.indexOf(k)<0) return;                     // per-device keys never sync
+    if(!(k in this._pendBefore)) this._pendBefore[k]=before;   // remember confirmed value for rollback
     clearTimeout(this._t[k]);
-    this._t[k] = setTimeout(()=> this._write(k, v), 400);      // debounce bursts
+    try{ nxSaveStatus('saving'); }catch(_){}
+    this._t[k] = setTimeout(()=> this._write(k, localStorage.getItem(k)), 250);   // debounce bursts
   },
   _write(k, v){
-    if(!this.col) return;
+    if(!this.col){ return; }
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
+    const before = this._pendBefore[k];
     try{ this.col.doc(k).set({ json:String(v), ts:Date.now(), by, byRole })
-          .then(()=>{ try{ if(localStorage.getItem(k)===String(v)) nxDirtyClear(k); }catch(_){} })   /* clear only if unchanged since */
-          .catch(e=> console.warn('[NX] push failed', k, e)); }
-    catch(e){ console.warn('[NX] push error', k, e); }
+          .then(()=>{ delete this._pendBefore[k]; try{ if(!Object.keys(this._pendBefore).length) nxSaveStatus('saved'); }catch(_){} })
+          .catch(e=>{ console.warn('[NX] push failed — reverting', k, e); this._rollback(k, before); }); }
+    catch(e){ console.warn('[NX] push error — reverting', k, e); this._rollback(k, before); }
   },
-  /* Push every queued (un-confirmed) local change up to the cloud. */
-  flushDirty(){
-    if(!this.ready || !this.col) return;
-    nxDirtyGet().forEach(k=>{ if(NX_CLOUD_KEYS.indexOf(k)<0){ nxDirtyClear(k); return; } const v=localStorage.getItem(k); if(v==null){ nxDirtyClear(k); return; } this._write(k, v); });
+  /* Database refused the write → roll the local value back to the last confirmed one,
+     so the app never shows a change the database did not accept. */
+  _rollback(k, before){
+    try{ delete this._pendBefore[k]; }catch(_){}
+    const def = (typeof NX_OBJECT_KEYS!=='undefined' && NX_OBJECT_KEYS.indexOf(k)>=0) ? '{}' : '[]';
+    _nxApplyingRemote = true; try{ _nxOrigSetItem(k, (before==null?def:before)); }catch(_){} _nxApplyingRemote = false;
+    try{ nxSaveStatus('failed'); }catch(_){}
+    try{ nxSanitizeLocal(); }catch(_){}
+    try{ nxRerenderAll(); }catch(_){}
+    try{ showToast('⚠ '+(LANG==='th'?'บันทึกไม่สำเร็จ — ฐานข้อมูลไม่รับ คืนค่าเดิมแล้ว':'Not saved — database refused the change. Reverted.')); }catch(_){}
   },
   /* Force a fresh pull from the cloud and re-render — used when a tab regains focus
      (Firestore's live listener pauses in backgrounded tabs and may miss changes),
@@ -3619,7 +3648,7 @@ const NX_CLOUD = {
   async resync(manual){
     if(!this.ready || !this.col || this._resyncing) return;
     this._resyncing=true;
-    try{ if(manual){ nxCloudBadge('connecting'); } await this.pull(); this.flushDirty(); nxCloudBadge('online'); if(manual){ try{ showToast('☁️ '+(LANG==='th'?'ซิงค์แล้ว':'Synced — up to date')); }catch(_){} } }
+    try{ if(manual){ nxCloudBadge('connecting'); } await this.pull(); nxCloudBadge('online'); if(manual){ try{ showToast('☁️ '+(LANG==='th'?'ซิงค์แล้ว':'Synced — up to date')); }catch(_){} } }
     catch(e){ console.warn('[NX] resync failed', e); }
     finally{ this._resyncing=false; }
   }
@@ -3640,13 +3669,23 @@ async function nxCheckVersion(force){
   }catch(_){}
   finally{ _nxVerChecking=false; }
 }
+/* Unmissable, blocking update gate: when a newer build is deployed, cover the
+   whole screen so the device cannot keep running stale code. */
 function nxShowUpdateBanner(newv){
   if(_nxVerBanner) return;
-  const el=document.createElement('div'); el.id='nxUpdateBanner';
-  el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:56px;z-index:100002;background:linear-gradient(120deg,#0906d7,#0891b2);color:#fff;font:700 13px/1.35 system-ui,Segoe UI,Roboto,sans-serif;padding:11px 15px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.38);cursor:pointer;display:flex;align-items:center;gap:9px;max-width:92vw';
   const safe=String(newv).replace(/[^0-9a-zA-Z.\-]/g,'');
-  el.innerHTML='<span style="font-size:16px">🔄</span><span>'+((typeof LANG!=='undefined'&&LANG==='th')?'มีเวอร์ชันใหม่ — แตะเพื่ออัปเดต':'New version available — tap to update')+' <b>v'+safe+'</b></span>';
-  el.addEventListener('click',()=>{ try{ location.replace(location.pathname+'?v='+encodeURIComponent(safe)); }catch(_){ location.reload(); } });
+  const th=(typeof LANG!=='undefined'&&LANG==='th');
+  const el=document.createElement('div'); el.id='nxUpdateGate';
+  el.style.cssText='position:fixed;inset:0;z-index:2147483646;background:linear-gradient(135deg,#070826,#0a1230 60%,#05122a);display:flex;align-items:center;justify-content:center;padding:24px;';
+  const doUpdate='(function(){try{location.replace(location.pathname+\'?v='+encodeURIComponent(safe)+'\');}catch(e){location.reload();}})()';
+  el.innerHTML=
+    '<div style="max-width:420px;width:100%;text-align:center;color:#fff;font-family:system-ui,Segoe UI,Roboto,sans-serif">'+
+      '<div style="font-size:52px;margin-bottom:10px">🔄</div>'+
+      '<div style="font-size:22px;font-weight:800;letter-spacing:.3px;margin-bottom:8px">'+(th?'ต้องอัปเดตเวอร์ชัน':'Update required')+'</div>'+
+      '<div style="font-size:14px;line-height:1.6;opacity:.85;margin-bottom:6px">'+(th?'มีเวอร์ชันใหม่ของระบบแล้ว อุปกรณ์นี้ใช้เวอร์ชันเก่าอยู่ ต้องอัปเดตก่อนจึงจะใช้งานและซิงค์ข้อมูลได้ถูกต้อง':'A newer version of the system is available. This device is on an old version and must update before it can work and sync data correctly.')+'</div>'+
+      '<div style="font-size:12px;opacity:.55;margin-bottom:22px">'+ (th?'เวอร์ชันนี้':'This device')+': v'+((typeof NX_BUILD!=='undefined')?NX_BUILD:'?')+' → '+(th?'ใหม่':'latest')+': v'+safe+'</div>'+
+      '<button onclick="'+doUpdate.replace(/"/g,'&quot;')+'" style="background:linear-gradient(120deg,#0906d7,#0891b2);color:#fff;border:none;border-radius:12px;padding:14px 30px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 30px rgba(9,6,215,.5);width:100%">'+(th?'🔄 อัปเดตเดี๋ยวนี้':'🔄 Update now')+'</button>'+
+    '</div>';
   document.body.appendChild(el); _nxVerBanner=el;
 }
 if(typeof document!=='undefined'){
@@ -9334,7 +9373,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-l';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-m';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
