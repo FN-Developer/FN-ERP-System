@@ -3479,9 +3479,26 @@ let _nxApplyRemoteAt = 0;   /* when the applying-remote flag was last raised —
 /* Capture any uncaught JS error / promise rejection so a device (esp. iPhone, whose console we
    can't see) can report WHAT broke — e.g. a submit handler throwing before it can save. */
 try{
-  window.addEventListener('error', function(e){ try{ window.__nxJsErr=String((e&&e.message)||'')+' @'+String((e&&e.filename)||'').split('/').pop()+':'+((e&&e.lineno)||'')+' '+new Date().toISOString().slice(11,19); }catch(_){} });
-  window.addEventListener('unhandledrejection', function(e){ try{ window.__nxJsErr='reject:'+String((e&&e.reason&&e.reason.message)||(e&&e.reason)||'')+' '+new Date().toISOString().slice(11,19); }catch(_){} });
+  window.addEventListener('error', function(e){ try{ window.__nxJsErr=String((e&&e.message)||'')+' @'+String((e&&e.filename)||'').split('/').pop()+':'+((e&&e.lineno)||'')+' '+new Date().toISOString().slice(11,19); nxDbg('ERR '+String((e&&e.message)||'')+' :'+((e&&e.lineno)||'')); }catch(_){} });
+  window.addEventListener('unhandledrejection', function(e){ try{ window.__nxJsErr='reject:'+String((e&&e.reason&&e.reason.message)||(e&&e.reason)||'')+' '+new Date().toISOString().slice(11,19); nxDbg('REJECT '+String((e&&e.reason&&e.reason.message)||(e&&e.reason)||'')); }catch(_){} });
 }catch(_){}
+/* ON-SCREEN debug log — for devices whose console we can't reach (iPhone with no Mac). Turn on by
+   loading the site with ?dbg=1 (or set localStorage nx_dbg='1'). Shows a green box at the top that
+   records each save step so the user can screenshot it. Off by default — zero effect for everyone else. */
+let _nxDbgOn=false, _nxDbgLog=[];
+try{ _nxDbgOn = /[?&]dbg=1/.test(location.search||'') || localStorage.getItem('nx_dbg')==='1'; if(/[?&]dbg=1/.test(location.search||'')){ try{ _nxOrigSetItem('nx_dbg','1'); }catch(_){} } }catch(_){}
+function nxDbg(m){ if(!_nxDbgOn) return; try{
+  _nxDbgLog.push(new Date().toISOString().slice(11,19)+' '+m); if(_nxDbgLog.length>50) _nxDbgLog.shift();
+  if(!document.body) return;
+  let el=document.getElementById('nxDbgBox');
+  if(!el){ el=document.createElement('div'); el.id='nxDbgBox';
+    el.style.cssText='position:fixed;left:0;right:0;top:0;max-height:46vh;overflow:auto;z-index:2147483647;background:rgba(0,0,0,.9);color:#39ff14;font:11px/1.35 ui-monospace,Menlo,monospace;padding:8px 10px 8px;white-space:pre-wrap;border-bottom:2px solid #39ff14;-webkit-user-select:text;user-select:text';
+    document.body.appendChild(el);
+    const btn=document.createElement('div'); btn.textContent='clear debug'; btn.style.cssText='position:fixed;right:8px;top:6px;z-index:2147483647;background:#39ff14;color:#000;font:bold 11px monospace;padding:3px 8px;border-radius:6px'; btn.onclick=function(){ _nxDbgLog=[]; try{ localStorage.removeItem('nx_dbg'); }catch(_){} const b=document.getElementById('nxDbgBox'); if(b) b.remove(); btn.remove(); _nxDbgOn=false; };
+    document.body.appendChild(btn);
+  }
+  el.textContent='DBG '+(typeof NX_BUILD!=='undefined'?NX_BUILD:'')+'  (screenshot this)\n'+_nxDbgLog.join('\n');
+}catch(_){} }
 
 /* ===== Database-first save status ===== */
 let _nxSaveStatusT=0;
@@ -3522,7 +3539,7 @@ localStorage.setItem = function(k, v){
      treats its OWN edits as remote and never queues/saves them (the iPhone "can view, can't
      submit; shows for 1s then resets" symptom). */
   try{ if(_nxApplyingRemote && (Date.now()-(_nxApplyRemoteAt||0))>3000){ _nxApplyingRemote=false; } }catch(_){}
-  try{ if(NX_CLOUD_KEYS.indexOf(k)>=0){ window.__nxLastSet=k+'|chg='+(localStorage.getItem(k)!==v)+'|apply='+(!!_nxApplyingRemote)+'@'+new Date().toISOString().slice(11,19); if(nxIsIOS()) setTimeout(function(){ try{ nxPresenceBeat(); }catch(_){} }, 60); } }catch(_){}
+  try{ if(NX_CLOUD_KEYS.indexOf(k)>=0){ window.__nxLastSet=k+'|chg='+(localStorage.getItem(k)!==v)+'|apply='+(!!_nxApplyingRemote)+'@'+new Date().toISOString().slice(11,19); nxDbg('setItem '+k+(_nxApplyingRemote?' <FROM CLOUD>':' <LOCAL SAVE>')+' chg='+(localStorage.getItem(k)!==v)); if(nxIsIOS()) setTimeout(function(){ try{ nxPresenceBeat(); }catch(_){} }, 60); } }catch(_){}
   try{ if(!_nxApplyingRemote && NX_CLOUD_KEYS.indexOf(k)>=0 && nxIsViewOnly()){ nxViewOnlyToast(); return; } }catch(_){}
   const _isData = NX_CLOUD_KEYS.indexOf(k)>=0;
   const _before = _isData ? localStorage.getItem(k) : null;
@@ -6704,6 +6721,7 @@ function wdReasonType(){
 }
 function submitWithdraw(e){
   e.preventDefault();
+  try{ nxDbg('submitWithdraw() called'); }catch(_){}
   const id=document.getElementById('wd_stock').value; const s=DB.stock().find(x=>x.id===id);
   const qty=parseFloat(document.getElementById('wd_qty').value)||0;
   const rt=document.getElementById('wd_reasonType').value;
@@ -6715,11 +6733,14 @@ function submitWithdraw(e){
   if(rt==='work'){ document.getElementById('fwd-work').classList.toggle('invalid',!workNo); if(!workNo) ok=false; }
   else { document.getElementById('fwd-reason').classList.toggle('invalid',!reasonTxt); if(!reasonTxt) ok=false; }
   document.getElementById('fwd-by').classList.toggle('invalid',!by); if(!by) ok=false;
-  if(!ok || !wdValidate()){ document.querySelector('#view-withdraw .invalid')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  if(!ok || !wdValidate()){ nxDbg('submitWithdraw ABORT: validation ok='+ok); document.querySelector('#view-withdraw .invalid')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   const reason=rt==='work'?(t('workLabel')+' '+workNo):reasonTxt;
   const rows=[{k:t('wdSelectStock'),v:s.no+' · '+s.list},{k:t('wdQty'),v:qty+' '+(s.unit||'')},{k:t('wdReason'),v:reason},{k:t('lblSubmittedBy'),v:by}];
+  nxDbg('submitWithdraw: opening confirm modal');
   confirmModal(t('mConfirmTitle'),t('mConfirmDesc'),rows,()=>{
-    doWithdraw(id,qty,{workNo:rt==='work'?workNo:'',reason,by});
+    nxDbg('confirm modal OK tapped → doWithdraw');
+    const _wr=doWithdraw(id,qty,{workNo:rt==='work'?workNo:'',reason,by});
+    nxDbg('doWithdraw returned '+_wr);
     closeModal(); successModal(t('withdrawDone'),t('withdrawDoneSub'));
     document.getElementById('withdrawForm').reset(); initWithdraw();
     document.querySelectorAll('#view-withdraw .invalid').forEach(x=>x.classList.remove('invalid'));
@@ -6727,8 +6748,8 @@ function submitWithdraw(e){
   });
 }
 function doWithdraw(stockId,qty,meta){
-  const s=DB.stock(); const it=s.find(x=>x.id===stockId); if(!it) return false;
-  const avail=parseFloat(it.qty)||0; if(qty>avail) return false;
+  const s=DB.stock(); const it=s.find(x=>x.id===stockId); if(!it){ nxDbg('doWithdraw ABORT: item not found'); return false; }
+  const avail=parseFloat(it.qty)||0; if(qty>avail){ nxDbg('doWithdraw ABORT: qty '+qty+' > avail '+avail); return false; }
   /* Stock is NOT deducted here — it is cut only after the request is CONFIRMED. */
   const be=DB.employees().find(x=>x.name===(meta.by||'')); const subId=be?be.id:'';
   const w=DB.withdraws(); w.push({id:'wd'+Date.now()+Math.floor(Math.random()*1000),stockId,no:it.no,list:it.list,unit:it.unit,unitPrice:it.unitPrice||'',qty:String(qty),workNo:meta.workNo||'',reason:meta.reason||'',submittedBy:meta.by||'',submittedById:subId,status:'wait',approver:'',approvedAt:'',date:new Date().toISOString()}); DB.saveWithdraws(w);
@@ -7253,7 +7274,8 @@ function efCalcAge(){
   if(warn) warn.style.display=under?'':'none';
 }
 function saveEmployee(isEdit,id){
-  const name=gv('ef_name'); if(!name){ document.getElementById('ef_name').style.borderColor='var(--red)'; return; }
+  try{ nxDbg('saveEmployee() called, name="'+gv('ef_name')+'"'); }catch(_){}
+  const name=gv('ef_name'); if(!name){ nxDbg('saveEmployee ABORT: empty name'); document.getElementById('ef_name').style.borderColor='var(--red)'; return; }
   const bv=efBirthValue(); if(bv){ const ageNum=parseInt(gv('ef_age')); if(!isNaN(ageNum)&&ageNum<MIN_HIRE_AGE){ const w=document.getElementById('ef_ageWarn'); if(w) w.style.display=''; showToast(t('empMinAge')); return; } }
   const es=DB.employees(); const rid=id||('emp'+Date.now()); const existing=es.find(x=>x.id===rid);
   const zeroAtt={totalDays:22,workedDays:0,absentDays:0,otHours:0,lateDays:0};                                   // brand-new employee starts clean
@@ -9580,7 +9602,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-z4';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-z5';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
