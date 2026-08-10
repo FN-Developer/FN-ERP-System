@@ -3615,6 +3615,39 @@ function nxRerenderAll(){
   try{ if(typeof go==='function') go(nxCurrentView()); }catch(_){}
 }
 
+/* iOS Safari detection. iOS Safari's Firestore SDK write channel can silently fail to
+   commit (writes "resolve" locally but never reach the server) while reads work fine —
+   so an iPhone sees everyone's data but can't save its own. iPadOS 13+ reports as
+   "MacIntel" with touch, so we catch that too. */
+function nxIsIOS(){ try{
+  const ua=navigator.userAgent||'';
+  if(/iPhone|iPad|iPod/.test(ua)) return true;
+  if(/iP(hone|ad|od)/.test(navigator.platform||'')) return true;
+  if((navigator.platform==='MacIntel'||/Macintosh/.test(ua)) && (navigator.maxTouchPoints||0)>1) return true;
+  return false;
+}catch(_){ return false; } }
+/* Write one data doc via the Firestore REST API — a plain HTTPS PATCH that works on every
+   browser/network (including iOS Safari) because it does not use the SDK's streaming/long-poll
+   write channel. Returns true on success. Used ONLY on iOS; all other devices keep the SDK path. */
+async function nxRestWrite(k, jsonStr, by, byRole){
+  try{
+    const u=(firebase.auth&&firebase.auth().currentUser)||null; if(!u) return false;
+    const token=await u.getIdToken();
+    const pid=FIREBASE_CONFIG.projectId;
+    const url='https://firestore.googleapis.com/v1/projects/'+pid+'/databases/(default)/documents/nx_state/'+encodeURIComponent(k)+'?key='+encodeURIComponent(FIREBASE_CONFIG.apiKey);
+    const body={ fields:{
+      json:{stringValue:String(jsonStr)},
+      ts:{integerValue:String(Date.now())},
+      by:{stringValue:String(by||'')},
+      byRole:{stringValue:String(byRole||'')},
+      kind:{stringValue:'data'}
+    }};
+    const res=await fetch(url,{ method:'PATCH', headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if(!res.ok){ try{ window.__nxLastWriteErr='rest'+res.status+':'+(await res.text()).slice(0,120); }catch(_){} }
+    return res.ok;
+  }catch(e){ try{ window.__nxLastWriteErr='restthrow:'+(e&&e.message||e); }catch(_){} return false; }
+}
+
 const NX_CLOUD = {
   ready:false, col:null, _t:{},
   get enabled(){ return !!(FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.apiKey && typeof firebase!=='undefined'); },
@@ -3744,6 +3777,15 @@ const NX_CLOUD = {
     attempt = attempt||0;
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
     const toWrite = String(v);
+    /* iOS ONLY: the SDK write silently fails to commit on iOS Safari. Send via REST (plain HTTPS),
+       which actually reaches the server. Non-iOS devices fall through to the unchanged SDK path. */
+    if(nxIsIOS()){
+      nxRestWrite(k, toWrite, by, byRole).then(ok=>{
+        if(ok){ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} try{ window.__nxWriteOK=(window.__nxWriteOK||0)+1; }catch(_){} }
+        else { try{ window.__nxWriteFail=(window.__nxWriteFail||0)+1; }catch(_){} if(attempt<6){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(6000,500*(attempt+1))); } else { try{ nxSaveStatus('failed'); }catch(_){} } }
+      });
+      return;
+    }
     try{ this.col.doc(k).set({ json:toWrite, ts:Date.now(), by, byRole, kind:'data' })
           .then(()=>{ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} try{ window.__nxWriteOK=(window.__nxWriteOK||0)+1; }catch(_){} })
           .catch(e=>{ try{ window.__nxLastWriteErr=(e&&e.code||'')+':'+(e&&e.message||e); window.__nxWriteFail=(window.__nxWriteFail||0)+1; }catch(_){}  if(attempt<5){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(6000,500*(attempt+1))); } else { console.warn('[NX] push still failing — kept queued', k, e); try{ nxSaveStatus('failed'); }catch(_){} } }); }   /* keep dirty; flushDirty retries — NEVER reverts */
@@ -9522,7 +9564,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-y';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-z';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
