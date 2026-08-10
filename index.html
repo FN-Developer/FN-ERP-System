@@ -3685,10 +3685,17 @@ const NX_CLOUD = {
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
     const before = this._pendBefore[k];
     let toWrite = String(v);
-    /* Merge my change onto the CURRENT cloud copy so a concurrent editor's rows aren't lost. */
+    /* Merge my change onto the CURRENT cloud copy so a concurrent editor's rows aren't lost.
+       CRITICAL: the merge re-read must NEVER block the write. On a slow/flaky connection the
+       read can hang; we race it against a 2.5s timeout and, if it doesn't return, skip the
+       merge and write directly — so a save always goes through (this is what was silently
+       stalling withdrawals on mobile while backups, which don't read first, still worked). */
     try{
       if(NX_MERGE[k] && NX_MERGE[k].type!=='scalar'){
-        const cloudDoc = await this.col.doc(k).get();
+        const cloudDoc = await Promise.race([
+          this.col.doc(k).get(),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('merge-read-timeout')), 2500))
+        ]);
         const cloudStr = cloudDoc.exists ? cloudDoc.data().json : null;
         const merged = nxMergeForWrite(k, before, cloudStr, String(v));
         if(merged!=null){ toWrite = merged;
@@ -3698,7 +3705,7 @@ const NX_CLOUD = {
           }
         }
       }
-    }catch(e){ console.warn('[NX] merge skipped', k, e); }
+    }catch(e){ console.warn('[NX] merge skipped (read slow/failed) — writing direct', k, (e&&e.message)||e); }
     try{ this.col.doc(k).set({ json:toWrite, ts:Date.now(), by, byRole, kind:'data' })
           .then(()=>{ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} try{ if(toWrite!==String(v)) nxRerenderAll(); }catch(_){} })
           .catch(e=>{ if(attempt<4){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(8000,700*(attempt+1))); } else { console.warn('[NX] push still failing — kept queued, will retry on reconnect', k, e); try{ nxSaveStatus('failed'); }catch(_){} } }); }   /* keep dirty; flushDirty retries — NEVER reverts */
@@ -9470,7 +9477,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-q';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-r';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
