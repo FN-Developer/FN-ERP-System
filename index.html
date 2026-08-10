@@ -3597,12 +3597,36 @@ const NX_CLOUD = {
 };
 let _nxResyncT=0;
 function nxResyncSoon(manual){ try{ if(!(NX_CLOUD&&NX_CLOUD.ready)) return; clearTimeout(_nxResyncT); _nxResyncT=setTimeout(()=>{ NX_CLOUD.resync(manual); }, manual?0:250); }catch(_){} }
+/* ---- Auto version check: detect when a newer build has been deployed and offer a
+        one-tap update. Fixes devices (esp. iOS Safari) getting stuck on old cached HTML. */
+let _nxVerBanner=null, _nxVerLast=0, _nxVerChecking=false;
+async function nxCheckVersion(force){
+  try{
+    if(typeof NX_BUILD==='undefined' || _nxVerBanner || _nxVerChecking) return;
+    if(!/^https?:$/.test(location.protocol)) return;                 // only on the hosted site
+    const now=Date.now(); if(!force && now-_nxVerLast<120000) return; // throttle to ~2 min
+    _nxVerLast=now; _nxVerChecking=true;
+    const res=await fetch(location.pathname+'?vc='+now, {cache:'no-store'});
+    if(res.ok){ const txt=await res.text(); const m=txt.match(/NX_BUILD=['"]([^'"]+)['"]/); if(m && m[1] && m[1]!==NX_BUILD) nxShowUpdateBanner(m[1]); }
+  }catch(_){}
+  finally{ _nxVerChecking=false; }
+}
+function nxShowUpdateBanner(newv){
+  if(_nxVerBanner) return;
+  const el=document.createElement('div'); el.id='nxUpdateBanner';
+  el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:56px;z-index:100002;background:linear-gradient(120deg,#0906d7,#0891b2);color:#fff;font:700 13px/1.35 system-ui,Segoe UI,Roboto,sans-serif;padding:11px 15px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.38);cursor:pointer;display:flex;align-items:center;gap:9px;max-width:92vw';
+  const safe=String(newv).replace(/[^0-9a-zA-Z.\-]/g,'');
+  el.innerHTML='<span style="font-size:16px">🔄</span><span>'+((typeof LANG!=='undefined'&&LANG==='th')?'มีเวอร์ชันใหม่ — แตะเพื่ออัปเดต':'New version available — tap to update')+' <b>v'+safe+'</b></span>';
+  el.addEventListener('click',()=>{ try{ location.replace(location.pathname+'?v='+encodeURIComponent(safe)); }catch(_){ location.reload(); } });
+  document.body.appendChild(el); _nxVerBanner=el;
+}
 if(typeof document!=='undefined'){
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') nxResyncSoon(false); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ nxResyncSoon(false); nxCheckVersion(false); } });
 }
 if(typeof window!=='undefined'){
-  window.addEventListener('focus',()=>nxResyncSoon(false));
-  window.addEventListener('online',()=>nxResyncSoon(false));
+  window.addEventListener('focus',()=>{ nxResyncSoon(false); nxCheckVersion(false); });
+  window.addEventListener('online',()=>{ nxResyncSoon(false); nxCheckVersion(false); });
+  window.addEventListener('load',()=>{ setTimeout(()=>nxCheckVersion(true), 5000); });
 }
 try{ window.NX_CLOUD = NX_CLOUD; }catch(_){}   /* expose for console debugging */
 
@@ -9278,7 +9302,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-i';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-j';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
