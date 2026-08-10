@@ -3469,6 +3469,11 @@ const NX_GUARD_FLAGS = ['nx_seed_leave','nx_seed_ot','nx_seed_pay','nx_seed_pos'
 
 /* Keep the real setItem so cloud pulls can write locally without echoing. */
 const _nxOrigSetItem = localStorage.setItem.bind(localStorage);
+/* Per-key timestamp of this device's most recent LOCAL change. Used to reject a stale
+   cloud copy (older than my just-made change) from overwriting it — the cause of a newly
+   submitted withdraw/work "appearing then disappearing" on a slow connection, where an
+   in-flight read returns the pre-change value and clobbers the fresh local one. */
+let _nxLastLocalTs={};
 let _nxApplyingRemote = false;
 
 /* ===== Database-first save status ===== */
@@ -3514,6 +3519,7 @@ localStorage.setItem = function(k, v){
   /* Queue it (survives reload / offline) and push. It stays queued until the cloud
      CONFIRMS it, then keeps retrying — a save is never lost and never reverted. */
   if(_isData && !_nxApplyingRemote && _before!==v){
+    try{ _nxLastLocalTs[k]=Date.now(); }catch(_){}
     try{ nxDirtyAdd(k); }catch(_){}
     try{ if(NX_CLOUD && NX_CLOUD.ready) NX_CLOUD.onLocalWrite(k, v, _before); }catch(_){}
   }
@@ -3670,9 +3676,12 @@ const NX_CLOUD = {
     const results = await Promise.all(NX_CLOUD_KEYS.map(k=> _to(this.col.doc(k).get().then(d=> d.exists?{k, v:d.data()}:null).catch(()=>null), 8000)));
     const present = results.filter(Boolean);
     if(present.length){
-      const dirty=nxDirtyGet();
       _nxApplyingRemote = true;
-      present.forEach(({k,v})=>{ if(dirty.indexOf(k)>=0) return;   // keep this device's un-pushed edit; flushDirty() sends it up
+      present.forEach(({k,v})=>{
+        if(nxDirtyGet().indexOf(k)>=0) return;   // re-checked NOW (a change made during this pull's slow reads): keep local, flushDirty() sends it up
+        /* Reject a cloud copy that is OLDER than a change I made in the last 15 s — it's an
+           in-flight/stale read that would wipe my fresh local edit. */
+        if(v && v.ts && _nxLastLocalTs[k] && v.ts < _nxLastLocalTs[k] && (Date.now()-_nxLastLocalTs[k])<15000) return;
         if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
       NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
       try{ nxSanitizeLocal(); }catch(_){}   /* never let a malformed cloud value break rendering */
@@ -3707,6 +3716,9 @@ const NX_CLOUD = {
           }catch(_){}
           return;
         }
+        /* Reject a stale echo: a cloud copy older than a change I made in the last 15 s would
+           wipe my just-submitted row (the "appears then disappears" bug on slow connections). */
+        if(v && v.ts && _nxLastLocalTs[k] && v.ts < _nxLastLocalTs[k] && (Date.now()-_nxLastLocalTs[k])<15000) return;
         const before=localStorage.getItem(k);
         _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
         try{ if(typeof nxAudit==='function') nxAudit(k, before, v.json, v.by||'remote device', v.byRole||''); }catch(_){}
@@ -9510,7 +9522,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-w';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-x';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
