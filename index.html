@@ -3661,8 +3661,19 @@ const NX_CLOUD = {
         const k=ch.doc.id, v=ch.doc.data();
         if(!v || typeof v.json!=='string') return;
         if(NX_CLOUD_KEYS.indexOf(k)<0) return;
-        if((NX_CLOUD._pendBefore && (k in NX_CLOUD._pendBefore)) || nxDirtyGet().indexOf(k)>=0) return;   // un-pushed local edit owns this key; flushDirty will merge it up
         if(localStorage.getItem(k)===v.json) return;           // no real change
+        /* If I have an un-pushed local edit on this key, don't overwrite it — instead merge
+           the incoming remote change INTO my local copy, so a concurrent editor's rows are
+           kept AND mine aren't lost. My queued write then pushes the combined result. */
+        if((NX_CLOUD._pendBefore && (k in NX_CLOUD._pendBefore)) || nxDirtyGet().indexOf(k)>=0){
+          try{
+            const base = (NX_CLOUD._pendBefore && (k in NX_CLOUD._pendBefore)) ? NX_CLOUD._pendBefore[k] : null;
+            const mineStr = localStorage.getItem(k);
+            const merged = nxMergeForWrite(k, base, v.json, mineStr);   // cloud=incoming remote, mine=local
+            if(merged!=null && merged!==mineStr){ _nxApplyingRemote=true; try{ _nxOrigSetItem(k, merged); }catch(_){} _nxApplyingRemote=false; try{ nxDirtyAdd(k); }catch(_){} changed=true; }
+          }catch(_){}
+          return;
+        }
         const before=localStorage.getItem(k);
         _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
         try{ if(typeof nxAudit==='function') nxAudit(k, before, v.json, v.by||'remote device', v.byRole||''); }catch(_){}
@@ -3677,39 +3688,21 @@ const NX_CLOUD = {
     if(!(k in this._pendBefore)) this._pendBefore[k]=before;   // merge base = value before my edit
     clearTimeout(this._t[k]);
     try{ nxSaveStatus('saving'); }catch(_){}
-    this._t[k] = setTimeout(()=> this._write(k, localStorage.getItem(k)), 250);   // debounce bursts
+    this._t[k] = setTimeout(()=> this._write(k, localStorage.getItem(k)), 120);   // debounce bursts (snappy)
   },
-  async _write(k, v, attempt){
+  /* DIRECT write — exactly like the backup path that has always worked: no read-first,
+     so a save can NEVER hang. It just writes the local value and retries until confirmed.
+     Concurrency is handled reactively in listen() (incoming edits get merged into a
+     key that has un-pushed local changes), so nothing is lost and nothing blocks. */
+  _write(k, v, attempt){
     if(!this.col || !this.ready){ return; }
     attempt = attempt||0;
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
-    const before = this._pendBefore[k];
-    let toWrite = String(v);
-    /* Merge my change onto the CURRENT cloud copy so a concurrent editor's rows aren't lost.
-       CRITICAL: the merge re-read must NEVER block the write. On a slow/flaky connection the
-       read can hang; we race it against a 2.5s timeout and, if it doesn't return, skip the
-       merge and write directly — so a save always goes through (this is what was silently
-       stalling withdrawals on mobile while backups, which don't read first, still worked). */
-    try{
-      if(NX_MERGE[k] && NX_MERGE[k].type!=='scalar'){
-        const cloudDoc = await Promise.race([
-          this.col.doc(k).get(),
-          new Promise((_,rej)=>setTimeout(()=>rej(new Error('merge-read-timeout')), 2500))
-        ]);
-        const cloudStr = cloudDoc.exists ? cloudDoc.data().json : null;
-        const merged = nxMergeForWrite(k, before, cloudStr, String(v));
-        if(merged!=null){ toWrite = merged;
-          if(merged!==String(v)){                      // cloud had rows I didn't — reflect them locally now
-            _nxApplyingRemote=true; try{ _nxOrigSetItem(k, merged); }catch(_){} _nxApplyingRemote=false;
-            try{ nxSanitizeLocal(); }catch(_){}
-          }
-        }
-      }
-    }catch(e){ console.warn('[NX] merge skipped (read slow/failed) — writing direct', k, (e&&e.message)||e); }
+    const toWrite = String(v);
     try{ this.col.doc(k).set({ json:toWrite, ts:Date.now(), by, byRole, kind:'data' })
-          .then(()=>{ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} try{ if(toWrite!==String(v)) nxRerenderAll(); }catch(_){} })
-          .catch(e=>{ if(attempt<4){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(8000,700*(attempt+1))); } else { console.warn('[NX] push still failing — kept queued, will retry on reconnect', k, e); try{ nxSaveStatus('failed'); }catch(_){} } }); }   /* keep dirty; flushDirty retries — NEVER reverts */
-    catch(e){ if(attempt<4){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(8000,700*(attempt+1))); } else { console.warn('[NX] push error — kept queued', k, e); } }
+          .then(()=>{ if(localStorage.getItem(k)===toWrite){ nxDirtyClear(k); delete this._pendBefore[k]; } try{ if(!nxDirtyGet().length) nxSaveStatus('saved'); }catch(_){} })
+          .catch(e=>{ if(attempt<5){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(6000,500*(attempt+1))); } else { console.warn('[NX] push still failing — kept queued', k, e); try{ nxSaveStatus('failed'); }catch(_){} } }); }   /* keep dirty; flushDirty retries — NEVER reverts */
+    catch(e){ if(attempt<5){ setTimeout(()=>{ this._write(k, localStorage.getItem(k), attempt+1); }, Math.min(6000,500*(attempt+1))); } else { console.warn('[NX] push error — kept queued', k, e); } }
   },
   /* Push every queued (un-confirmed) local change up to the cloud. Called on connect,
      reconnect, focus, and periodically — so an offline/failed save always lands eventually. */
@@ -9477,7 +9470,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-r';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-s';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
