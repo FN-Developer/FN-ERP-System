@@ -3411,6 +3411,17 @@ const NX_GUARD_FLAGS = ['nx_seed_leave','nx_seed_ot','nx_seed_pay','nx_seed_pos'
 const _nxOrigSetItem = localStorage.setItem.bind(localStorage);
 let _nxApplyingRemote = false;
 
+/* ===== Outbox (offline-safe sync) =====
+   Every local change to a shared key is queued here and only cleared once its
+   cloud push is CONFIRMED. On reconnect the device pushes queued changes UP
+   before it pulls DOWN, and pull() never overwrites a still-queued key — so an
+   edit made while offline / on a backgrounded tab can never be silently lost.
+   Stored per-device (nx_dirty), never synced. */
+function nxDirtyGet(){ try{ const a=JSON.parse(localStorage.getItem('nx_dirty')||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function nxDirtySet(a){ try{ _nxOrigSetItem('nx_dirty', JSON.stringify(a)); }catch(_){} }
+function nxDirtyAdd(k){ const a=nxDirtyGet(); if(a.indexOf(k)<0){ a.push(k); nxDirtySet(a); } }
+function nxDirtyClear(k){ const a=nxDirtyGet(); const i=a.indexOf(k); if(i>=0){ a.splice(i,1); nxDirtySet(a); } }
+
 /* Intercept saves: write locally (unchanged behaviour) then push to cloud.
    NX_CLOUD is referenced lexically (a top-level const is NOT a window property);
    the try/catch also absorbs the brief TDZ window before it is initialised. */
@@ -3425,7 +3436,12 @@ localStorage.setItem = function(k, v){
   _nxOrigSetItem(k, v);
   /* Audit log: record every real data change made by a logged-in user. */
   if(_isData && _before!==v){ try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; if(s.loggedIn && typeof nxAudit==='function') nxAudit(k, _before, v, s.user||'—', s.role||''); }catch(_){} }
-  try{ if(!_nxApplyingRemote && NX_CLOUD && NX_CLOUD.ready) NX_CLOUD.onLocalWrite(k, v); }catch(_){}
+  /* Queue the change (offline-safe), then push. Only once the cloud baseline is
+     established (ready): pre-connect writes are seeds/migrations that must defer
+     to the cloud, so they are NOT queued (queuing them could overwrite real data). */
+  if(_isData && !_nxApplyingRemote && _before!==v){
+    try{ if(NX_CLOUD && NX_CLOUD.ready){ nxDirtyAdd(k); NX_CLOUD.onLocalWrite(k, v); } }catch(_){}
+  }
 };
 
 /* Robustness guard: repair any shared-data value that isn't the expected shape,
@@ -3531,6 +3547,7 @@ const NX_CLOUD = {
       this.col = firebase.firestore().collection('nx_state');
       await this.pull();
       this.ready = true;
+      try{ this.flushDirty(); }catch(_){}   /* push any edits queued while offline (e.g. from a previous session) up first */
       try{ if(_nxDetailsStripped){ this._write('nx_details', localStorage.getItem('nx_details')); _nxDetailsStripped=false; } }catch(_){}  /* push the cleaned details (dead columns removed) up to the cloud once */
       try{ if(typeof ensureSpectatorPosition==='function') ensureSpectatorPosition(); }catch(_){}  /* re-add view-only position into synced data if missing */
       this.listen();
@@ -3545,8 +3562,10 @@ const NX_CLOUD = {
     const results = await Promise.all(NX_CLOUD_KEYS.map(k=> this.col.doc(k).get().then(d=> d.exists?{k, v:d.data()}:null).catch(()=>null)));
     const present = results.filter(Boolean);
     if(present.length){
+      const dirty=nxDirtyGet();
       _nxApplyingRemote = true;
-      present.forEach(({k,v})=>{ if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
+      present.forEach(({k,v})=>{ if(dirty.indexOf(k)>=0) return;   /* keep this device's un-pushed edit; flushDirty() will send it up */
+        if(v && typeof v.json==='string'){ try{ _nxOrigSetItem(k, v.json); }catch(_){} } });
       NX_GUARD_FLAGS.forEach(f=>{ try{ _nxOrigSetItem(f,'1'); }catch(_){} });
       try{ nxSanitizeLocal(); }catch(_){}   /* never let a malformed cloud value break rendering */
       _nxApplyingRemote = false;
@@ -3564,6 +3583,7 @@ const NX_CLOUD = {
         const k=ch.doc.id, v=ch.doc.data();
         if(!v || typeof v.json!=='string') return;
         if(NX_CLOUD_KEYS.indexOf(k)<0) return;
+        if(nxDirtyGet().indexOf(k)>=0) return;                 // an un-pushed local edit owns this key; flushDirty() will send it up
         if(localStorage.getItem(k)===v.json) return;           // no real change
         const before=localStorage.getItem(k);
         _nxApplyingRemote = true; try{ _nxOrigSetItem(k, v.json); }catch(_){} _nxApplyingRemote = false;
@@ -3582,8 +3602,15 @@ const NX_CLOUD = {
   _write(k, v){
     if(!this.col) return;
     let by='',byRole=''; try{ const s=(typeof DB!=='undefined'&&DB.session())||{}; by=s.user||''; byRole=s.role||''; }catch(_){}
-    try{ this.col.doc(k).set({ json:String(v), ts:Date.now(), by, byRole }).catch(e=> console.warn('[NX] push failed', k, e)); }
+    try{ this.col.doc(k).set({ json:String(v), ts:Date.now(), by, byRole })
+          .then(()=>{ try{ if(localStorage.getItem(k)===String(v)) nxDirtyClear(k); }catch(_){} })   /* clear only if unchanged since */
+          .catch(e=> console.warn('[NX] push failed', k, e)); }
     catch(e){ console.warn('[NX] push error', k, e); }
+  },
+  /* Push every queued (un-confirmed) local change up to the cloud. */
+  flushDirty(){
+    if(!this.ready || !this.col) return;
+    nxDirtyGet().forEach(k=>{ if(NX_CLOUD_KEYS.indexOf(k)<0){ nxDirtyClear(k); return; } const v=localStorage.getItem(k); if(v==null){ nxDirtyClear(k); return; } this._write(k, v); });
   },
   /* Force a fresh pull from the cloud and re-render — used when a tab regains focus
      (Firestore's live listener pauses in backgrounded tabs and may miss changes),
@@ -3592,7 +3619,7 @@ const NX_CLOUD = {
   async resync(manual){
     if(!this.ready || !this.col || this._resyncing) return;
     this._resyncing=true;
-    try{ if(manual){ nxCloudBadge('connecting'); } await this.pull(); nxCloudBadge('online'); if(manual){ try{ showToast('☁️ '+(LANG==='th'?'ซิงค์แล้ว':'Synced — up to date')); }catch(_){} } }
+    try{ if(manual){ nxCloudBadge('connecting'); } await this.pull(); this.flushDirty(); nxCloudBadge('online'); if(manual){ try{ showToast('☁️ '+(LANG==='th'?'ซิงค์แล้ว':'Synced — up to date')); }catch(_){} } }
     catch(e){ console.warn('[NX] resync failed', e); }
     finally{ this._resyncing=false; }
   }
@@ -9307,7 +9334,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-k';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-l';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
