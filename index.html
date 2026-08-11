@@ -643,6 +643,18 @@ select option{background:var(--panel-solid);color:var(--txt)}
 .di-miss{display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
 .di-miss-row{font-size:13px;background:color-mix(in srgb,var(--red) 10%,transparent);border:1px solid color-mix(in srgb,var(--red) 30%,transparent);border-radius:8px;padding:8px 12px}
 .di-miss-more{font-size:12px;color:var(--muted)}
+/* live-preview table extras */
+.di-csv-hint{color:var(--muted);font-size:12px}
+.di-csv-table tbody tr.outscope{opacity:.42}
+.di-csv-table tbody tr.rowmiss td{background:color-mix(in srgb,var(--red) 7%,transparent)}
+.di-csv-table td.di-miss-cell{background:color-mix(in srgb,var(--red) 26%,transparent)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--red) 55%,transparent)}
+.di-csv-table td.di-rev-cell{font-family:'Orbitron';color:var(--cyan);font-weight:700}
+.di-confirm-status{font-size:13px;color:var(--muted);margin:6px 0 12px;min-height:18px}
+.di-confirm-status.ok{color:var(--green,#16a34a);font-weight:600}
+.btn.is-locked{opacity:.5;filter:grayscale(.4)}
+#diConfirmBtn.confirmed{background:color-mix(in srgb,var(--green,#16a34a) 18%,transparent);border-color:var(--green,#16a34a);color:var(--green,#16a34a)}
+#diConfirmBtn.nudge{animation:diNudge .3s ease 2}
+@keyframes diNudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
 /* table */
 .table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
@@ -4068,6 +4080,10 @@ function nxCurrentView(){ try{ const el=document.querySelector('.view.active'); 
 function nxRerenderAll(){
   try{ if(typeof checkSession==='function') checkSession(); }catch(_){}
   try{ if(typeof computeAlerts==='function') computeAlerts(); }catch(_){}
+  /* Never yank the Work-Detail-Input form out from under someone who is entering data:
+     re-navigating would rebuild every field and scroll to top, losing their work. Skip the
+     view re-render while they're busy there; the data itself is already merged in localStorage. */
+  try{ if(typeof diBusy==='function' && diBusy()){ return; } }catch(_){}
   try{ if(typeof go==='function') go(nxCurrentView()); }catch(_){}
 }
 
@@ -6242,6 +6258,7 @@ function diGrpPick(idb,g){
   const menu=document.getElementById(idb+'-menu'); if(menu) menu.classList.remove('open');
   const wrap = document.getElementById(idb==='digrp'?'df-group':null);
   if(wrap) wrap.classList.remove('invalid');
+  if(idb==='dagrp'){ try{ diApplyLive(); }catch(_){} }   // CSV apply picker → live table update
 }
 function diGrpDel(idb,g){
   const left=diGroups().filter(x=>x!==g);
@@ -6359,6 +6376,23 @@ document.getElementById('detailForm').addEventListener('submit',function(e){
 
 /* =================== DETAIL INPUT — MODE SWITCH =================== */
 let diCurrentMode='one';
+/* True when the user is actively entering data on the Work-Detail-Input page — used to
+   suppress live/remote re-renders that would rebuild the form and lose their inputs. */
+function diBusy(){
+  try{
+    if(typeof nxCurrentView==='function' && nxCurrentView()!=='detail') return false;
+    const card=document.getElementById('detailFormCard');
+    if(!card || card.style.display==='none') return false;
+    if(diCurrentMode==='csv' && diCsvRows.length) return true;               // CSV rows loaded
+    const ae=document.activeElement;
+    if(ae && ae.closest && ae.closest('#view-detail')) return true;         // focus is inside the form
+    const ids=['d-module','d-list','d-specific','d-qty','d-brand','d-heat','d-supplier','d-poNo','d-estUnitPrice','d-unitPrice','d-total','d-shipDate','d-recvDate'];
+    for(let i=0;i<ids.length;i++){ const el=document.getElementById(ids[i]); if(el && String(el.value||'').trim()!=='') return true; }
+    const g=document.getElementById('d-group'); if(g && g.value) return true;
+    const u=document.getElementById('d-unit'); if(u && u.value) return true;
+    return false;
+  }catch(_){ return false; }
+}
 function diMode(m){
   diCurrentMode=m;
   const one=document.getElementById('diOne'), csv=document.getElementById('diCsv');
@@ -6406,7 +6440,7 @@ function diBuildCsvUI(){
       <input type="file" id="diFile" accept=".csv,text/csv" style="display:none" onchange="diFileChosen(event)">
     </div>
     <div id="diCsvBody"></div>`;
-  if(diCsvRows.length) diRenderCsvTable();
+  if(diCsvRows.length) diRenderCsvArea();
 }
 function diFileChosen(e){ const f=e.target.files&&e.target.files[0]; if(f) diReadFile(f); }
 function diDropFile(e){ e.preventDefault(); const dz=document.getElementById('diDrop'); if(dz) dz.classList.remove('over'); const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) diReadFile(f); }
@@ -6420,37 +6454,68 @@ function diParseCsv(text){
   if(!rows.length){ showToast(LANG==='en'?'CSV is empty.':'ไฟล์ CSV ว่างเปล่า'); return; }
   diCsvHeaders=rows[0];
   diCsvRows=rows.slice(1).map(cells=>({cells}));
-  diCsvSel=new Set(); diCsvAnchor=-1;
-  diRenderCsvTable();
+  diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false;
+  diRenderCsvArea();
 }
-function diRenderCsvTable(){
+/* Full preview column order — the table shows EVERY final field, so it doubles as the review. */
+const DI_PREVIEW_COLS=['rev','module','list','specific','qty','unit','brand','heat','group','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total'];
+let diCsvConfirmed=false;   // Upload is locked until the table has been Confirmed
+/* Build the CSV area shell once (table head + tbody + selection bar + apply panel + buttons).
+   Only the tbody is re-rendered live as you edit, so override inputs never lose focus. */
+function diRenderCsvArea(){
   const body=document.getElementById('diCsvBody'); if(!body) return;
   const en=LANG==='en';
   if(!diCsvRows.length){ body.innerHTML=''; return; }
-  const ncol=Math.max(DI_CSV_COLS.length, diCsvHeaders.length);
-  let head='<th class="di-csv-ck"><input type="checkbox" id="diCsvAll" onclick="diCsvToggleAll(this.checked)"></th><th>#</th>';
-  for(let i=0;i<ncol;i++){
-    const spec=DI_CSV_COLS[i];
-    const nm=spec?(en?spec.en:spec.th):(diCsvHeaders[i]||('Col '+(i+1)));
-    head+=`<th>${escapeHtml(nm)}</th>`;
-  }
-  let rowsHtml='';
-  diCsvRows.forEach((r,idx)=>{
-    const selCls=diCsvSel.has(idx)?' class="sel"':'';
-    let tds=`<td class="di-csv-ck"><input type="checkbox" ${diCsvSel.has(idx)?'checked':''} onclick="diCsvRowClick(event,${idx})"></td><td class="di-csv-n">${idx+1}</td>`;
-    for(let i=0;i<ncol;i++){ tds+=`<td>${escapeHtml(r.cells[i]!=null?r.cells[i]:'')}</td>`; }
-    rowsHtml+=`<tr${selCls} data-idx="${idx}" onclick="diCsvRowClick(event,${idx})">${tds}</tr>`;
-  });
+  const head='<th class="di-csv-ck"><input type="checkbox" id="diCsvAll" onclick="diCsvToggleAll(this.checked)"></th><th>#</th>'+
+    DI_PREVIEW_COLS.map(k=>{ const f=FIELDS.find(x=>x.key===k); return `<th>${escapeHtml(f?(en?f.en:f.th):k)}</th>`; }).join('');
   body.innerHTML=`
-    <div class="di-csv-note">${en?'Select rows: click a checkbox, <b>Shift-click</b> for a range, <b>Ctrl/Cmd-click</b> to toggle. Then fill the fields below to apply to all selected rows.':'เลือกแถว: คลิกช่องกาถูก, <b>Shift-คลิก</b> เลือกช่วง, <b>Ctrl/Cmd-คลิก</b> สลับเลือก แล้วกรอกข้อมูลด้านล่างเพื่อใช้กับทุกแถวที่เลือก'}</div>
-    <div class="di-csv-tablewrap"><table class="di-csv-table"><thead><tr>${head}</tr></thead><tbody>${rowsHtml}</tbody></table></div>
-    <div class="di-csv-selinfo"><span id="diCsvSelCount">0</span> ${en?'row(s) selected':'แถวที่เลือก'} · <button type="button" class="btn ghost sm" onclick="diCsvSelectAll()">${en?'Select all':'เลือกทั้งหมด'}</button> <button type="button" class="btn ghost sm" onclick="diCsvClearSel()">${en?'Clear':'ล้าง'}</button></div>
+    <div class="di-csv-note">${en?'Select rows (click a checkbox, <b>Shift-click</b> for a range, <b>Ctrl/Cmd-click</b> to toggle). Fill the fields below — the table updates live and <b>is your preview</b>. Then press <b>Confirm</b> to check it, and <b>Upload</b> to save.':'เลือกแถว (คลิกช่องกาถูก, <b>Shift-คลิก</b> เลือกช่วง, <b>Ctrl/Cmd-คลิก</b> สลับเลือก) กรอกข้อมูลด้านล่าง — ตารางจะอัปเดตทันทีและ<b>คือตัวอย่างก่อนบันทึก</b> จากนั้นกด <b>Confirm</b> เพื่อตรวจสอบ แล้วกด <b>Upload</b> เพื่อบันทึก'}</div>
+    <div class="di-csv-tablewrap"><table class="di-csv-table"><thead><tr>${head}</tr></thead><tbody id="diCsvTbody"></tbody></table></div>
+    <div class="di-csv-selinfo"><span id="diCsvSelCount">0</span> ${en?'row(s) selected':'แถวที่เลือก'} · <button type="button" class="btn ghost sm" onclick="diCsvSelectAll()">${en?'Select all':'เลือกทั้งหมด'}</button> <button type="button" class="btn ghost sm" onclick="diCsvClearSel()">${en?'Clear':'ล้าง'}</button> <span class="di-csv-hint">${en?'(no selection = all rows)':'(ไม่เลือก = ทุกแถว)'}</span></div>
     <div id="diApplyBox"></div>`;
   diRenderApplyFields();
+  diRenderTableBody();
+}
+/* rows that will be uploaded = the selected ones, or ALL rows if nothing is selected */
+function diCsvScope(){ return diCsvSel.size ? [...diCsvSel].sort((a,b)=>a-b) : diCsvRows.map((_,i)=>i); }
+function diOverrides(){ const ov={}; DI_APPLY_FIELDS.forEach(f=>{ ov[f.key]=diApplyVal(f.key); }); return ov; }
+/* Merge CSV cells + override panel → the exact records the preview shows and Upload will save. */
+function diMergedRows(){
+  const selEl=document.getElementById('selWorkNo'); const wn=selEl?selEl.value:'';
+  const scope=new Set(diCsvScope());
+  const ov=diOverrides();
+  let revN=parseInt(diNextRev(wn),10); if(isNaN(revN)) revN=1;
+  return diCsvRows.map((r,idx)=>{
+    const inScope=scope.has(idx);
+    const rec={workNo:wn};
+    DI_CSV_COLS.forEach((col,ci)=>{ rec[col.key]=(r.cells[ci]!=null?String(r.cells[ci]).trim():''); });
+    if(inScope){ DI_APPLY_FIELDS.forEach(f=>{ if(ov[f.key]!=='') rec[f.key]=ov[f.key]; }); }
+    DI_PREVIEW_COLS.forEach(k=>{ if(rec[k]==null) rec[k]=''; });
+    rec.rev = inScope ? String(revN++) : '';
+    const missing = inScope ? FIELDS.filter(f=>f.req && f.key!=='rev' && (!rec[f.key]||rec[f.key]==='')).map(f=>f.key) : [];
+    return {idx, rec, inScope, missing};
+  });
+}
+/* Re-render ONLY the tbody (keeps override-field focus + horizontal scroll intact). */
+function diRenderTableBody(){
+  const tb=document.getElementById('diCsvTbody'); if(!tb) return;
+  const merged=diMergedRows();
+  tb.innerHTML=merged.map(m=>{
+    const sel=diCsvSel.has(m.idx);
+    const cls=(sel?'sel':'')+(m.inScope?'':' outscope')+(m.inScope&&m.missing.length?' rowmiss':'');
+    let tds=`<td class="di-csv-ck"><input type="checkbox" ${sel?'checked':''} onclick="diCsvRowClick(event,${m.idx})"></td><td class="di-csv-n">${m.idx+1}</td>`;
+    DI_PREVIEW_COLS.forEach(k=>{
+      const miss=m.inScope && m.missing.indexOf(k)>=0;
+      const isRev=k==='rev';
+      tds+=`<td class="${miss?'di-miss-cell':''}${isRev?' di-rev-cell':''}">${escapeHtml(m.rec[k]!=null?String(m.rec[k]):'')}</td>`;
+    });
+    return `<tr class="${cls}" data-idx="${m.idx}" onclick="diCsvRowClick(event,${m.idx})">${tds}</tr>`;
+  }).join('');
   diUpdateSelCount();
 }
+/* called by every override field on input/change — refresh preview + re-lock Upload */
+function diApplyLive(){ diCsvConfirmed=false; diRenderTableBody(); diUpdateCsvButtons(); }
 function diCsvRowClick(e,idx){
-  // if the click was on the checkbox itself, let it drive but prevent double toggle from row handler
   const isCk = e.target && e.target.type==='checkbox';
   if(e.shiftKey && diCsvAnchor>=0){
     const a=Math.min(diCsvAnchor,idx), b=Math.max(diCsvAnchor,idx);
@@ -6459,124 +6524,106 @@ function diCsvRowClick(e,idx){
     if(diCsvSel.has(idx)) diCsvSel.delete(idx); else diCsvSel.add(idx);
     diCsvAnchor=idx;
   } else {
-    if(isCk){
-      // plain checkbox click toggles just this row
-      if(diCsvSel.has(idx)) diCsvSel.delete(idx); else diCsvSel.add(idx);
-    } else {
-      // plain row click selects only this row
-      diCsvSel=new Set([idx]);
-    }
+    if(isCk){ if(diCsvSel.has(idx)) diCsvSel.delete(idx); else diCsvSel.add(idx); }
+    else { diCsvSel=new Set([idx]); }
     diCsvAnchor=idx;
   }
   e.stopPropagation();
-  diRefreshCsvSelUI();
-}
-function diRefreshCsvSelUI(){
-  document.querySelectorAll('#diCsvBody tbody tr').forEach(tr=>{
-    const i=parseInt(tr.getAttribute('data-idx'),10);
-    tr.classList.toggle('sel',diCsvSel.has(i));
-    const ck=tr.querySelector('input[type=checkbox]'); if(ck) ck.checked=diCsvSel.has(i);
-  });
-  diUpdateSelCount();
+  diCsvConfirmed=false;          // selection changed → scope/rev change → re-confirm
+  diRenderTableBody(); diUpdateCsvButtons();
 }
 function diUpdateSelCount(){
   const el=document.getElementById('diCsvSelCount'); if(el) el.textContent=diCsvSel.size;
   const all=document.getElementById('diCsvAll'); if(all) all.checked = diCsvSel.size===diCsvRows.length && diCsvRows.length>0;
 }
 function diCsvToggleAll(on){ if(on) diCsvSelectAll(); else diCsvClearSel(); }
-function diCsvSelectAll(){ diCsvSel=new Set(diCsvRows.map((_,i)=>i)); diRefreshCsvSelUI(); }
-function diCsvClearSel(){ diCsvSel=new Set(); diRefreshCsvSelUI(); }
-/* the fill-below panel: the same 16 fields (minus CSV-provided ones are still overridable) */
-const DI_APPLY_FIELDS=FIELDS.filter(f=>f.key!=='rev'); // rev auto-assigned per row on finish
+function diCsvSelectAll(){ diCsvSel=new Set(diCsvRows.map((_,i)=>i)); diCsvConfirmed=false; diRenderTableBody(); diUpdateCsvButtons(); }
+function diCsvClearSel(){ diCsvSel=new Set(); diCsvConfirmed=false; diRenderTableBody(); diUpdateCsvButtons(); }
+/* the fill-below panel: the same fields (rev is auto-assigned per row) */
+const DI_APPLY_FIELDS=FIELDS.filter(f=>f.key!=='rev');
 function diRenderApplyFields(){
   const box=document.getElementById('diApplyBox'); if(!box) return;
   const en=LANG==='en';
   let html=`<div class="di-sec-title">${en?'Fill / override fields for selected rows':'กรอก / แทนที่ข้อมูลของแถวที่เลือก'}</div>
-    <div class="di-apply-note">${en?'Leave a field blank to keep the CSV value. Required (*) fields must be present (from CSV or here) before finishing.':'เว้นว่างเพื่อใช้ค่าจาก CSV ช่องที่จำเป็น (*) ต้องมีค่า (จาก CSV หรือกรอกที่นี่) ก่อนบันทึก'}</div>
+    <div class="di-apply-note">${en?'Leave a field blank to keep the CSV value. As you type, the table above updates live. Required (*) columns must be filled before Upload.':'เว้นว่างเพื่อใช้ค่าจาก CSV เมื่อพิมพ์ ตารางด้านบนจะอัปเดตทันที ช่องที่จำเป็น (*) ต้องมีค่าก่อน Upload'}</div>
     <div class="grid three">`;
   DI_APPLY_FIELDS.forEach(f=>{
     const label=en?f.en:f.th;
     let ctrl;
     if(f.key==='supplier'){
-      ctrl=`<input type="text" id="da-supplier" placeholder="${en?'Supplier name (optional)':'ชื่อผู้จัดจำหน่าย (ไม่บังคับ)'}">`;
+      ctrl=`<input type="text" id="da-supplier" oninput="diApplyLive()" placeholder="${en?'Supplier name (optional)':'ชื่อผู้จัดจำหน่าย (ไม่บังคับ)'}">`;
     } else if(f.key==='unit'){
-      ctrl=`<select id="da-unit">${diUnitOptions('')}</select>`;
+      ctrl=`<select id="da-unit" onchange="diApplyLive()">${diUnitOptions('')}</select>`;
     } else if(f.key==='group'){
       ctrl=diGroupPickerHtml('dagrp','','da-group');
     } else {
-      ctrl=`<input type="${f.type||'text'}" id="da-${f.key}" ${f.type==='number'?'step="any" min="0"':''}>`;
+      ctrl=`<input type="${f.type||'text'}" id="da-${f.key}" oninput="diApplyLive()" ${f.type==='number'?'step="any" min="0"':''}>`;
     }
     html+=`<div class="field"><label>${escapeHtml(label)} ${f.req?'<span class="req">*</span>':''}</label>${ctrl}</div>`;
   });
   html+=`</div>
+    <div class="di-confirm-status" id="diConfirmStatus"></div>
     <div class="actions">
-      <button type="button" class="btn primary" onclick="diCsvFinish()">✓ ${en?'Finish — review & save':'เสร็จสิ้น — ตรวจสอบและบันทึก'}</button>
+      <button type="button" class="btn ghost" id="diConfirmBtn" onclick="diCsvConfirm()">✓ ${en?'Confirm':'ยืนยัน'}</button>
+      <button type="button" class="btn primary is-locked" id="diUploadBtn" onclick="diCsvUpload()">⬆ ${en?'Upload':'อัปโหลด'}</button>
       <button type="button" class="btn ghost" onclick="diCsvReset()">${en?'Reset CSV':'ล้าง CSV'}</button>
     </div>`;
   box.innerHTML=html;
+  diUpdateCsvButtons();
 }
-function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvSel=new Set(); diCsvAnchor=-1; diBuildCsvUI(); }
+function diUpdateCsvButtons(){
+  const en=LANG==='en';
+  const up=document.getElementById('diUploadBtn');
+  const cb=document.getElementById('diConfirmBtn');
+  const st=document.getElementById('diConfirmStatus');
+  if(up) up.classList.toggle('is-locked',!diCsvConfirmed);
+  if(cb) cb.classList.toggle('confirmed',diCsvConfirmed);
+  if(st){
+    if(diCsvConfirmed){ const n=diCsvScope().length; st.className='di-confirm-status ok'; st.textContent=(en?`✓ Confirmed — ${n} row(s) ready. Review the table above, then press Upload.`:`✓ ยืนยันแล้ว — ${n} แถวพร้อมบันทึก ตรวจสอบตารางด้านบน แล้วกด Upload`); }
+    else { st.className='di-confirm-status'; st.textContent=(en?'Press Confirm to validate the table before uploading.':'กด Confirm เพื่อตรวจสอบตารางก่อนอัปโหลด'); }
+  }
+}
+function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false; diBuildCsvUI(); }
 function diApplyVal(key){
   if(key==='group'){ const h=document.getElementById('da-group'); return h?h.value.trim():''; }
   const el=document.getElementById('da-'+key); return el?String(el.value).trim():'';
 }
-function diCsvFinish(){
+/* CONFIRM — validate the in-scope rows; highlight any missing required cells in the table. */
+function diCsvConfirm(){
   const en=LANG==='en';
-  const wn=document.getElementById('selWorkNo').value;
+  const selEl=document.getElementById('selWorkNo'); const wn=selEl?selEl.value:'';
   if(!wn){ showToast(en?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
   if(!diCsvRows.length){ showToast(en?'Upload a CSV first.':'อัปโหลด CSV ก่อน'); return; }
-  const targets = diCsvSel.size? [...diCsvSel].sort((a,b)=>a-b) : diCsvRows.map((_,i)=>i);
-  // override values from the apply panel
-  const ov={}; DI_APPLY_FIELDS.forEach(f=>{ ov[f.key]=diApplyVal(f.key); });
-  // compute rev base once, then increment per new row
-  let revN=parseInt(diNextRev(wn),10); if(isNaN(revN)) revN=1;
-  const built=[]; const missing=[];
-  targets.forEach(idx=>{
-    const cells=diCsvRows[idx].cells;
-    const rec={workNo:wn, id:'d'+Date.now()+idx+Math.floor(Math.random()*1000)};
-    // map CSV columns
-    DI_CSV_COLS.forEach((col,ci)=>{ rec[col.key]=(cells[ci]!=null?String(cells[ci]).trim():''); });
-    // apply overrides (non-blank wins)
-    DI_APPLY_FIELDS.forEach(f=>{ if(ov[f.key]!=='') rec[f.key]=ov[f.key]; if(rec[f.key]==null) rec[f.key]=''; });
-    rec.rev=String(revN++);
-    // check required
-    const miss=FIELDS.filter(f=>f.req && f.key!=='rev' && (!rec[f.key]||rec[f.key]==='')).map(f=>en?f.en:f.th);
-    if(miss.length) missing.push({row:idx+1, miss});
-    built.push(rec);
-  });
-  if(missing.length){
-    const list=missing.slice(0,12).map(m=>`<div class="di-miss-row"><b>${en?'Row':'แถว'} ${m.row}</b>: ${escapeHtml(m.miss.join(', '))}</div>`).join('');
+  const merged=diMergedRows();
+  const scope=merged.filter(m=>m.inScope);
+  if(!scope.length){ showToast(en?'No rows in scope.':'ไม่มีแถวที่จะบันทึก'); return; }
+  const bad=scope.filter(m=>m.missing.length);
+  diCsvConfirmed = bad.length===0;
+  diRenderTableBody(); diUpdateCsvButtons();
+  if(bad.length){
+    const list=bad.slice(0,12).map(m=>`<div class="di-miss-row"><b>${en?'Row':'แถว'} ${m.idx+1}</b>: ${escapeHtml(m.missing.map(k=>{const f=FIELDS.find(x=>x.key===k);return f?(en?f.en:f.th):k;}).join(', '))}</div>`).join('');
     customModal({icon:'⚠️', title:(en?'Missing required fields':'ข้อมูลจำเป็นยังไม่ครบ'),
-      desc:(en?'These selected rows are missing required (*) values. Fill them in the CSV, or provide them in the fields below, then finish again.':'แถวที่เลือกเหล่านี้ยังขาดค่าที่จำเป็น (*) กรุณาเติมใน CSV หรือกรอกในช่องด้านล่าง แล้วกดเสร็จสิ้นอีกครั้ง'),
-      bodyHtml:`<div class="di-miss">${list}${missing.length>12?`<div class="di-miss-more">+${missing.length-12} ${en?'more':'เพิ่มเติม'}</div>`:''}</div>`,
+      desc:(en?'The highlighted rows in the table are missing required (*) values. Fill them in the CSV or in the fields below, then Confirm again.':'แถวที่ไฮไลต์ในตารางยังขาดค่าที่จำเป็น (*) กรุณาเติมใน CSV หรือช่องด้านล่าง แล้วกด Confirm อีกครั้ง'),
+      bodyHtml:`<div class="di-miss">${list}${bad.length>12?`<div class="di-miss-more">+${bad.length-12} ${en?'more':'เพิ่มเติม'}</div>`:''}</div>`,
       footButtons:[{label:(en?'OK':'ตกลง'),cls:'primary',onClick:closeModal}]});
     return;
   }
-  // preview confirm
-  diCsvPreview(built);
+  showToast(en?`✓ Confirmed — ${scope.length} row(s) ready to upload`:`✓ ยืนยันแล้ว — ${scope.length} แถวพร้อมอัปโหลด`);
 }
-function diCsvPreview(built){
+/* UPLOAD — only works after Confirm; saves the in-scope rows to the selected work. */
+function diCsvUpload(){
   const en=LANG==='en';
-  const cols=['rev'].concat(DI_CSV_COLS.map(c=>c.key)).concat(['group','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total']);
-  const colLbl=k=>{ const f=FIELDS.find(x=>x.key===k); return f?(en?f.en:f.th):k; };
-  let head=cols.map(k=>`<th>${escapeHtml(colLbl(k))}</th>`).join('');
-  let body=built.map(r=>`<tr>${cols.map(k=>`<td>${escapeHtml(r[k]!=null?String(r[k]):'')}</td>`).join('')}</tr>`).join('');
-  customModal({icon:'📋', title:(en?`Review ${built.length} row(s)`:`ตรวจสอบ ${built.length} แถว`),
-    desc:(en?'These records will be added to the selected Work. Confirm to save all.':'รายการเหล่านี้จะถูกเพิ่มเข้างานที่เลือก กดยืนยันเพื่อบันทึกทั้งหมด'),
-    bodyHtml:`<div class="di-prev-wrap"><table class="di-prev-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`,
-    footButtons:[
-      {label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},
-      {label:(en?`✓ Save all ${built.length}`:`✓ บันทึกทั้งหมด ${built.length}`),cls:'primary',onClick:diCsvCommit}
-    ]});
-  window._diCsvBuilt=built;
-}
-function diCsvCommit(){
-  const built=window._diCsvBuilt||[];
-  if(!built.length){ closeModal(); return; }
-  const dets=DB.details(); built.forEach(r=>dets.push(r)); DB.saveDetails(dets);
-  window._diCsvBuilt=null;
-  closeModal();
-  successModal(LANG==='en'?`${built.length} detail(s) added!`:`เพิ่มรายละเอียด ${built.length} รายการแล้ว!`, LANG==='en'?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว');
+  if(!diCsvConfirmed){ showToast(en?'Press Confirm first to review the table.':'กด Confirm ก่อนเพื่อตรวจสอบตาราง'); const cb=document.getElementById('diConfirmBtn'); if(cb){ cb.classList.add('nudge'); setTimeout(()=>cb.classList.remove('nudge'),600); } return; }
+  const selEl=document.getElementById('selWorkNo'); const wn=selEl?selEl.value:'';
+  if(!wn){ showToast(en?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
+  const merged=diMergedRows();
+  const scope=merged.filter(m=>m.inScope);
+  if(scope.some(m=>m.missing.length)){ diCsvConfirmed=false; diUpdateCsvButtons(); diCsvConfirm(); return; }
+  const dets=DB.details();
+  scope.forEach((m,i)=>{ const rec=Object.assign({}, m.rec); rec.id='d'+Date.now()+i+Math.floor(Math.random()*1000); rec.workNo=wn; dets.push(rec); });
+  DB.saveDetails(dets);
+  const n=scope.length;
+  successModal(en?`${n} detail(s) uploaded!`:`อัปโหลดรายละเอียด ${n} รายการแล้ว!`, en?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว');
   diCsvReset();
   renderSpectator(); renderTimeline(); computeAlerts();
 }
@@ -10458,7 +10505,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-z';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-z1';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
