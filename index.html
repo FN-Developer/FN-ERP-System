@@ -3333,7 +3333,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-head h1{background:linear-gradient(92deg,var(--txt),color-mix(in srgb,var(--blue) 72%,var(--txt)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
       #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:15px;position:relative;z-index:1;padding:4px 4px 8px}
       #view-dbest .dbe-row{display:flex;gap:15px;min-height:0}
-      #view-dbest .dbe-donuts{flex:1.7 1 0;min-height:230px}
+      #view-dbest .dbe-donuts{flex:1.85 1 0;min-height:250px}
       #view-dbest .dbe-bars{flex:0 0 auto}
       #view-dbest .dbe-bottom{flex:1 1 0}
       #view-dbest .dbe-ct-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -3352,7 +3352,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-cs{font:600 10.5px/1.3 system-ui;color:var(--muted);margin:4px 0 6px}
       #view-dbest .dbe-donut-flex{flex:1 1 auto;display:flex;gap:10px;align-items:center;min-height:0}
       #view-dbest .dbe-donut-flex{padding:6px 2px;gap:14px}
-      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;height:min(100%,244px);aspect-ratio:1;width:auto;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
+      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;height:min(100%,250px);aspect-ratio:1;width:auto;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
       #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;overflow:visible}
       .dbe-seg{pointer-events:none;transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
       .dbe-hit{pointer-events:all}
@@ -3399,7 +3399,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-reco{flex:2.4 1 0;border-radius:22px;padding:13px 18px;display:flex;flex-direction:column;gap:5px;border:1px solid var(--dbe-edge);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);box-shadow:var(--dbe-shadow)}
       #view-dbest .dbe-reco .rh{font:900 13.5px/1.2 system-ui;display:flex;align-items:center;gap:7px}
       #view-dbest .dbe-reco .rb{font:600 11.5px/1.45 system-ui;color:var(--txt)}
-      #view-dbest .dbe-reco .rl{font:600 10.5px/1.4 system-ui;color:var(--muted);margin-top:2px}
+      #view-dbest .dbe-reco .rl{font:600 9.7px/1.32 system-ui;color:var(--muted);margin-top:2px}
       #view-dbest .dbe-reco.ok{background:color-mix(in srgb,var(--green) 16%,var(--dbe-glass))}
       #view-dbest .dbe-reco.warn{background:color-mix(in srgb,#eda100 17%,var(--dbe-glass))}
       #view-dbest .dbe-reco.crit{background:color-mix(in srgb,var(--red) 16%,var(--dbe-glass))}
@@ -9811,7 +9811,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-g';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-h';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
