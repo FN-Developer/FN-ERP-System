@@ -6556,17 +6556,20 @@ function renderCheck(){
   document.getElementById('ckEmpty').style.display = rows.length? 'none':'block';
   if(ckBlinkTarget){
     const id=ckBlinkTarget; ckBlinkTarget=null;
-    const el=document.getElementById('ck-'+id);
-    if(el){ setTimeout(()=>{
+    // Re-query the row FRESH at scroll time — an earlier render may have replaced the tbody,
+    // detaching any element captured now, which is why the lead sometimes didn't reach the row.
+    setTimeout(()=>{
+      const el=document.getElementById('ck-'+id); if(!el) return;
       el.classList.add('row-blink');
-      // blink the date selector(s) that still need managing (empty first; else both)
       const dates=[...el.querySelectorAll('.ck-date')];
       const empties=dates.filter(inp=>!inp.value);
       const blinkers=(empties.length?empties:dates);
       blinkers.forEach(inp=>inp.classList.add('date-blink'));
-      leadTo(blinkers[0]||el); // scroll page + table horizontally so the blinking date is visible (mobile-friendly)
-      setTimeout(()=>{ el.classList.remove('row-blink'); el.querySelectorAll('.ck-date').forEach(inp=>inp.classList.remove('date-blink')); },6500);
-    },320); }
+      // lead straight to the row (vertical) then to its date column (horizontal) so it's centred in view
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      if(blinkers[0]) blinkers[0].scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+      setTimeout(()=>{ const e2=document.getElementById('ck-'+id); if(e2){ e2.classList.remove('row-blink'); e2.querySelectorAll('.ck-date').forEach(inp=>inp.classList.remove('date-blink')); } },6500);
+    },360);
   }
 }
 function ckEdit(id,field,value){
@@ -10027,7 +10030,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-v';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-w';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
