@@ -3320,12 +3320,12 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       @media (prefers-reduced-motion:reduce){#view-dbest::before{animation:none}}
       #view-dbest .dbe-head{margin-bottom:12px;flex:0 0 auto;position:relative;z-index:1}
       #view-dbest .dbe-head h1{background:linear-gradient(92deg,var(--txt),color-mix(in srgb,var(--blue) 72%,var(--txt)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1}
-      #view-dbest .dbe-row{display:flex;gap:12px;min-height:0}
+      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:15px;position:relative;z-index:1;padding:4px 4px 8px}
+      #view-dbest .dbe-row{display:flex;gap:15px;min-height:0}
       #view-dbest .dbe-donuts{flex:1 1 46%}
       #view-dbest .dbe-bars{flex:0 0 auto}
       #view-dbest .dbe-bottom{flex:1 1 30%}
-      #view-dbest .dbe-card{background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:22px;padding:13px 16px;display:flex;flex-direction:column;min-height:0;min-width:0;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
+      #view-dbest .dbe-card{background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:24px;padding:16px 19px;display:flex;flex-direction:column;min-height:0;min-width:0;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
       #view-dbest .dbe-card:hover{transform:translateY(-2px);box-shadow:0 26px 64px -20px rgba(9,6,215,.46),0 3px 10px -4px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.6)}
       #view-dbest .dbe-donuts .dbe-card{flex:1 1 0}
       #view-dbest .dbe-ct{font:800 13px/1.2 system-ui;color:var(--txt);letter-spacing:.2px;display:flex;align-items:center;gap:8px}
@@ -3334,9 +3334,9 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-donut-flex{flex:1 1 auto;display:flex;gap:10px;align-items:center;min-height:0}
       #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;width:clamp(124px,15.5vw,176px);aspect-ratio:1;filter:drop-shadow(0 10px 22px rgba(9,6,215,.20))}
       #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;overflow:visible}
-      #view-dbest .dbe-seg{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
-      #view-dbest .dbe-seg.on{transform:translate(calc(var(--mx,0)*3.6px),calc(var(--my,0)*3.6px)) scale(1.055);filter:drop-shadow(0 4px 9px rgba(0,0,0,.32)) brightness(1.09)}
-      #view-dbest .dbe-seg.dim{opacity:.32}
+      #view-dbest .dbe-seg{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .32s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
+      #view-dbest .dbe-seg.on{transform:translate(calc(var(--mx,0)*7px),calc(var(--my,0)*7px)) scale(1.09);filter:drop-shadow(0 5px 11px rgba(0,0,0,.34)) brightness(1.1)}
+      #view-dbest .dbe-seg.dim{opacity:.3}
       #view-dbest .dbe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
       #view-dbest .dbe-center b{font:900 clamp(19px,2vw,25px)/1 system-ui;color:var(--txt);letter-spacing:-.6px;transition:color .2s}
       #view-dbest .dbe-center small{font:700 9.5px/1.35 system-ui;color:var(--muted);margin-top:3px;max-width:86%}
@@ -3375,6 +3375,26 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeTip .tsw{width:10px;height:10px;border-radius:4px;flex:0 0 auto}
       #dbeTip .td{color:var(--muted);font-variant-numeric:tabular-nums}
       #dbeTip .td b{color:var(--txt)}
+      #dbeModal{position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .28s ease;background:rgba(8,10,26,.32);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
+      #dbeModal.on{opacity:1;pointer-events:auto}
+      #dbeModal .dbe-mcard{position:relative;width:min(94vw,600px);max-height:90vh;overflow:auto;border-radius:30px;padding:30px 34px 24px;background:color-mix(in srgb,var(--panel) 80%,transparent);-webkit-backdrop-filter:blur(42px) saturate(1.8);backdrop-filter:blur(42px) saturate(1.8);border:1px solid color-mix(in srgb,#fff 40%,transparent);box-shadow:0 44px 110px -34px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.6);transform:scale(.92) translateY(10px);transition:transform .36s cubic-bezier(.2,.9,.25,1)}
+      #dbeModal.on .dbe-mcard{transform:scale(1) translateY(0)}
+      #dbeModal .dbe-mclose{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:color-mix(in srgb,var(--panel) 60%,transparent);color:var(--txt);font:800 15px/1 system-ui;cursor:pointer;display:grid;place-items:center;transition:transform .2s,background .2s,color .2s}
+      #dbeModal .dbe-mclose:hover{transform:scale(1.09);background:color-mix(in srgb,var(--red) 26%,transparent);color:#fff}
+      #dbeModal .dbe-mtop{display:flex;align-items:center;gap:13px;margin-bottom:6px;padding-right:44px}
+      #dbeModal .dbe-msw{width:22px;height:22px;border-radius:7px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(255,255,255,.3),0 3px 8px rgba(0,0,0,.3)}
+      #dbeModal .dbe-mname{font:900 23px/1.1 system-ui;color:var(--txt);letter-spacing:-.5px}
+      #dbeModal .dbe-mchart{font:700 11px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+      #dbeModal .dbe-mring-wrap{position:relative;width:min(54vw,244px);aspect-ratio:1;margin:16px auto 20px;filter:drop-shadow(0 16px 34px rgba(9,6,215,.30))}
+      #dbeModal .dbe-mring{width:100%;height:100%;display:block}
+      #dbeModal .dbe-mring-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+      #dbeModal .dbe-mring-c b{font:900 clamp(38px,9vw,50px)/1 system-ui;letter-spacing:-1.5px}
+      #dbeModal .dbe-mring-c small{font:700 12px/1.3 system-ui;color:var(--muted);margin-top:5px}
+      #dbeModal .dbe-mstats{display:flex;gap:12px}
+      #dbeModal .dbe-mstat{flex:1 1 0;background:color-mix(in srgb,var(--txt) 5%,transparent);border:1px solid rgba(255,255,255,.24);border-radius:16px;padding:13px 12px;text-align:center}
+      #dbeModal .dbe-mstat span{display:block;font:700 9.5px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+      #dbeModal .dbe-mstat b{font:900 clamp(15px,2vw,18px)/1.1 system-ui;color:var(--txt);font-variant-numeric:tabular-nums}
+      #dbeModal .dbe-mhint{text-align:center;font:600 10.5px/1.3 system-ui;color:var(--muted);margin-top:16px}
       @media(max-width:900px){ #view-dbest.active{height:auto;overflow:visible} #view-dbest .dbe-donuts,#view-dbest .dbe-bottom{flex-wrap:wrap} #view-dbest .dbe-donuts .dbe-card{flex:1 1 260px} }
     </style>
     <div class="page-head dbe-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE STORAGE ESTIMATE</h1><p>Firestore usage, daily upload estimate &amp; days-to-full projection · ประเมินพื้นที่ฐานข้อมูล</p></div>
@@ -9710,7 +9730,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-b';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-c';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9791,11 +9811,11 @@ function dbeArc(cx,cy,R,r,a0,a1){
   return 'M'+o0[0]+' '+o0[1]+' A'+R+' '+R+' 0 '+large+' 1 '+o1[0]+' '+o1[1]+' L'+i1[0]+' '+i1[1]+' A'+r+' '+r+' 0 '+large+' 0 '+i0[0]+' '+i0[1]+' Z';
 }
 function dbeTipEl(){ let t=document.getElementById('dbeTip'); if(!t){ t=document.createElement('div'); t.id='dbeTip'; document.body.appendChild(t); } return t; }
-function dbeRenderDonut(map, svgId,cenId,legId, big,small){
+function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small){
   const {segs,total}=dbeBuildSegs(map);
   const svg=document.getElementById(svgId), cen=document.getElementById(cenId), leg=document.getElementById(legId);
   if(!svg||!cen||!leg) return;
-  const cx=50,cy=50,R=45,r=29, band=R-r, midR=(R+r)/2;
+  const cx=50,cy=50,R=42,r=27, band=R-r, midR=(R+r)/2;
   const defCenter='<b>'+big+'</b><small>'+escapeHtml(small)+'</small>';
   let inner='<circle cx="50" cy="50" r="'+midR+'" fill="none" stroke="var(--dbe-track)" stroke-width="'+band+'"/>';
   const meta=[];
@@ -9823,8 +9843,36 @@ function dbeRenderDonut(map, svgId,cenId,legId, big,small){
     else { cen.innerHTML=defCenter; tip.classList.remove('on'); }
   }
   function moveTip(e){ const x=e.clientX,y=e.clientY,w=tip.offsetWidth||140,h=tip.offsetHeight||46; let nx=x+15,ny=y-h-10; if(nx+w>window.innerWidth-8) nx=x-w-15; if(ny<8) ny=y+18; tip.style.left=nx+'px'; tip.style.top=ny+'px'; }
-  segEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); });
-  legEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); });
+  const openIt=i=>{ tip.classList.remove('on'); dbeOpenDetail(chartName, meta[i], total); };
+  segEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); el.addEventListener('click',()=>openIt(i)); });
+  legEls.forEach((el,i)=>{ el.style.cursor='pointer'; el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); el.addEventListener('click',()=>openIt(i)); });
+}
+/* Full-page detail: clicking a slice expands it into a centered glass panel over a 30%-dim backdrop. */
+function dbeModalEl(){ let m=document.getElementById('dbeModal'); if(!m){ m=document.createElement('div'); m.id='dbeModal';
+    m.innerHTML='<div class="dbe-mcard" role="dialog" aria-modal="true"><button class="dbe-mclose" type="button" aria-label="Close">✕</button><div class="dbe-mbody"></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target===m) dbeCloseDetail(); });
+    m.querySelector('.dbe-mclose').addEventListener('click',dbeCloseDetail);
+  } return m; }
+function dbeEsc(e){ if(e.key==='Escape') dbeCloseDetail(); }
+function dbeCloseDetail(){ const m=document.getElementById('dbeModal'); if(m) m.classList.remove('on'); document.removeEventListener('keydown',dbeEsc); }
+function dbeOpenDetail(chartName, seg, total){
+  if(!seg) return; const m=dbeModalEl(); const body=m.querySelector('.dbe-mbody');
+  const pct=total>0?(seg.val/total*100):0;
+  const RR=54,SW=20,CC=2*Math.PI*RR, dash=Math.max(0.01,pct/100*CC);
+  const ring='<svg viewBox="0 0 120 120" class="dbe-mring">'
+    +'<circle cx="60" cy="60" r="'+RR+'" fill="none" stroke="var(--dbe-track)" stroke-width="'+SW+'"/>'
+    +'<circle cx="60" cy="60" r="'+RR+'" fill="none" stroke="'+seg.color+'" stroke-width="'+SW+'" stroke-linecap="round" stroke-dasharray="'+dash+' '+(CC-dash)+'" transform="rotate(-90 60 60)"/></svg>';
+  body.innerHTML=
+    '<div class="dbe-mtop"><span class="dbe-msw" style="background:'+seg.color+'"></span><div><div class="dbe-mname">'+escapeHtml(seg.label)+'</div><div class="dbe-mchart">'+escapeHtml(chartName)+'</div></div></div>'
+    +'<div class="dbe-mring-wrap">'+ring+'<div class="dbe-mring-c"><b style="color:'+seg.color+'">'+((pct<10)?pct.toFixed(1):pct.toFixed(0))+'%</b><small>of total</small></div></div>'
+    +'<div class="dbe-mstats">'
+      +'<div class="dbe-mstat"><span>Size</span><b>'+nxFmtBytes(Math.round(seg.val))+'</b></div>'
+      +'<div class="dbe-mstat"><span>Share</span><b>'+((pct<10)?pct.toFixed(1):pct.toFixed(0))+'%</b></div>'
+      +'<div class="dbe-mstat"><span>Group total</span><b>'+nxFmtBytes(Math.round(total))+'</b></div>'
+    +'</div>'
+    +'<div class="dbe-mhint">Tap outside, press Esc, or ✕ to close</div>';
+  m.classList.add('on'); document.addEventListener('keydown',dbeEsc);
 }
 function dbeFmtDays(n){ if(!isFinite(n)) return '∞'; if(n>=3650) return (n/365).toFixed(0)+' yr'; if(n>=730) return (n/365).toFixed(1)+' yr'; return n.toLocaleString()+' d'; }
 function renderDbEstimate(){
@@ -9836,10 +9884,10 @@ function renderDbEstimate(){
   if(!(perDay>0)){ perDay=total/30; estimated=true; }
   const perMonth=perDay*30;
   // three donuts
-  dbeRenderDonut(sizeMap,'dbeDonutTotal','dbeCenTotal','dbeLegTotal','100%', nxFmtBytes(total)+' total');
+  dbeRenderDonut('Entire Database',sizeMap,'dbeDonutTotal','dbeCenTotal','dbeLegTotal','100%', nxFmtBytes(total)+' total');
   const dayMap={}, monMap={}; Object.keys(sizeMap).forEach(k=>{ dayMap[k]=sizeMap[k]/total*perDay; monMap[k]=sizeMap[k]/total*perMonth; });
-  dbeRenderDonut(dayMap,'dbeDonutDay','dbeCenDay','dbeLegDay', nxFmtBytes(Math.round(perDay)), '/ day'+(estimated?' (est.)':''));
-  dbeRenderDonut(monMap,'dbeDonutMon','dbeCenMon','dbeLegMon', nxFmtBytes(Math.round(perMonth)), '/ month'+(estimated?' (est.)':''));
+  dbeRenderDonut('Daily Estimate',dayMap,'dbeDonutDay','dbeCenDay','dbeLegDay', nxFmtBytes(Math.round(perDay)), '/ day'+(estimated?' (est.)':''));
+  dbeRenderDonut('Monthly Estimate',monMap,'dbeDonutMon','dbeCenMon','dbeLegMon', nxFmtBytes(Math.round(perMonth)), '/ month'+(estimated?' (est.)':''));
   // usage bars
   const bars=document.getElementById('dbeBars');
   if(bars){ const rows=[['Usage',total,'var(--blue)'],['Available',avail,'var(--green)'],['Total Storage',max,'var(--muted)']];
