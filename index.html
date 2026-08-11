@@ -3467,6 +3467,41 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeModal .dbe-cbig-leg .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
       #dbeModal .dbe-cbig-leg .pc{flex:0 0 auto;width:42px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
       @media(max-width:680px){ #dbeModal .dbe-cbig{flex-direction:column;gap:20px} #dbeModal .dbe-cbig-donut{width:min(64vw,240px)} #dbeModal .dbe-cbig-leg{width:100%} }
+      /* "Other" legend row is clickable to reveal its subset */
+      #view-dbest .dbe-lg.has-sub .nm .sub-caret{display:inline-block;margin-left:2px;color:var(--blue);font-weight:900;opacity:.85}
+      #view-dbest .dbe-lg.has-sub:hover{background:color-mix(in srgb,var(--blue) 13%,transparent)}
+      #dbeTip .tth{margin-top:5px;padding-top:5px;border-top:1px solid color-mix(in srgb,var(--txt) 12%,transparent);color:var(--blue);font-weight:800;font-size:10px}
+      /* Other-breakdown modal list */
+      #dbeModal .dbe-olist{margin:15px 0 16px;display:flex;flex-direction:column;gap:5px;max-height:46vh;overflow-y:auto;padding-right:3px}
+      #dbeModal .dbe-orow{display:flex;align-items:center;gap:11px;padding:9px 13px;border-radius:13px;background:color-mix(in srgb,var(--txt) 5%,transparent);border:1px solid rgba(255,255,255,.16);font:600 13.5px/1.3 system-ui}
+      #dbeModal .dbe-orow .osw{width:9px;height:9px;border-radius:3px;flex:0 0 auto;background:color-mix(in srgb,var(--muted) 70%,transparent);box-shadow:0 0 0 1px rgba(255,255,255,.22)}
+      #dbeModal .dbe-orow .nm{flex:1 1 auto;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      #dbeModal .dbe-orow .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
+      #dbeModal .dbe-orow .pc{flex:0 0 auto;width:52px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+      /* Idle "data architecture" background inside the big container */
+      #view-dbest .dbe-wrap>:not(.dbe-arch){position:relative;z-index:1}
+      #view-dbest .dbe-arch{position:absolute;inset:0;border-radius:inherit;overflow:hidden;z-index:0;pointer-events:none;opacity:.5}
+      #view-dbest .dbe-arch svg{position:absolute;inset:0;width:100%;height:100%}
+      #view-dbest .dbe-arch .arch-trace{fill:none;stroke:color-mix(in srgb,var(--txt) 12%,transparent);stroke-width:1.3}
+      #view-dbest .dbe-arch .arch-pulse{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-dasharray:16 190;filter:drop-shadow(0 0 5px currentColor);animation:archFlow 5s linear infinite}
+      #view-dbest .dbe-arch .p1{stroke:#3ba7ff;color:#3ba7ff;animation-duration:5.2s}
+      #view-dbest .dbe-arch .p2{stroke:#1baf7a;color:#1baf7a;animation-duration:6.6s;animation-delay:-2s}
+      #view-dbest .dbe-arch .p3{stroke:#8b5cf6;color:#8b5cf6;animation-duration:5.8s;animation-delay:-3.4s}
+      #view-dbest .dbe-arch .p4{stroke:#eb6834;color:#eb6834;animation-duration:7.2s;animation-delay:-1s}
+      #view-dbest .dbe-arch .arch-node{fill:color-mix(in srgb,var(--blue) 55%,transparent);animation:archBlink 3s ease-in-out infinite}
+      #view-dbest .dbe-arch .arch-node:nth-child(2n){animation-delay:-1.5s}
+      #view-dbest .dbe-arch .arch-node:nth-child(3n){animation-delay:-.9s;fill:color-mix(in srgb,#1baf7a 55%,transparent)}
+      @keyframes archFlow{from{stroke-dashoffset:206}to{stroke-dashoffset:0}}
+      @keyframes archBlink{0%,100%{opacity:.3}50%{opacity:1}}
+      @media (prefers-reduced-motion:reduce){#view-dbest .dbe-arch .arch-pulse,#view-dbest .dbe-arch .arch-node{animation:none}}
+      /* Responsive Storage-Usage bars: on narrow widths the bar drops to its own full-width line so it stays visible */
+      #view-dbest .dbe-bar .bt{min-width:56px}
+      @media(max-width:760px){
+        #view-dbest .dbe-bar{flex-wrap:wrap;gap:4px 10px}
+        #view-dbest .dbe-bar .bl{flex:1 1 auto;order:1}
+        #view-dbest .dbe-bar .bv{flex:0 0 auto;width:auto;order:2;margin-left:auto;text-align:right}
+        #view-dbest .dbe-bar .bt{flex:1 1 100%;order:3;min-width:0}
+      }
       @media(max-width:900px){
         #view-dbest.active{height:auto;overflow:visible;margin-bottom:0}
         /* rows size to their content (not flex-basis:0) so the donut can never overflow onto the bars below */
@@ -3483,6 +3518,11 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <div class="ph-actions"><button type="button" class="ph-btn ov-cta" onclick="renderDbEstimate()"><span class="ov-cta-ic">⟳</span><span>Refresh</span></button></div>
     </div>
     <div class="dbe-wrap">
+      <div class="dbe-arch" aria-hidden="true"><svg viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice">
+        <g><path class="arch-trace" d="M-20 90 H360 V210 H720 V120 H1220"/><path class="arch-trace" d="M-20 260 H180 V380 H560 V300 H900 V360 H1220"/><path class="arch-trace" d="M-20 430 H420 V330 H820 V430 H1220"/><path class="arch-trace" d="M-20 150 H120 V60 H520 V160 H860 V70 H1220"/></g>
+        <g><path class="arch-pulse p1" d="M-20 90 H360 V210 H720 V120 H1220"/><path class="arch-pulse p2" d="M-20 260 H180 V380 H560 V300 H900 V360 H1220"/><path class="arch-pulse p3" d="M-20 430 H420 V330 H820 V430 H1220"/><path class="arch-pulse p4" d="M-20 150 H120 V60 H520 V160 H860 V70 H1220"/></g>
+        <g><circle class="arch-node" cx="360" cy="90" r="4"/><circle class="arch-node" cx="720" cy="120" r="4"/><circle class="arch-node" cx="180" cy="260" r="4"/><circle class="arch-node" cx="560" cy="380" r="4"/><circle class="arch-node" cx="820" cy="330" r="4"/><circle class="arch-node" cx="520" cy="60" r="4"/><circle class="arch-node" cx="860" cy="160" r="4"/></g>
+      </svg></div>
       <div class="dbe-row dbe-donuts">
         <div class="dbe-card">
           <div class="dbe-ct-row">
@@ -3511,9 +3551,9 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         <div id="dbeBars"></div>
       </div>
       <div class="dbe-row dbe-bottom">
-        <div class="dbe-stat"><div class="k">Storage / day</div><div class="v" id="dbeRate">—</div><div class="s" id="dbeRateSub">rate of growth</div></div>
-        <div class="dbe-stat"><div class="k">Days until full</div><div class="v" id="dbeDays">—</div><div class="s" id="dbeDaysSub">at current rate</div></div>
-        <div class="dbe-stat"><div class="k">Max capacity</div><div class="v" id="dbeMax">—</div><div class="s">Firestore Spark (free) plan</div></div>
+        <div class="dbe-stat"><div class="k" id="dbeRateK">Storage / day</div><div class="v" id="dbeRate">—</div><div class="s" id="dbeRateSub">rate of growth</div></div>
+        <div class="dbe-stat"><div class="k" id="dbeDaysK">Days until full</div><div class="v" id="dbeDays">—</div><div class="s" id="dbeDaysSub">at current rate</div></div>
+        <div class="dbe-stat"><div class="k" id="dbeMaxK">Max capacity</div><div class="v" id="dbeMax">—</div><div class="s" id="dbeMaxSub">Firestore Spark (free) plan</div></div>
         <div class="dbe-reco" id="dbeReco"><div class="rh" id="dbeRecoH"></div><div class="rb" id="dbeRecoB"></div><div class="rl" id="dbeRecoL"></div></div>
       </div>
     </div>
@@ -9842,7 +9882,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-m';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-n';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9905,15 +9945,17 @@ function nxDaysToFull(){ let hist=[]; try{ hist=JSON.parse(localStorage.getItem(
 /* ---- Database Storage Estimate page (Developer Management) ---- */
 const DBE_COLORS=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];  /* validated categorical palette */
 const DBE_OTHER='#8a93ad';
-const DBE_NAMES={nx_works:'Work Orders',nx_details:'Work Details',nx_vendors:'Vendors',nx_customers:'Customers',nx_stock:'Stock',nx_withdraws:'Withdrawals',nx_employees:'Employees',nx_returns:'Returns',nx_leaves:'Leaves',nx_ot:'Overtime',nx_otrates:'OT Rates',nx_caldays:'Calendar',nx_workswitch:'Work Switch',nx_defaults:'Defaults',nx_positions:'Positions',nx_payslips:'Payslips',nx_ta_devices:'TA Devices',nx_ta_logs:'TA Logs',nx_pr:'Purchase Req.',nx_datefmt:'Date Format',nx_departments:'Departments'};
-function dbeNiceName(k){ return DBE_NAMES[k]||k.replace(/^nx_/,''); }
+const DBE_NAMES={nx_works:'Work Orders',nx_details:'Work Details',nx_vendors:'Vendors / Suppliers',nx_customers:'Customers',nx_stock:'Stock Items',nx_withdraws:'Stock Withdrawals',nx_employees:'Employees',nx_returns:'Stock Returns',nx_leaves:'Leave Records',nx_ot:'Overtime (OT)',nx_otrates:'Overtime Rates',nx_caldays:'Company Calendar',nx_workswitch:'Work Settings',nx_defaults:'Default Settings',nx_positions:'Positions & Access',nx_payslips:'Payslips (Salary)',nx_ta_devices:'Attendance Devices',nx_ta_logs:'Attendance Logs (Time Attendance)',nx_pr:'Purchase Requests',nx_datefmt:'Date Format',nx_departments:'Departments'};
+const DBE_NAMES_TH={nx_works:'ใบสั่งงาน',nx_details:'รายละเอียดงาน',nx_vendors:'ผู้ขาย/ซัพพลายเออร์',nx_customers:'ลูกค้า',nx_stock:'สต๊อกสินค้า',nx_withdraws:'เบิกสต๊อก',nx_employees:'พนักงาน',nx_returns:'คืนสต๊อก',nx_leaves:'บันทึกการลา',nx_ot:'ล่วงเวลา (OT)',nx_otrates:'อัตรา OT',nx_caldays:'ปฏิทินบริษัท',nx_workswitch:'ตั้งค่างาน',nx_defaults:'ค่าเริ่มต้น',nx_positions:'ตำแหน่ง & สิทธิ์',nx_payslips:'สลิปเงินเดือน (Payslips)',nx_ta_devices:'เครื่องลงเวลา',nx_ta_logs:'บันทึกลงเวลา (Attendance)',nx_pr:'ใบขอซื้อ (PR)',nx_datefmt:'รูปแบบวันที่',nx_departments:'แผนก'};
+function dbeIsTh(){ return (typeof LANG!=='undefined' && LANG==='th'); }
+function dbeNiceName(k){ return (dbeIsTh()&&DBE_NAMES_TH[k])||DBE_NAMES[k]||k.replace(/^nx_/,''); }
 function dbeBuildSegs(map){
   const entries=Object.entries(map).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
   const total=entries.reduce((n,e)=>n+e[1],0);
   const top=entries.slice(0,8), rest=entries.slice(8);
   const restSum=rest.reduce((n,e)=>n+e[1],0);
   const segs=top.map((e,i)=>({label:dbeNiceName(e[0]),val:e[1],color:DBE_COLORS[i]}));
-  if(restSum>0) segs.push({label:'Other ('+rest.length+')',val:restSum,color:DBE_OTHER});
+  if(restSum>0) segs.push({label:(dbeIsTh()?'อื่น ๆ':'Other')+' ('+rest.length+')',val:restSum,color:DBE_OTHER,sub:rest.map(e=>({label:dbeNiceName(e[0]),val:e[1]}))});
   return {segs,total};
 }
 function dbeArc(cx,cy,R,r,a0,a1){
@@ -9941,14 +9983,14 @@ function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small, expandKey)
       const dh=dbeArc(cx,cy,R+9,r,a,a+sweep);
       hits+='<path d="'+dh+'" fill="rgba(0,0,0,0)" class="dbe-hit" data-i="'+idx+'"/>';
       a+=sweep;
-      meta.push({label:s.label,val:s.val,pct:frac*100,color:s.color});
+      meta.push({label:s.label,val:s.val,pct:frac*100,color:s.color,sub:s.sub});
     });
   }
   if(expandKey && total>0){ inner+='<circle cx="50" cy="50" r="'+(r-1)+'" fill="rgba(0,0,0,0)" class="dbe-hole" style="pointer-events:all;cursor:zoom-in"/>'; }
   inner+=hits;   // hit layer on top (segments themselves are pointer-events:none)
   svg.innerHTML=inner;
   cen.innerHTML=defCenter;
-  leg.innerHTML= total>0 ? segs.map((s,idx)=>'<div class="dbe-lg" data-i="'+idx+'"><span class="dbe-sw" style="background:'+s.color+'"></span><span class="nm">'+escapeHtml(s.label)+'</span><span class="vl">'+nxFmtBytes(Math.round(s.val))+'</span><span class="pc">'+((s.val/total)*100).toFixed(0)+'%</span></div>').join('') : '<div class="muted-line" style="font-size:11px;padding:6px">No data yet</div>';
+  leg.innerHTML= total>0 ? segs.map((s,idx)=>'<div class="dbe-lg'+(s.sub?' has-sub':'')+'" data-i="'+idx+'"><span class="dbe-sw" style="background:'+s.color+'"></span><span class="nm">'+escapeHtml(s.label)+(s.sub?' <span class="sub-caret">›</span>':'')+'</span><span class="vl">'+nxFmtBytes(Math.round(s.val))+'</span><span class="pc">'+((s.val/total)*100).toFixed(0)+'%</span></div>').join('') : '<div class="muted-line" style="font-size:11px;padding:6px">No data yet</div>';
   if(!total) return;
   const tip=dbeTipEl();
   const segEls=[].slice.call(svg.querySelectorAll('.dbe-seg'));
@@ -9959,12 +10001,13 @@ function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small, expandKey)
     const on=idx>=0;
     segEls.forEach((el,i)=>{ el.classList.toggle('on',on&&i===idx); el.classList.toggle('dim',on&&i!==idx); });
     legEls.forEach((el,i)=>el.classList.toggle('hi',on&&i===idx));
-    if(on){ const m=meta[idx]; cen.innerHTML='<b style="color:'+m.color+'">'+fmtPct(m.pct)+'</b><small>'+escapeHtml(m.label)+' · '+nxFmtBytes(Math.round(m.val))+'</small>';
-      tip.innerHTML='<div class="tt"><span class="tsw" style="background:'+m.color+'"></span>'+escapeHtml(m.label)+'</div><div class="td"><b>'+nxFmtBytes(Math.round(m.val))+'</b> · '+fmtPct(m.pct)+' of total</div>'; tip.classList.add('on'); }
+    if(on){ const m=meta[idx]; const hint=(m.sub&&clickable)?('<div class="tth">👆 '+(dbeIsTh()?('ดูข้อมูลย่อย '+m.sub.length+' ประเภท'):('click to see '+m.sub.length+' types'))+'</div>'):'';
+      cen.innerHTML='<b style="color:'+m.color+'">'+fmtPct(m.pct)+'</b><small>'+escapeHtml(m.label)+' · '+nxFmtBytes(Math.round(m.val))+'</small>';
+      tip.innerHTML='<div class="tt"><span class="tsw" style="background:'+m.color+'"></span>'+escapeHtml(m.label)+'</div><div class="td"><b>'+nxFmtBytes(Math.round(m.val))+'</b> · '+fmtPct(m.pct)+(dbeIsTh()?' ของทั้งหมด':' of total')+'</div>'+hint; tip.classList.add('on'); }
     else { cen.innerHTML=defCenter; tip.classList.remove('on'); }
   }
   function moveTip(e){ const x=e.clientX,y=e.clientY,w=tip.offsetWidth||140,h=tip.offsetHeight||46; let nx=x+15,ny=y-h-10; if(nx+w>window.innerWidth-8) nx=x-w-15; if(ny<8) ny=y+18; tip.style.left=nx+'px'; tip.style.top=ny+'px'; }
-  const openIt=i=>{ tip.classList.remove('on'); dbeOpenDetail(chartName, meta[i], total); };
+  const openIt=i=>{ tip.classList.remove('on'); if(meta[i]&&meta[i].sub){ dbeOpenOther(meta[i], total); } else { dbeOpenDetail(chartName, meta[i], total); } };
   const clickable=!window._dbeSuppressClick;
   /* One continuous hover handler on the whole SVG — reads which static hit-path is under the
      cursor. Because the hit layer is gapless and doesn't move, switching between slices is smooth
@@ -10019,7 +10062,24 @@ function dbeOpenChart(which){
   window._dbeSuppressClick=false;
   m.classList.add('on'); document.addEventListener('keydown',dbeEsc);
 }
-function dbeFmtDays(n){ if(!isFinite(n)) return '∞'; if(n>=3650) return (n/365).toFixed(0)+' yr'; if(n>=730) return (n/365).toFixed(1)+' yr'; return n.toLocaleString()+' d'; }
+/* "Other" breakdown: clicking the aggregated slice lists every smaller data type inside it. */
+function dbeOpenOther(seg, total){
+  if(!seg||!seg.sub) return; const th=dbeIsTh();
+  const m=dbeModalEl(); m.classList.remove('chart'); const body=m.querySelector('.dbe-mbody');
+  const items=seg.sub.slice().sort((a,b)=>b.val-a.val);
+  const rows=items.map(it=>{ const pct=total>0?(it.val/total*100):0; return '<div class="dbe-orow"><span class="osw"></span><span class="nm">'+escapeHtml(it.label)+'</span><span class="vl">'+nxFmtBytes(Math.round(it.val))+'</span><span class="pc">'+(pct<1?pct.toFixed(2):(pct<10?pct.toFixed(1):pct.toFixed(0)))+'%</span></div>'; }).join('');
+  body.innerHTML=
+    '<div class="dbe-mtop"><span class="dbe-msw" style="background:'+seg.color+'"></span><div><div class="dbe-mname">'+(th?'อื่น ๆ':'Other')+'</div><div class="dbe-mchart">'+(th?(items.length+' ประเภทข้อมูลย่อย'):(items.length+' smaller data types'))+'</div></div></div>'
+    +'<div class="dbe-olist">'+rows+'</div>'
+    +'<div class="dbe-mstats">'
+      +'<div class="dbe-mstat"><span>'+(th?'รวมทั้งหมด':'Combined')+'</span><b>'+nxFmtBytes(Math.round(seg.val))+'</b></div>'
+      +'<div class="dbe-mstat"><span>'+(th?'สัดส่วน':'Share')+'</span><b>'+((seg.pct<10)?seg.pct.toFixed(1):seg.pct.toFixed(0))+'%</b></div>'
+      +'<div class="dbe-mstat"><span>'+(th?'จำนวนประเภท':'Types')+'</span><b>'+items.length+'</b></div>'
+    +'</div>'
+    +'<div class="dbe-mhint">'+(th?'แตะข้างนอก, กด Esc หรือ ✕ เพื่อปิด':'Tap outside, press Esc, or ✕ to close')+'</div>';
+  m.classList.add('on'); document.addEventListener('keydown',dbeEsc);
+}
+function dbeFmtDays(n){ const th=dbeIsTh(), yr=th?' ปี':' yr', dd=th?' วัน':' d'; if(!isFinite(n)) return '∞'; if(n>=3650) return (n/365).toFixed(0)+yr; if(n>=730) return (n/365).toFixed(1)+yr; return n.toLocaleString()+dd; }
 /* Data-Estimate donut with a Daily / Weekly / Monthly selector (one chart, three scales). */
 function dbeSetPeriod(p){
   window._dbePeriod=p;
@@ -10053,22 +10113,27 @@ function renderDbEstimate(){
   window._dbeData={sizeMap:sizeMap, total:total, perDay:perDay, estimated:estimated};
   dbeSetPeriod(window._dbePeriod||'day');
   // usage bars
+  const th=dbeIsTh();   /* follow the website language toggle for the whole panel */
   const bars=document.getElementById('dbeBars');
-  if(bars){ const rows=[['Usage',total,'var(--blue)','bf-usage'],['Available',avail,'var(--green)','bf-avail'],['Total Storage',max,'var(--muted)','bf-total']];
+  if(bars){ const rows=[[(th?'ที่ใช้ไป':'Usage'),total,'var(--blue)','bf-usage'],[(th?'พื้นที่ว่าง':'Available'),avail,'var(--green)','bf-avail'],[(th?'ความจุรวม':'Total Storage'),max,'var(--muted)','bf-total']];
     bars.innerHTML=rows.map(r=>{ const pct=max>0?(r[1]/max*100):0; const w=Math.max(pct, r[1]>0?0.4:0);
       return '<div class="dbe-bar"><div class="bl">'+r[0]+'</div><div class="bt"><div class="bf '+r[3]+'" style="width:'+w.toFixed(3)+'%;background:'+r[2]+'"></div></div><div class="bv">'+nxFmtBytes(r[1])+' <small>· '+pct.toFixed(pct<1?2:0)+'%</small></div></div>';
     }).join(''); }
   // stats
   const daysNum = perDay>0 ? Math.floor(avail/perDay) : Infinity;
   const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  const histLen=(function(){try{return JSON.parse(localStorage.getItem('nx_size_hist')||'[]').length;}catch(_){return 0;}})();
+  set('dbeRateK', th?'ใช้เพิ่มต่อวัน':'Storage / day');
   set('dbeRate', nxFmtBytes(Math.round(perDay))+(estimated?' *':''));
-  set('dbeRateSub', estimated?'rough estimate · collecting daily history':'measured from '+ (function(){try{return JSON.parse(localStorage.getItem('nx_size_hist')||'[]').length;}catch(_){return 0;}})()+' days of history');
+  set('dbeRateSub', estimated?(th?'ประเมินคร่าว ๆ · กำลังเก็บสถิติรายวัน':'rough estimate · collecting daily history'):(th?('วัดจากสถิติ '+histLen+' วัน'):('measured from '+histLen+' days of history')));
+  set('dbeDaysK', th?'จะเต็มในอีก':'Days until full');
   set('dbeDays', dbeFmtDays(daysNum));
-  set('dbeDaysSub', isFinite(daysNum)?('≈ '+(daysNum).toLocaleString()+' days at current rate'):'no measurable growth yet');
+  set('dbeDaysSub', isFinite(daysNum)?(th?('≈ '+(daysNum).toLocaleString()+' วัน ที่อัตราปัจจุบัน'):('≈ '+(daysNum).toLocaleString()+' days at current rate')):(th?'ยังไม่มีการเติบโตที่วัดได้':'no measurable growth yet'));
+  set('dbeMaxK', th?'ความจุสูงสุด':'Max capacity');
   set('dbeMax', nxFmtBytes(max));
+  set('dbeMaxSub', th?'Firestore Spark (แผนฟรี)':'Firestore Spark (free) plan');
   // recommendation
   const box=document.getElementById('dbeReco'); const h=document.getElementById('dbeRecoH'), b=document.getElementById('dbeRecoB'), l=document.getElementById('dbeRecoL');
-  const th=(typeof LANG!=='undefined'&&LANG==='th');   /* follow the website language toggle */
   const pctTxt=(pctUsed<0.01?'&lt;0.01':pctUsed.toFixed(2))+'%';
   const leftTxt=isFinite(daysNum)?dbeFmtDays(daysNum):'∞';
   let cls,icon,head,body;
