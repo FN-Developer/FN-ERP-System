@@ -3331,11 +3331,16 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       @media (prefers-reduced-motion:reduce){#view-dbest::before{animation:none}}
       #view-dbest .dbe-head{margin-bottom:12px;flex:0 0 auto;position:relative;z-index:1}
       #view-dbest .dbe-head h1{background:linear-gradient(92deg,var(--txt),color-mix(in srgb,var(--blue) 72%,var(--txt)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:15px;position:relative;z-index:1;padding:4px 4px 8px}
-      #view-dbest .dbe-row{display:flex;gap:15px;min-height:0}
+      /* One big smooth-bordered container holding every component, with padding so nothing touches its edge */
+      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;padding:12px;
+        border-radius:24px;border:1px solid color-mix(in srgb,#fff 14%,transparent);background:color-mix(in srgb,var(--panel) 18%,transparent);
+        -webkit-backdrop-filter:blur(12px) saturate(1.15);backdrop-filter:blur(12px) saturate(1.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+      /* the shared footer sits below this fixed-height view; the no-scrollbar pull would drag it up behind the cards — hide it here */
+      #view-dbest.active ~ .footer-note{display:none}
+      #view-dbest .dbe-row{display:flex;gap:12px;min-height:0}
       #view-dbest .dbe-donuts{flex:2.15 1 0;min-height:236px}
-      #view-dbest .dbe-bars{flex:0 0 auto}
-      #view-dbest .dbe-bottom{flex:1 1 0;min-height:166px}
+      #view-dbest .dbe-bars{flex:0 0 auto;padding-top:12px;padding-bottom:10px}
+      #view-dbest .dbe-bottom{flex:1 1 0;min-height:156px}
       #view-dbest .dbe-ct-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
       #view-dbest .dbe-seg-ctl{display:inline-flex;gap:2px;padding:3px;border-radius:13px;background:color-mix(in srgb,var(--txt) 7%,transparent);border:1px solid var(--dbe-edge);flex:0 0 auto;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
       #view-dbest .dbe-seg-ctl button{border:none;background:transparent;color:var(--muted);font:800 10.5px/1 system-ui;padding:7px 11px;border-radius:10px;cursor:pointer;transition:background .22s,color .22s,box-shadow .22s}
@@ -3396,7 +3401,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-stat .k{font:700 10px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
       #view-dbest .dbe-stat .v{font:900 clamp(19px,2.3vw,27px)/1.05 system-ui;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.6px}
       #view-dbest .dbe-stat .s{font:600 10px/1.3 system-ui;color:var(--muted)}
-      #view-dbest .dbe-reco{flex:2.4 1 0;border-radius:22px;padding:11px 16px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--dbe-edge);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);box-shadow:var(--dbe-shadow)}
+      #view-dbest .dbe-reco{flex:2.4 1 0;border-radius:22px;padding:12px 17px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--dbe-edge);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);box-shadow:var(--dbe-shadow)}
       #view-dbest .dbe-reco .rh{font:900 13.5px/1.2 system-ui;display:flex;align-items:center;gap:7px}
       #view-dbest .dbe-reco .rb{font:600 11.5px/1.45 system-ui;color:var(--txt)}
       #view-dbest .dbe-reco .rl{font:600 9.7px/1.32 system-ui;color:var(--muted);margin-top:2px}
@@ -5707,6 +5712,7 @@ function applyLang(){
   buildDetailFields();
   try{ if(document.getElementById('custName')&&document.getElementById('custName').tagName==='SELECT') fillCreateCustSelect(); }catch(_){}
   try{ renderDevSettings(); }catch(_){}
+  try{ if(document.getElementById('view-dbest')) renderDbEstimate(); }catch(_){}
   try{ applySound(); }catch(_){}
   refreshWorkSelect();
   renderSpectator();
@@ -9836,7 +9842,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-l';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-m';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -10062,29 +10068,34 @@ function renderDbEstimate(){
   set('dbeMax', nxFmtBytes(max));
   // recommendation
   const box=document.getElementById('dbeReco'); const h=document.getElementById('dbeRecoH'), b=document.getElementById('dbeRecoB'), l=document.getElementById('dbeRecoL');
+  const th=(typeof LANG!=='undefined'&&LANG==='th');   /* follow the website language toggle */
   const pctTxt=(pctUsed<0.01?'&lt;0.01':pctUsed.toFixed(2))+'%';
   const leftTxt=isFinite(daysNum)?dbeFmtDays(daysNum):'∞';
-  let cls,icon,head,headTh,body,bodyTh;
+  let cls,icon,head,body;
   if(pctUsed>=85 || (isFinite(daysNum)&&daysNum<90)){
-    cls='crit'; icon='🚨'; head='Action needed now'; headTh='ต้องจัดการทันที';
-    body='Storage is filling fast — <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?', only <span class="hl">'+leftTxt+'</span> left':'')+'. Free space or add capacity now.';
-    bodyTh='พื้นที่ใกล้เต็ม — ใช้ไป '+pctTxt+(isFinite(daysNum)?' · เหลือ '+leftTxt:'')+' รีบลบข้อมูลเก่า หรือเพิ่มความจุ (upgrade plan)';
+    cls='crit'; icon='🚨';
+    head=th?'ต้องจัดการทันที':'Action needed now';
+    body=th ? ('พื้นที่ใกล้เต็ม — ใช้ไป <span class="hl">'+pctTxt+'</span>'+(isFinite(daysNum)?' · เหลือ <span class="hl">'+leftTxt+'</span>':'')+' รีบลบข้อมูลเก่า หรือเพิ่มความจุ (upgrade)')
+              : ('Storage is filling fast — <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?', only <span class="hl">'+leftTxt+'</span> left':'')+'. Free space or add capacity now.');
   } else if(pctUsed>=60 || (isFinite(daysNum)&&daysNum<365)){
-    cls='warn'; icon='⚠️'; head='Plan a cleanup soon'; headTh='ควรวางแผนล้างข้อมูลเร็ว ๆ นี้';
-    body='Growth is noticeable — <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?', ~<span class="hl">'+leftTxt+'</span> left':'')+'. Trim old data before it becomes urgent.';
-    bodyTh='ข้อมูลโตขึ้นชัดเจน — ใช้ไป '+pctTxt+(isFinite(daysNum)?' · เหลือ ~'+leftTxt:'')+' ควรลบข้อมูลเก่า (old data) ก่อนจะเร่งด่วน';
+    cls='warn'; icon='⚠️';
+    head=th?'ควรวางแผนล้างข้อมูลเร็ว ๆ นี้':'Plan a cleanup soon';
+    body=th ? ('ข้อมูลโตขึ้นชัดเจน — ใช้ไป <span class="hl">'+pctTxt+'</span>'+(isFinite(daysNum)?' · เหลือ ~<span class="hl">'+leftTxt+'</span>':'')+' ควรลบข้อมูลเก่า (old data) ก่อนจะเร่งด่วน')
+              : ('Growth is noticeable — <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?', ~<span class="hl">'+leftTxt+'</span> left':'')+'. Trim old data before it becomes urgent.');
   } else {
-    cls='ok'; icon='✅'; head='Healthy — no action needed'; headTh='ปกติ — ยังไม่ต้องทำอะไร';
-    body='Only <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?' · ~<span class="hl">'+leftTxt+'</span> of headroom':'')+'. Plenty of space at the current rate.';
-    bodyTh='ใช้ไปเพียง '+pctTxt+(isFinite(daysNum)?' · เหลือพื้นที่อีกราว '+leftTxt:'')+' — พื้นที่เหลือเฟือที่อัตราปัจจุบัน';
+    cls='ok'; icon='✅';
+    head=th?'ปกติ — ยังไม่ต้องทำอะไร':'Healthy — no action needed';
+    body=th ? ('ใช้ไปเพียง <span class="hl">'+pctTxt+'</span>'+(isFinite(daysNum)?' · เหลือพื้นที่อีกราว <span class="hl">'+leftTxt+'</span>':'')+' — พื้นที่เหลือเฟือที่อัตราปัจจุบัน')
+              : ('Only <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?' · ~<span class="hl">'+leftTxt+'</span> of headroom':'')+'. Plenty of space at the current rate.');
   }
+  const tiers = th
+    ? [['ok','&lt;60%','สำรองข้อมูลตามปกติ (backup)'],['warn','60–85% / &lt;1ปี','ลบ log เก่า, export เป็น CSV'],['crit','&gt;85% / &lt;90วัน','ล้างข้อมูล (running data) หรืออัปเกรด Blaze']]
+    : [['ok','&lt;60%','keep normal backups'],['warn','60–85% / &lt;1yr','trim old logs, export to CSV'],['crit','&gt;85% / &lt;90d','clear data or upgrade to Blaze']];
+  const rlHead = th?'แนวทางจัดการ':'What to do';
   if(box){ box.className='dbe-reco '+cls; }
-  if(h){ h.className='rh '+cls; h.innerHTML=icon+' '+head+' <span class="rh-th">· '+headTh+'</span>'; }
-  if(b){ b.innerHTML='<div class="rb-en">'+body+'</div><div class="rb-th">'+bodyTh+'</div>'; }
-  if(l){ l.innerHTML='<span class="rl-h">What to do · แนวทางจัดการ</span>'
-      +'<span class="tier ok"><b>&lt;60%</b> keep backups <span class="thm">· สำรองปกติ (backup)</span></span>'
-      +'<span class="tier warn"><b>60–85% / &lt;1yr</b> trim logs, export CSV <span class="thm">· ลบ log เก่า &amp; export</span></span>'
-      +'<span class="tier crit"><b>&gt;85% / &lt;90d</b> clear data or upgrade Blaze <span class="thm">· ล้างข้อมูล หรืออัปเกรด</span></span>'; }
+  if(h){ h.className='rh '+cls; h.innerHTML=icon+' '+head; }
+  if(b){ b.innerHTML=body; }
+  if(l){ l.innerHTML='<span class="rl-h">'+rlHead+'</span>'+tiers.map(x=>'<span class="tier '+x[0]+'"><b>'+x[1]+'</b> '+x[2]+'</span>').join(''); }
   /* Size the page to fit the viewport exactly (no scrollbar) — adapts to the real header height
      and the shared main-container bottom padding. Mobile keeps the natural flow (CSS fallback). */
   try{ const v=document.getElementById('view-dbest'); if(v){ v.style.height=''; } }catch(_){}
