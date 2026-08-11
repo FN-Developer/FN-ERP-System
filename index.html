@@ -3354,7 +3354,8 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-donut-flex{padding:2px 0}
       #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;height:min(100%,190px);aspect-ratio:1;width:auto;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
       #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;overflow:visible}
-      .dbe-seg{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .32s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
+      .dbe-seg{pointer-events:none;transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
+      .dbe-hit{pointer-events:all}
       .dbe-seg.on{transform:translate(calc(var(--mx,0)*7px),calc(var(--my,0)*7px)) scale(1.09);filter:drop-shadow(0 5px 11px rgba(0,0,0,.34)) brightness(1.1)}
       .dbe-seg.dim{opacity:.3}
       #view-dbest .dbe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
@@ -3410,7 +3411,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeTip .td b{color:var(--txt)}
       #dbeModal{position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .28s ease;background:rgba(8,10,26,.32);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
       #dbeModal.on{opacity:1;pointer-events:auto}
-      #dbeModal .dbe-mcard{position:relative;width:min(94vw,600px);max-height:90vh;overflow:auto;border-radius:30px;padding:30px 34px 24px;background:color-mix(in srgb,var(--panel) 80%,transparent);-webkit-backdrop-filter:blur(42px) saturate(1.8);backdrop-filter:blur(42px) saturate(1.8);border:1px solid color-mix(in srgb,#fff 40%,transparent);box-shadow:0 44px 110px -34px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.6);transform:scale(.92) translateY(10px);transition:transform .36s cubic-bezier(.2,.9,.25,1)}
+      #dbeModal .dbe-mcard{position:relative;width:min(94vw,600px);max-height:94vh;overflow:visible;border-radius:30px;padding:30px 34px 24px;background:color-mix(in srgb,var(--panel) 80%,transparent);-webkit-backdrop-filter:blur(42px) saturate(1.8);backdrop-filter:blur(42px) saturate(1.8);border:1px solid color-mix(in srgb,#fff 40%,transparent);box-shadow:0 44px 110px -34px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.6);transform:scale(.92) translateY(10px);transition:transform .36s cubic-bezier(.2,.9,.25,1)}
       #dbeModal.on .dbe-mcard{transform:scale(1) translateY(0)}
       #dbeModal .dbe-mclose{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:color-mix(in srgb,var(--panel) 60%,transparent);color:var(--txt);font:800 15px/1 system-ui;cursor:pointer;display:grid;place-items:center;transition:transform .2s,background .2s,color .2s}
       #dbeModal .dbe-mclose:hover{transform:scale(1.09);background:color-mix(in srgb,var(--red) 26%,transparent);color:#fff}
@@ -3428,23 +3429,23 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeModal .dbe-mstat span{display:block;font:700 9.5px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
       #dbeModal .dbe-mstat b{font:900 clamp(15px,2vw,18px)/1.1 system-ui;color:var(--txt);font-variant-numeric:tabular-nums}
       #dbeModal .dbe-mhint{text-align:center;font:600 10.5px/1.3 system-ui;color:var(--muted);margin-top:16px}
-      /* Whole-chart big overview (click a donut to expand) */
-      #dbeModal.chart .dbe-mcard{width:min(95vw,740px)}
-      #dbeModal .dbe-cbig{display:flex;gap:26px;align-items:center;margin-top:8px}
-      #dbeModal .dbe-cbig-donut{position:relative;flex:0 0 auto;width:min(44vw,290px);aspect-ratio:1;filter:drop-shadow(0 18px 38px rgba(9,6,215,.30))}
+      /* Whole-chart big overview (click a donut to expand) — roomy so the slice pop-out never clips or scrolls */
+      #dbeModal.chart .dbe-mcard{width:min(96vw,880px);padding:34px 44px 26px;overflow:visible}
+      #dbeModal .dbe-cbig{display:flex;gap:38px;align-items:center;margin-top:10px;padding:16px 6px}
+      #dbeModal .dbe-cbig-donut{position:relative;flex:0 0 auto;width:min(38vw,46vh,340px);aspect-ratio:1;margin:0 4px;filter:drop-shadow(0 18px 38px rgba(9,6,215,.30));overflow:visible}
       #dbeModal .dbe-cbig-donut svg{width:100%;height:100%;display:block;overflow:visible}
       #dbeModal .dbe-cbig-donut .dbe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
-      #dbeModal .dbe-cbig-donut .dbe-center b{font:900 clamp(30px,6vw,40px)/1 system-ui;color:var(--txt);letter-spacing:-1.2px}
-      #dbeModal .dbe-cbig-donut .dbe-center small{font:700 12px/1.3 system-ui;color:var(--muted);margin-top:5px;max-width:88%}
-      #dbeModal .dbe-cbig-leg{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;max-height:52vh;overflow:auto}
-      #dbeModal .dbe-cbig-leg .dbe-lg{display:flex;align-items:center;gap:9px;font:600 13px/1.3 system-ui;color:var(--txt);padding:6px 10px;border-radius:11px;transition:background .2s,transform .2s;cursor:default}
-      #dbeModal .dbe-cbig-leg .dbe-lg.hi{background:color-mix(in srgb,var(--txt) 9%,transparent);transform:translateX(2px)}
-      #dbeModal .dbe-cbig-leg .dbe-sw{width:13px;height:13px;border-radius:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(255,255,255,.28),0 1px 2px rgba(0,0,0,.2)}
+      #dbeModal .dbe-cbig-donut .dbe-center b{font:900 clamp(32px,6vw,44px)/1 system-ui;color:var(--txt);letter-spacing:-1.4px}
+      #dbeModal .dbe-cbig-donut .dbe-center small{font:700 12.5px/1.3 system-ui;color:var(--muted);margin-top:6px;max-width:80%}
+      #dbeModal .dbe-cbig-leg{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;overflow:visible}
+      #dbeModal .dbe-cbig-leg .dbe-lg{display:flex;align-items:center;gap:10px;font:600 13.5px/1.3 system-ui;color:var(--txt);padding:7px 11px;border-radius:12px;transition:background .2s,transform .2s;cursor:pointer}
+      #dbeModal .dbe-cbig-leg .dbe-lg.hi{background:color-mix(in srgb,var(--txt) 9%,transparent);transform:translateX(3px)}
+      #dbeModal .dbe-cbig-leg .dbe-sw{width:14px;height:14px;border-radius:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(255,255,255,.28),0 1px 2px rgba(0,0,0,.2)}
       #dbeModal .dbe-cbig-leg .nm{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
       #dbeModal .dbe-cbig-leg .dbe-lg.hi .nm{color:var(--txt)}
       #dbeModal .dbe-cbig-leg .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
-      #dbeModal .dbe-cbig-leg .pc{flex:0 0 auto;width:40px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-      @media(max-width:640px){ #dbeModal .dbe-cbig{flex-direction:column} #dbeModal .dbe-cbig-leg{max-height:34vh;width:100%} }
+      #dbeModal .dbe-cbig-leg .pc{flex:0 0 auto;width:42px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+      @media(max-width:680px){ #dbeModal .dbe-cbig{flex-direction:column;gap:20px} #dbeModal .dbe-cbig-donut{width:min(64vw,240px)} #dbeModal .dbe-cbig-leg{width:100%} }
       @media(max-width:900px){ #view-dbest.active{height:auto;overflow:visible} #view-dbest .dbe-donuts,#view-dbest .dbe-bottom{flex-wrap:wrap} #view-dbest .dbe-donuts .dbe-card{flex:1 1 260px} }
     </style>
     <div class="page-head dbe-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE STORAGE ESTIMATE</h1><p>Firestore usage, daily upload estimate &amp; days-to-full projection · ประเมินพื้นที่ฐานข้อมูล</p></div>
@@ -9809,7 +9810,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-e';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-f';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9896,17 +9897,23 @@ function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small, expandKey)
   if(!svg||!cen||!leg) return;
   const cx=50,cy=50,R=42,r=27, band=R-r, midR=(R+r)/2;
   const defCenter='<b>'+big+'</b><small>'+escapeHtml(small)+'</small>';
-  let inner='<circle cx="50" cy="50" r="'+midR+'" fill="none" stroke="var(--dbe-track)" stroke-width="'+band+'"/>';
-  const meta=[];
+  let inner='<circle cx="50" cy="50" r="'+midR+'" fill="none" stroke="var(--dbe-track)" stroke-width="'+band+'" style="pointer-events:none"/>';
+  const meta=[]; let hits='';
   if(total>0){
     let a=-Math.PI/2; const gapA=(segs.length>1)?0.05:0;
-    segs.forEach((s,idx)=>{ const frac=s.val/total, sweep=frac*2*Math.PI; const a0=a+gapA/2, a1=a+sweep-gapA/2; a+=sweep; const mid=(a0+a1)/2;
-      const d=dbeArc(cx,cy,R,r,a0,Math.max(a0+0.0001,a1));
+    segs.forEach((s,idx)=>{ const frac=s.val/total, sweep=frac*2*Math.PI; const a0v=a+gapA/2, a1v=a+sweep-gapA/2; const mid=(a0v+a1v)/2;
+      const d=dbeArc(cx,cy,R,r,a0v,Math.max(a0v+0.0001,a1v));
       inner+='<path d="'+d+'" fill="'+s.color+'" class="dbe-seg" data-i="'+idx+'" style="--mx:'+Math.cos(mid).toFixed(3)+';--my:'+Math.sin(mid).toFixed(3)+'"/>';
+      /* Static, GAPLESS, over-sized hit path — never moves, so exploding a slice or hovering a
+         gap can't trigger the enter/leave loop that made the UI flicker. */
+      const dh=dbeArc(cx,cy,R+9,r,a,a+sweep);
+      hits+='<path d="'+dh+'" fill="rgba(0,0,0,0)" class="dbe-hit" data-i="'+idx+'"/>';
+      a+=sweep;
       meta.push({label:s.label,val:s.val,pct:frac*100,color:s.color});
     });
   }
   if(expandKey && total>0){ inner+='<circle cx="50" cy="50" r="'+(r-1)+'" fill="rgba(0,0,0,0)" class="dbe-hole" style="pointer-events:all;cursor:zoom-in"/>'; }
+  inner+=hits;   // hit layer on top (segments themselves are pointer-events:none)
   svg.innerHTML=inner;
   cen.innerHTML=defCenter;
   leg.innerHTML= total>0 ? segs.map((s,idx)=>'<div class="dbe-lg" data-i="'+idx+'"><span class="dbe-sw" style="background:'+s.color+'"></span><span class="nm">'+escapeHtml(s.label)+'</span><span class="vl">'+nxFmtBytes(Math.round(s.val))+'</span><span class="pc">'+((s.val/total)*100).toFixed(0)+'%</span></div>').join('') : '<div class="muted-line" style="font-size:11px;padding:6px">No data yet</div>';
@@ -9915,7 +9922,9 @@ function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small, expandKey)
   const segEls=[].slice.call(svg.querySelectorAll('.dbe-seg'));
   const legEls=[].slice.call(leg.querySelectorAll('.dbe-lg'));
   const fmtPct=p=>(p<10?p.toFixed(1):p.toFixed(0))+'%';
-  function show(idx,on){
+  let cur=-1;
+  function show(idx){
+    const on=idx>=0;
     segEls.forEach((el,i)=>{ el.classList.toggle('on',on&&i===idx); el.classList.toggle('dim',on&&i!==idx); });
     legEls.forEach((el,i)=>el.classList.toggle('hi',on&&i===idx));
     if(on){ const m=meta[idx]; cen.innerHTML='<b style="color:'+m.color+'">'+fmtPct(m.pct)+'</b><small>'+escapeHtml(m.label)+' · '+nxFmtBytes(Math.round(m.val))+'</small>';
@@ -9925,9 +9934,18 @@ function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small, expandKey)
   function moveTip(e){ const x=e.clientX,y=e.clientY,w=tip.offsetWidth||140,h=tip.offsetHeight||46; let nx=x+15,ny=y-h-10; if(nx+w>window.innerWidth-8) nx=x-w-15; if(ny<8) ny=y+18; tip.style.left=nx+'px'; tip.style.top=ny+'px'; }
   const openIt=i=>{ tip.classList.remove('on'); dbeOpenDetail(chartName, meta[i], total); };
   const clickable=!window._dbeSuppressClick;
-  segEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); if(clickable) el.addEventListener('click',()=>openIt(i)); });
-  legEls.forEach((el,i)=>{ if(clickable) el.style.cursor='pointer'; el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); if(clickable) el.addEventListener('click',()=>openIt(i)); });
-  if(expandKey){ const hole=svg.querySelector('.dbe-hole'); if(hole){ hole.addEventListener('click',()=>{ tip.classList.remove('on'); dbeOpenChart(expandKey); }); hole.addEventListener('mouseenter',()=>{ cen.classList.add('dbe-cen-zoom'); }); hole.addEventListener('mouseleave',()=>{ cen.classList.remove('dbe-cen-zoom'); }); } }
+  /* One continuous hover handler on the whole SVG — reads which static hit-path is under the
+     cursor. Because the hit layer is gapless and doesn't move, switching between slices is smooth
+     (no reset flash between them) and hovering a gap keeps the neighbour active instead of flickering. */
+  svg.onmousemove = e=>{
+    const t=e.target, hit=(t&&t.classList&&t.classList.contains('dbe-hit'))?t:null;
+    if(hit){ const i=+hit.getAttribute('data-i'); if(i!==cur){ cur=i; show(i); } moveTip(e); if(cen.classList.contains('dbe-cen-zoom')) cen.classList.remove('dbe-cen-zoom'); }
+    else { if(cur!==-1){ cur=-1; show(-1); } if(expandKey && t && t.classList && t.classList.contains('dbe-hole')) cen.classList.add('dbe-cen-zoom'); else cen.classList.remove('dbe-cen-zoom'); }
+  };
+  svg.onmouseleave = ()=>{ if(cur!==-1){ cur=-1; show(-1); } cen.classList.remove('dbe-cen-zoom'); };
+  if(clickable){ [].forEach.call(svg.querySelectorAll('.dbe-hit'),h=>{ h.style.cursor='pointer'; h.addEventListener('click',()=>openIt(+h.getAttribute('data-i'))); }); }
+  legEls.forEach((el,i)=>{ if(clickable) el.style.cursor='pointer'; el.addEventListener('mouseenter',e=>{ cur=i; show(i); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>{ cur=-1; show(-1); }); if(clickable) el.addEventListener('click',()=>openIt(i)); });
+  if(expandKey){ const hole=svg.querySelector('.dbe-hole'); if(hole){ hole.addEventListener('click',()=>{ tip.classList.remove('on'); dbeOpenChart(expandKey); }); } }
 }
 /* Full-page detail: clicking a slice expands it into a centered glass panel over a 30%-dim backdrop. */
 function dbeModalEl(){ let m=document.getElementById('dbeModal'); if(!m){ m=document.createElement('div'); m.id='dbeModal';
