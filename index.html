@@ -775,6 +775,18 @@ tr.ck-alert-hl>td:first-child{animation:alertHlIn 1.4s ease-out}
 @keyframes alertHlIn{0%,30%{background:rgba(225,29,47,0.28)}100%{}}
 .ck-date.date-blink{animation:dateBlink 0.75s ease-in-out infinite;font-weight:700;position:relative;z-index:1}
 @keyframes dateBlink{0%,100%{border-color:var(--line2);box-shadow:0 0 0 0 rgba(255,59,92,0)}50%{border-color:var(--red);box-shadow:0 0 0 4px rgba(255,59,92,0.35)}}
+/* Status-coloured blink borders when a row is reached from the Status page */
+.ck-date.dbk{font-weight:700;position:relative;z-index:1}
+.ck-date.dbk-ok{animation:dbkOk .78s ease-in-out infinite}
+.ck-date.dbk-sched{animation:dbkSched .78s ease-in-out infinite}
+.ck-date.dbk-transit{animation:dbkTransit .78s ease-in-out infinite}
+.ck-date.dbk-late{animation:dbkLate .78s ease-in-out infinite}
+.ck-date.dbk-pending{animation:dbkPending .78s ease-in-out infinite}
+@keyframes dbkOk{0%,100%{border-color:var(--line2);box-shadow:0 0 0 0 rgba(20,154,90,0)}50%{border-color:var(--green);box-shadow:0 0 0 4px rgba(20,154,90,.45)}}
+@keyframes dbkSched{0%,100%{border-color:var(--line2);box-shadow:0 0 0 0 rgba(9,6,215,0)}50%{border-color:var(--blue);box-shadow:0 0 0 4px rgba(9,6,215,.42)}}
+@keyframes dbkTransit{0%,100%{border-color:var(--line2);box-shadow:0 0 0 0 rgba(234,161,0,0)}50%{border-color:#eda100;box-shadow:0 0 0 4px rgba(234,161,0,.55)}}
+@keyframes dbkLate{0%,100%{border-color:var(--line2);box-shadow:0 0 0 0 rgba(225,29,47,0)}50%{border-color:var(--red);box-shadow:0 0 0 4px rgba(225,29,47,.45)}}
+@keyframes dbkPending{0%,100%{border-color:var(--line2);box-shadow:0 0 0 0 rgba(120,130,160,0)}50%{border-color:var(--muted);box-shadow:0 0 0 4px rgba(120,130,160,.4)}}
 
 /* ---------- Vendor / Follow-up ---------- */
 .btn-mini{border:1px solid var(--line2);background:var(--chip-bg);color:var(--primary);font-weight:700;font-family:'Rajdhani';font-size:12.5px;padding:6px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:.15s}
@@ -2459,8 +2471,9 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-status .st-viewonly{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--txt) 7%,transparent);padding:6px 13px;border-radius:999px;border:1px solid var(--line)}
       #view-status .st-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;font-weight:800;font-size:12px;white-space:nowrap;border:1px solid transparent}
       #view-status .st-badge.ok{color:var(--green);background:color-mix(in srgb,var(--green) 15%,transparent);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
-      #view-status .st-badge.transit{color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent);border-color:color-mix(in srgb,var(--blue) 38%,transparent)}
-      #view-status .st-badge.sched{color:#7c3aed;background:color-mix(in srgb,#7c3aed 14%,transparent);border-color:color-mix(in srgb,#7c3aed 38%,transparent)}
+      #view-status .st-badge.sched{color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent);border-color:color-mix(in srgb,var(--blue) 38%,transparent)}
+      #view-status .st-badge.transit{color:#b07800;background:color-mix(in srgb,#eda100 18%,transparent);border-color:color-mix(in srgb,#eda100 46%,transparent)}
+      #view-status .st-badge.late{color:var(--red);background:color-mix(in srgb,var(--red) 15%,transparent);border-color:color-mix(in srgb,var(--red) 42%,transparent)}
       #view-status .st-badge.pending{color:var(--muted);background:color-mix(in srgb,var(--muted) 16%,transparent);border-color:color-mix(in srgb,var(--muted) 34%,transparent)}
       #view-status .st-legend{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
       #view-status #statusTable tbody tr{cursor:pointer;transition:background .15s}
@@ -6562,15 +6575,16 @@ function renderCheck(){
       const el=document.getElementById('ck-'+id); if(!el) return;
       el.classList.add('row-blink');
       const dates=[...el.querySelectorAll('.ck-date')];
-      const empties=dates.filter(inp=>!inp.value);
-      const blinkers=(empties.length?empties:dates);
-      blinkers.forEach(inp=>inp.classList.add('date-blink'));
+      // Blink both date fields in the colour of this item's status:
+      // Received→green, Scheduled→blue, In transit→yellow, Late→red.
+      const d=DB.details().find(x=>x.id===id); const stc=(d?stStatusOf(d).cls:'pending');
+      dates.forEach(inp=>inp.classList.add('dbk','dbk-'+stc));
       // Lead straight to the row. ONE scroll only (a second scrollIntoView cancels this one);
       // instant so it always lands, then centre the date column horizontally by hand.
       el.scrollIntoView({block:'center'});
-      const tw=el.closest('.table-wrap'), d0=blinkers[0];
+      const tw=el.closest('.table-wrap'), d0=dates[0];
       if(tw && d0){ try{ const twR=tw.getBoundingClientRect(), dR=d0.getBoundingClientRect(); tw.scrollLeft = Math.max(0, tw.scrollLeft + (dR.left-twR.left) - tw.clientWidth/2 + dR.width/2); }catch(_){} }
-      setTimeout(()=>{ const e2=document.getElementById('ck-'+id); if(e2){ e2.classList.remove('row-blink'); e2.querySelectorAll('.ck-date').forEach(inp=>inp.classList.remove('date-blink')); } },6500);
+      setTimeout(()=>{ const e2=document.getElementById('ck-'+id); if(e2){ e2.classList.remove('row-blink'); e2.querySelectorAll('.ck-date').forEach(inp=>inp.classList.remove('dbk','dbk-ok','dbk-sched','dbk-transit','dbk-late','dbk-pending')); } },6500);
     },360);
   }
 }
@@ -6686,10 +6700,11 @@ function stStatusOf(d){
   const th=(LANG==='th');
   if(d.recvDate) return {cls:'ok', ic:'✅', txt: th?'รับแล้ว':'Received'};
   if(d.shipDate){
-    let future=false;
-    try{ const today=new Date(); today.setHours(0,0,0,0); const sd=new Date(d.shipDate+'T00:00:00'); if(!isNaN(sd.getTime()) && sd.getTime()>today.getTime()) future=true; }catch(_){}
-    if(future) return {cls:'sched', ic:'📅', txt: th?'กำหนดจัดส่ง':'Scheduled'};
-    return {cls:'transit', ic:'🚚', txt: th?'กำลังจัดส่ง · รอรับ':'In transit'};
+    let cmp=0;   /* +1 future, 0 today, -1 already passed */
+    try{ const today=new Date(); today.setHours(0,0,0,0); const sd=new Date(d.shipDate+'T00:00:00'); if(!isNaN(sd.getTime())){ const diff=sd.getTime()-today.getTime(); cmp=diff>0?1:(diff<0?-1:0); } }catch(_){}
+    if(cmp>0) return {cls:'sched', ic:'📅', txt: th?'กำหนดจัดส่ง':'Scheduled'};
+    if(cmp<0) return {cls:'late', ic:'⏰', txt: th?'เลยกำหนดส่ง':'Late'};
+    return {cls:'transit', ic:'🚚', txt: th?'กำลังจัดส่ง':'In transit'};
   }
   return {cls:'pending', ic:'⏳', txt: th?'รอดำเนินการ':'Pending'};
 }
@@ -10032,7 +10047,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-x';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-y';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
