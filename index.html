@@ -3307,7 +3307,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
   <!-- ============ DATABASE STORAGE ESTIMATE (Firebase) ============ -->
   <section class="view" id="view-dbest">
     <style>
-      #view-dbest.active{display:flex;flex-direction:column;height:calc(100dvh - 118px);min-height:520px;overflow:hidden}
+      #view-dbest.active{display:flex;flex-direction:column;height:calc(100dvh - 236px);min-height:480px;overflow:hidden}
       #view-dbest .dbe-head{margin-bottom:10px;flex:0 0 auto}
       #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:10px}
       #view-dbest .dbe-row{display:flex;gap:10px;min-height:0}
@@ -9684,7 +9684,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-z9';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-a';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9806,6 +9806,9 @@ function renderDbEstimate(){
   if(h){ h.className='rh '+cls; h.innerHTML=icon+' '+head; }
   if(b){ b.textContent=body; }
   if(l){ l.innerHTML='What to do — ✅ under 60%: keep normal backups. &nbsp;⚠️ 60–85% or under 1 yr left: delete old cloud backups, trim TA logs, export finished work orders &amp; payslips to CSV then clear them. &nbsp;🚨 over 85% or under 90 days: clear running data (backups are kept), remove old logs now, or upgrade Firestore to the Blaze plan for more storage.'; }
+  /* Size the page to fit the viewport exactly (no scrollbar) — adapts to the real header height
+     and the shared main-container bottom padding. Mobile keeps the natural flow (CSS fallback). */
+  try{ const v=document.getElementById('view-dbest'); if(v && window.innerWidth>900){ v.style.height=''; const over=document.documentElement.scrollHeight-window.innerHeight; if(over>0){ const h=Math.round(v.getBoundingClientRect().height); v.style.height=Math.max(460,h-over-2)+'px'; } } else if(v){ v.style.height=''; } }catch(_){}
 }
 /* ---- Login history (each account login captured as its own doc) ---- */
 async function nxLogLogin(retries){ retries=(retries==null)?10:retries; let s; try{s=DB.session()||{};}catch(_){s={};} if(!s.loggedIn) return; const col=nxPresenceCol(); if(!col){ if(retries>0) setTimeout(()=>{ nxLogLogin(retries-1); }, 1500); return; } const ip=_nxIP||{}; const dev=nxDeviceInfo(); const ts=Date.now(); const id='_lg_'+ts+'_'+Math.floor(Math.random()*1e5).toString(36); try{ await col.doc(id).set({ kind:'login', user:s.user||'—', role:s.role||'', build:NX_BUILD, dname:nxDeviceName(), did:nxDeviceId(), device:dev.type, name:dev.name, ip:ip.ip||'', city:ip.city||'', country:ip.country||'', t:ts }); }catch(_){} }
