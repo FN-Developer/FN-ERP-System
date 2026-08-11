@@ -3319,7 +3319,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
   <section class="view" id="view-dbest">
     <style>
       #view-dbest.active{display:flex;flex-direction:column;height:calc(100dvh - 236px);min-height:480px;overflow:hidden;position:relative;margin-bottom:-106px;
-        --dbe-glass:color-mix(in srgb,var(--panel) 55%,transparent);--dbe-edge:color-mix(in srgb,#fff 34%,transparent);
+        --dbe-glass:color-mix(in srgb,var(--panel) 46%,transparent);--dbe-edge:color-mix(in srgb,#fff 34%,transparent);
         --dbe-track:color-mix(in srgb,var(--txt) 9%,transparent);--dbe-shadow:0 16px 46px -18px rgba(9,6,215,.36),0 2px 8px -4px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.5)}
       #view-dbest::before{content:"";position:absolute;inset:-12% -8%;z-index:0;pointer-events:none;
         background:radial-gradient(38% 46% at 12% 6%,color-mix(in srgb,var(--blue) 46%,transparent),transparent 70%),
@@ -3480,18 +3480,20 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeModal .dbe-orow .pc{flex:0 0 auto;width:52px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
       /* Idle "data architecture" background inside the big container */
       #view-dbest .dbe-wrap>:not(.dbe-arch){position:relative;z-index:1}
-      #view-dbest .dbe-arch{position:absolute;inset:0;border-radius:inherit;overflow:hidden;z-index:0;pointer-events:none;opacity:.5}
+      #view-dbest .dbe-arch{position:absolute;inset:0;border-radius:inherit;overflow:hidden;z-index:0;pointer-events:none;opacity:1}
+      /* Outer layer — same data-architecture animation across the WHOLE page background (fixed, full viewport), behind the big container. Only shown while the dbest view is active. */
+      #view-dbest .dbe-arch-outer{position:fixed;inset:0;opacity:.6;z-index:0}
       #view-dbest .dbe-arch svg{position:absolute;inset:0;width:100%;height:100%}
-      #view-dbest .dbe-arch .arch-trace{fill:none;stroke:color-mix(in srgb,var(--txt) 12%,transparent);stroke-width:1.3}
-      #view-dbest .dbe-arch .arch-pulse{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-dasharray:16 190;filter:drop-shadow(0 0 5px currentColor);animation:archFlow 5s linear infinite}
+      #view-dbest .dbe-arch .arch-trace{fill:none;stroke:color-mix(in srgb,var(--txt) 17%,transparent);stroke-width:1.7}
+      #view-dbest .dbe-arch .arch-pulse{fill:none;stroke-width:3.3;stroke-linecap:round;stroke-dasharray:20 150;filter:drop-shadow(0 0 7px currentColor);animation:archFlow 5s linear infinite}
       #view-dbest .dbe-arch .p1{stroke:#3ba7ff;color:#3ba7ff;animation-duration:5.2s}
       #view-dbest .dbe-arch .p2{stroke:#1baf7a;color:#1baf7a;animation-duration:6.6s;animation-delay:-2s}
       #view-dbest .dbe-arch .p3{stroke:#8b5cf6;color:#8b5cf6;animation-duration:5.8s;animation-delay:-3.4s}
       #view-dbest .dbe-arch .p4{stroke:#eb6834;color:#eb6834;animation-duration:7.2s;animation-delay:-1s}
-      #view-dbest .dbe-arch .arch-node{fill:color-mix(in srgb,var(--blue) 55%,transparent);animation:archBlink 3s ease-in-out infinite}
+      #view-dbest .dbe-arch .arch-node{r:5;fill:color-mix(in srgb,var(--blue) 55%,transparent);animation:archBlink 3s ease-in-out infinite}
       #view-dbest .dbe-arch .arch-node:nth-child(2n){animation-delay:-1.5s}
       #view-dbest .dbe-arch .arch-node:nth-child(3n){animation-delay:-.9s;fill:color-mix(in srgb,#1baf7a 55%,transparent)}
-      @keyframes archFlow{from{stroke-dashoffset:206}to{stroke-dashoffset:0}}
+      @keyframes archFlow{from{stroke-dashoffset:170}to{stroke-dashoffset:0}}
       @keyframes archBlink{0%,100%{opacity:.3}50%{opacity:1}}
       @media (prefers-reduced-motion:reduce){#view-dbest .dbe-arch .arch-pulse,#view-dbest .dbe-arch .arch-node{animation:none}}
       /* Responsive Storage-Usage bars: on narrow widths the bar drops to its own full-width line so it stays visible */
@@ -3514,6 +3516,11 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         #view-dbest .dbe-legend{width:100%;overflow:visible;max-height:none}
       }
     </style>
+    <div class="dbe-arch dbe-arch-outer" aria-hidden="true"><svg viewBox="0 0 1600 700" preserveAspectRatio="xMidYMid slice">
+      <g><path class="arch-trace" d="M-20 120 H480 V320 H960 V180 H1620"/><path class="arch-trace" d="M-20 360 H240 V520 H740 V420 H1200 V500 H1620"/><path class="arch-trace" d="M-20 600 H560 V460 H1080 V600 H1620"/><path class="arch-trace" d="M-20 210 H160 V80 H700 V220 H1140 V90 H1620"/></g>
+      <g><path class="arch-pulse p1" d="M-20 120 H480 V320 H960 V180 H1620"/><path class="arch-pulse p2" d="M-20 360 H240 V520 H740 V420 H1200 V500 H1620"/><path class="arch-pulse p3" d="M-20 600 H560 V460 H1080 V600 H1620"/><path class="arch-pulse p4" d="M-20 210 H160 V80 H700 V220 H1140 V90 H1620"/></g>
+      <g><circle class="arch-node" cx="480" cy="120" r="4"/><circle class="arch-node" cx="960" cy="180" r="4"/><circle class="arch-node" cx="240" cy="360" r="4"/><circle class="arch-node" cx="740" cy="520" r="4"/><circle class="arch-node" cx="1080" cy="460" r="4"/><circle class="arch-node" cx="700" cy="80" r="4"/><circle class="arch-node" cx="1140" cy="220" r="4"/></g>
+    </svg></div>
     <div class="page-head dbe-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE STORAGE ESTIMATE</h1><p>Firestore usage, daily upload estimate &amp; days-to-full projection · ประเมินพื้นที่ฐานข้อมูล</p></div>
       <div class="ph-actions"><button type="button" class="ph-btn ov-cta" onclick="renderDbEstimate()"><span class="ov-cta-ic">⟳</span><span>Refresh</span></button></div>
     </div>
@@ -9882,7 +9889,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-n';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-o';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
