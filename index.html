@@ -3331,10 +3331,9 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       @media (prefers-reduced-motion:reduce){#view-dbest::before{animation:none}}
       #view-dbest .dbe-head{margin-bottom:12px;flex:0 0 auto;position:relative;z-index:1}
       #view-dbest .dbe-head h1{background:linear-gradient(92deg,var(--txt),color-mix(in srgb,var(--blue) 72%,var(--txt)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-      /* One big smooth-bordered container holding every component, with padding so nothing touches its edge */
-      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;padding:12px;
-        border-radius:34px;border:1px solid color-mix(in srgb,#fff 14%,transparent);background:color-mix(in srgb,var(--panel) 90%,transparent);
-        -webkit-backdrop-filter:blur(12px) saturate(1.15);backdrop-filter:blur(12px) saturate(1.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+      /* No enclosing frame — cards float freely on the animated data-architecture background */
+      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;padding:6px 4px}
+      #view-dbest .dbe-wrap>.dbe-arch{display:none}   /* full-page outer arch is the single backdrop now */
       /* the shared footer sits below this fixed-height view; the no-scrollbar pull would drag it up behind the cards — hide it here */
       #view-dbest.active ~ .footer-note{display:none}
       #view-dbest .dbe-row{display:flex;gap:12px;min-height:0}
@@ -9889,7 +9888,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-q';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-r';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
