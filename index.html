@@ -3307,48 +3307,74 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
   <!-- ============ DATABASE STORAGE ESTIMATE (Firebase) ============ -->
   <section class="view" id="view-dbest">
     <style>
-      #view-dbest.active{display:flex;flex-direction:column;height:calc(100dvh - 236px);min-height:480px;overflow:hidden}
-      #view-dbest .dbe-head{margin-bottom:10px;flex:0 0 auto}
-      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:10px}
-      #view-dbest .dbe-row{display:flex;gap:10px;min-height:0}
+      #view-dbest.active{display:flex;flex-direction:column;height:calc(100dvh - 236px);min-height:480px;overflow:hidden;position:relative;
+        --dbe-glass:color-mix(in srgb,var(--panel) 55%,transparent);--dbe-edge:color-mix(in srgb,#fff 34%,transparent);
+        --dbe-track:color-mix(in srgb,var(--txt) 9%,transparent);--dbe-shadow:0 16px 46px -18px rgba(9,6,215,.36),0 2px 8px -4px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.5)}
+      #view-dbest::before{content:"";position:absolute;inset:-12% -8%;z-index:0;pointer-events:none;
+        background:radial-gradient(38% 46% at 12% 6%,color-mix(in srgb,var(--blue) 46%,transparent),transparent 70%),
+          radial-gradient(34% 42% at 90% 2%,color-mix(in srgb,#eb6834 36%,transparent),transparent 70%),
+          radial-gradient(44% 52% at 82% 96%,color-mix(in srgb,#1baf7a 34%,transparent),transparent 72%),
+          radial-gradient(42% 50% at 16% 98%,color-mix(in srgb,#8b5cf6 34%,transparent),transparent 72%);
+        filter:blur(50px) saturate(1.25);opacity:.55;animation:dbeAura 24s ease-in-out infinite alternate}
+      @keyframes dbeAura{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(1.6%,-1.2%,0) scale(1.05)}100%{transform:translate3d(-1.6%,1.4%,0) scale(1.02)}}
+      @media (prefers-reduced-motion:reduce){#view-dbest::before{animation:none}}
+      #view-dbest .dbe-head{margin-bottom:12px;flex:0 0 auto;position:relative;z-index:1}
+      #view-dbest .dbe-head h1{background:linear-gradient(92deg,var(--txt),color-mix(in srgb,var(--blue) 72%,var(--txt)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1}
+      #view-dbest .dbe-row{display:flex;gap:12px;min-height:0}
       #view-dbest .dbe-donuts{flex:1 1 46%}
       #view-dbest .dbe-bars{flex:0 0 auto}
       #view-dbest .dbe-bottom{flex:1 1 30%}
-      #view-dbest .dbe-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;min-height:0;min-width:0}
+      #view-dbest .dbe-card{background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:22px;padding:13px 16px;display:flex;flex-direction:column;min-height:0;min-width:0;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
+      #view-dbest .dbe-card:hover{transform:translateY(-2px);box-shadow:0 26px 64px -20px rgba(9,6,215,.46),0 3px 10px -4px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.6)}
       #view-dbest .dbe-donuts .dbe-card{flex:1 1 0}
-      #view-dbest .dbe-ct{font:800 12.5px/1.2 system-ui,Segoe UI,Roboto;color:var(--txt);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
-      #view-dbest .dbe-cs{font:600 10.5px/1.3 system-ui;color:var(--muted);margin:2px 0 6px}
+      #view-dbest .dbe-ct{font:800 13px/1.2 system-ui;color:var(--txt);letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+      #view-dbest .dbe-ct .ic{width:25px;height:25px;border-radius:9px;display:grid;place-items:center;font-size:13px;flex:0 0 auto;background:color-mix(in srgb,var(--blue) 15%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 32%,transparent),0 2px 6px -2px rgba(9,6,215,.3)}
+      #view-dbest .dbe-cs{font:600 10.5px/1.3 system-ui;color:var(--muted);margin:4px 0 6px}
       #view-dbest .dbe-donut-flex{flex:1 1 auto;display:flex;gap:10px;align-items:center;min-height:0}
-      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;width:clamp(120px,15vw,168px);aspect-ratio:1}
-      #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
+      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;width:clamp(124px,15.5vw,176px);aspect-ratio:1;filter:drop-shadow(0 10px 22px rgba(9,6,215,.20))}
+      #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;overflow:visible}
+      #view-dbest .dbe-seg{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
+      #view-dbest .dbe-seg.on{transform:translate(calc(var(--mx,0)*3.6px),calc(var(--my,0)*3.6px)) scale(1.055);filter:drop-shadow(0 4px 9px rgba(0,0,0,.32)) brightness(1.09)}
+      #view-dbest .dbe-seg.dim{opacity:.32}
       #view-dbest .dbe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
-      #view-dbest .dbe-center b{font:900 20px/1 system-ui;color:var(--txt)}
-      #view-dbest .dbe-center small{font:700 10px/1.3 system-ui;color:var(--muted);margin-top:3px}
-      #view-dbest .dbe-legend{flex:1 1 auto;min-width:0;overflow:auto;display:flex;flex-direction:column;gap:3px}
-      #view-dbest .dbe-lg{display:flex;align-items:center;gap:6px;font:600 10.5px/1.25 system-ui;color:var(--txt)}
-      #view-dbest .dbe-sw{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+      #view-dbest .dbe-center b{font:900 clamp(19px,2vw,25px)/1 system-ui;color:var(--txt);letter-spacing:-.6px;transition:color .2s}
+      #view-dbest .dbe-center small{font:700 9.5px/1.35 system-ui;color:var(--muted);margin-top:3px;max-width:86%}
+      #view-dbest .dbe-legend{flex:1 1 auto;min-width:0;overflow:auto;display:flex;flex-direction:column;gap:1px}
+      #view-dbest .dbe-lg{display:flex;align-items:center;gap:7px;font:600 10.5px/1.25 system-ui;color:var(--txt);padding:2.5px 6px;border-radius:9px;transition:background .2s,transform .2s;cursor:default}
+      #view-dbest .dbe-lg.hi{background:color-mix(in srgb,var(--txt) 8%,transparent);transform:translateX(2px)}
+      #view-dbest .dbe-sw{width:10px;height:10px;border-radius:4px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(255,255,255,.28),0 1px 2px rgba(0,0,0,.22)}
       #view-dbest .dbe-lg .nm{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+      #view-dbest .dbe-lg.hi .nm{color:var(--txt)}
       #view-dbest .dbe-lg .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
-      #view-dbest .dbe-lg .pc{flex:0 0 auto;width:34px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-      #view-dbest .dbe-bar{display:flex;align-items:center;gap:12px;margin:7px 0}
+      #view-dbest .dbe-lg .pc{flex:0 0 auto;width:32px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+      #view-dbest .dbe-bar{display:flex;align-items:center;gap:12px;margin:9px 0}
       #view-dbest .dbe-bar .bl{flex:0 0 132px;font:800 12px/1.2 system-ui;color:var(--txt)}
-      #view-dbest .dbe-bar .bt{flex:1 1 auto;height:22px;background:var(--inset-bg,rgba(128,140,180,.14));border-radius:999px;overflow:hidden;position:relative}
-      #view-dbest .dbe-bar .bf{height:100%;border-radius:999px;min-width:3px;transition:width .5s ease}
+      #view-dbest .dbe-bar .bt{flex:1 1 auto;height:24px;background:var(--dbe-track);border-radius:999px;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,.16)}
+      #view-dbest .dbe-bar .bf{height:100%;border-radius:999px;min-width:5px;transition:width .8s cubic-bezier(.2,.9,.25,1);position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+      #view-dbest .dbe-bar .bf::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.30),transparent 55%)}
       #view-dbest .dbe-bar .bv{flex:0 0 auto;font:800 12px/1.2 system-ui;color:var(--txt);font-variant-numeric:tabular-nums;width:150px;text-align:right}
       #view-dbest .dbe-bar .bv small{font-weight:700;color:var(--muted)}
-      #view-dbest .dbe-bottom{display:flex;gap:10px}
-      #view-dbest .dbe-stat{flex:1 1 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:2px}
-      #view-dbest .dbe-stat .k{font:700 10.5px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-      #view-dbest .dbe-stat .v{font:900 clamp(18px,2.3vw,26px)/1.05 system-ui;color:var(--txt);font-variant-numeric:tabular-nums}
-      #view-dbest .dbe-stat .s{font:600 10.5px/1.3 system-ui;color:var(--muted)}
-      #view-dbest .dbe-reco{flex:2.4 1 0;border-radius:16px;padding:12px 15px;display:flex;flex-direction:column;gap:4px;border:1px solid var(--line)}
-      #view-dbest .dbe-reco .rh{font:900 13px/1.2 system-ui;display:flex;align-items:center;gap:7px}
+      #view-dbest .dbe-bottom{display:flex;gap:12px}
+      #view-dbest .dbe-stat{flex:1 1 0;background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:22px;padding:13px 16px;display:flex;flex-direction:column;justify-content:center;gap:3px;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
+      #view-dbest .dbe-stat:hover{transform:translateY(-2px);box-shadow:0 26px 64px -20px rgba(9,6,215,.46),inset 0 1px 0 rgba(255,255,255,.6)}
+      #view-dbest .dbe-stat .k{font:700 10px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+      #view-dbest .dbe-stat .v{font:900 clamp(19px,2.3vw,27px)/1.05 system-ui;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.6px}
+      #view-dbest .dbe-stat .s{font:600 10px/1.3 system-ui;color:var(--muted)}
+      #view-dbest .dbe-reco{flex:2.4 1 0;border-radius:22px;padding:13px 18px;display:flex;flex-direction:column;gap:5px;border:1px solid var(--dbe-edge);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);box-shadow:var(--dbe-shadow)}
+      #view-dbest .dbe-reco .rh{font:900 13.5px/1.2 system-ui;display:flex;align-items:center;gap:7px}
       #view-dbest .dbe-reco .rb{font:600 11.5px/1.45 system-ui;color:var(--txt)}
-      #view-dbest .dbe-reco .rl{font:600 10.5px/1.35 system-ui;color:var(--muted);margin-top:2px}
-      #view-dbest .dbe-reco.ok{background:color-mix(in srgb,var(--green) 12%,transparent);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
-      #view-dbest .dbe-reco.warn{background:color-mix(in srgb,#eda100 14%,transparent);border-color:color-mix(in srgb,#eda100 45%,transparent)}
-      #view-dbest .dbe-reco.crit{background:color-mix(in srgb,var(--red) 12%,transparent);border-color:color-mix(in srgb,var(--red) 42%,transparent)}
+      #view-dbest .dbe-reco .rl{font:600 10.5px/1.4 system-ui;color:var(--muted);margin-top:2px}
+      #view-dbest .dbe-reco.ok{background:color-mix(in srgb,var(--green) 16%,var(--dbe-glass))}
+      #view-dbest .dbe-reco.warn{background:color-mix(in srgb,#eda100 17%,var(--dbe-glass))}
+      #view-dbest .dbe-reco.crit{background:color-mix(in srgb,var(--red) 16%,var(--dbe-glass))}
       #view-dbest .dbe-reco .rh.ok{color:var(--green)} #view-dbest .dbe-reco .rh.warn{color:#b07800} #view-dbest .dbe-reco .rh.crit{color:var(--red)}
+      #dbeTip{position:fixed;z-index:2147483000;pointer-events:none;opacity:0;transform:translateY(5px);transition:opacity .15s,transform .15s;background:color-mix(in srgb,var(--panel) 70%,transparent);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid color-mix(in srgb,#fff 34%,transparent);border-radius:14px;padding:8px 12px;box-shadow:0 18px 44px -14px rgba(0,0,0,.44);font:600 11px/1.4 system-ui;color:var(--txt);min-width:126px}
+      #dbeTip.on{opacity:1;transform:translateY(0)}
+      #dbeTip .tt{font-weight:900;display:flex;align-items:center;gap:6px;margin-bottom:3px}
+      #dbeTip .tsw{width:10px;height:10px;border-radius:4px;flex:0 0 auto}
+      #dbeTip .td{color:var(--muted);font-variant-numeric:tabular-nums}
+      #dbeTip .td b{color:var(--txt)}
       @media(max-width:900px){ #view-dbest.active{height:auto;overflow:visible} #view-dbest .dbe-donuts,#view-dbest .dbe-bottom{flex-wrap:wrap} #view-dbest .dbe-donuts .dbe-card{flex:1 1 260px} }
     </style>
     <div class="page-head dbe-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE STORAGE ESTIMATE</h1><p>Firestore usage, daily upload estimate &amp; days-to-full projection · ประเมินพื้นที่ฐานข้อมูล</p></div>
@@ -3357,20 +3383,20 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     <div class="dbe-wrap">
       <div class="dbe-row dbe-donuts">
         <div class="dbe-card">
-          <div class="dbe-ct">🗄 Entire Database</div><div class="dbe-cs">Everything stored now, by data type</div>
+          <div class="dbe-ct"><span class="ic">🗄</span>Entire Database</div><div class="dbe-cs">Everything stored now, by data type</div>
           <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutTotal" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenTotal"></div></div><div class="dbe-legend" id="dbeLegTotal"></div></div>
         </div>
         <div class="dbe-card">
-          <div class="dbe-ct">📈 Daily Estimate</div><div class="dbe-cs">Estimated data uploaded per day, by type</div>
+          <div class="dbe-ct"><span class="ic">📈</span>Daily Estimate</div><div class="dbe-cs">Estimated data uploaded per day, by type</div>
           <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutDay" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenDay"></div></div><div class="dbe-legend" id="dbeLegDay"></div></div>
         </div>
         <div class="dbe-card">
-          <div class="dbe-ct">🗓 Monthly Estimate</div><div class="dbe-cs">Projected 30-day upload, by type</div>
+          <div class="dbe-ct"><span class="ic">🗓</span>Monthly Estimate</div><div class="dbe-cs">Projected 30-day upload, by type</div>
           <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutMon" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenMon"></div></div><div class="dbe-legend" id="dbeLegMon"></div></div>
         </div>
       </div>
       <div class="dbe-card dbe-bars">
-        <div class="dbe-ct">💾 Storage Usage</div>
+        <div class="dbe-ct"><span class="ic">💾</span>Storage Usage</div>
         <div id="dbeBars"></div>
       </div>
       <div class="dbe-row dbe-bottom">
@@ -9684,7 +9710,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-a';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-b';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9758,15 +9784,47 @@ function dbeBuildSegs(map){
   if(restSum>0) segs.push({label:'Other ('+rest.length+')',val:restSum,color:DBE_OTHER});
   return {segs,total};
 }
+function dbeArc(cx,cy,R,r,a0,a1){
+  const P=(rad,ang)=>[(cx+rad*Math.cos(ang)).toFixed(3),(cy+rad*Math.sin(ang)).toFixed(3)];
+  const large=(a1-a0)>Math.PI?1:0;
+  const o0=P(R,a0),o1=P(R,a1),i1=P(r,a1),i0=P(r,a0);
+  return 'M'+o0[0]+' '+o0[1]+' A'+R+' '+R+' 0 '+large+' 1 '+o1[0]+' '+o1[1]+' L'+i1[0]+' '+i1[1]+' A'+r+' '+r+' 0 '+large+' 0 '+i0[0]+' '+i0[1]+' Z';
+}
+function dbeTipEl(){ let t=document.getElementById('dbeTip'); if(!t){ t=document.createElement('div'); t.id='dbeTip'; document.body.appendChild(t); } return t; }
 function dbeRenderDonut(map, svgId,cenId,legId, big,small){
   const {segs,total}=dbeBuildSegs(map);
   const svg=document.getElementById(svgId), cen=document.getElementById(cenId), leg=document.getElementById(legId);
-  const R=40,SW=13,C=2*Math.PI*R;
-  let acc=0; let arcs='<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="var(--inset-bg,rgba(128,140,180,.16))" stroke-width="'+SW+'"/>';
-  if(total>0){ segs.forEach(s=>{ const len=(s.val/total)*C; const gap=(segs.length>1)?1.6:0; const dash=Math.max(0.01,len-gap); arcs+='<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="'+s.color+'" stroke-width="'+SW+'" stroke-dasharray="'+dash+' '+(C-dash)+'" stroke-dashoffset="'+(-acc)+'"/>'; acc+=len; }); }
-  if(svg) svg.innerHTML=arcs;
-  if(cen) cen.innerHTML='<b>'+big+'</b><small>'+escapeHtml(small)+'</small>';
-  if(leg) leg.innerHTML= total>0 ? segs.map(s=>'<div class="dbe-lg"><span class="dbe-sw" style="background:'+s.color+'"></span><span class="nm">'+escapeHtml(s.label)+'</span><span class="vl">'+nxFmtBytes(Math.round(s.val))+'</span><span class="pc">'+((s.val/total)*100).toFixed(0)+'%</span></div>').join('') : '<div class="muted-line" style="font-size:11px;padding:6px">No data yet</div>';
+  if(!svg||!cen||!leg) return;
+  const cx=50,cy=50,R=45,r=29, band=R-r, midR=(R+r)/2;
+  const defCenter='<b>'+big+'</b><small>'+escapeHtml(small)+'</small>';
+  let inner='<circle cx="50" cy="50" r="'+midR+'" fill="none" stroke="var(--dbe-track)" stroke-width="'+band+'"/>';
+  const meta=[];
+  if(total>0){
+    let a=-Math.PI/2; const gapA=(segs.length>1)?0.05:0;
+    segs.forEach((s,idx)=>{ const frac=s.val/total, sweep=frac*2*Math.PI; const a0=a+gapA/2, a1=a+sweep-gapA/2; a+=sweep; const mid=(a0+a1)/2;
+      const d=dbeArc(cx,cy,R,r,a0,Math.max(a0+0.0001,a1));
+      inner+='<path d="'+d+'" fill="'+s.color+'" class="dbe-seg" data-i="'+idx+'" style="--mx:'+Math.cos(mid).toFixed(3)+';--my:'+Math.sin(mid).toFixed(3)+'"/>';
+      meta.push({label:s.label,val:s.val,pct:frac*100,color:s.color});
+    });
+  }
+  svg.innerHTML=inner;
+  cen.innerHTML=defCenter;
+  leg.innerHTML= total>0 ? segs.map((s,idx)=>'<div class="dbe-lg" data-i="'+idx+'"><span class="dbe-sw" style="background:'+s.color+'"></span><span class="nm">'+escapeHtml(s.label)+'</span><span class="vl">'+nxFmtBytes(Math.round(s.val))+'</span><span class="pc">'+((s.val/total)*100).toFixed(0)+'%</span></div>').join('') : '<div class="muted-line" style="font-size:11px;padding:6px">No data yet</div>';
+  if(!total) return;
+  const tip=dbeTipEl();
+  const segEls=[].slice.call(svg.querySelectorAll('.dbe-seg'));
+  const legEls=[].slice.call(leg.querySelectorAll('.dbe-lg'));
+  const fmtPct=p=>(p<10?p.toFixed(1):p.toFixed(0))+'%';
+  function show(idx,on){
+    segEls.forEach((el,i)=>{ el.classList.toggle('on',on&&i===idx); el.classList.toggle('dim',on&&i!==idx); });
+    legEls.forEach((el,i)=>el.classList.toggle('hi',on&&i===idx));
+    if(on){ const m=meta[idx]; cen.innerHTML='<b style="color:'+m.color+'">'+fmtPct(m.pct)+'</b><small>'+escapeHtml(m.label)+' · '+nxFmtBytes(Math.round(m.val))+'</small>';
+      tip.innerHTML='<div class="tt"><span class="tsw" style="background:'+m.color+'"></span>'+escapeHtml(m.label)+'</div><div class="td"><b>'+nxFmtBytes(Math.round(m.val))+'</b> · '+fmtPct(m.pct)+' of total</div>'; tip.classList.add('on'); }
+    else { cen.innerHTML=defCenter; tip.classList.remove('on'); }
+  }
+  function moveTip(e){ const x=e.clientX,y=e.clientY,w=tip.offsetWidth||140,h=tip.offsetHeight||46; let nx=x+15,ny=y-h-10; if(nx+w>window.innerWidth-8) nx=x-w-15; if(ny<8) ny=y+18; tip.style.left=nx+'px'; tip.style.top=ny+'px'; }
+  segEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); });
+  legEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); });
 }
 function dbeFmtDays(n){ if(!isFinite(n)) return '∞'; if(n>=3650) return (n/365).toFixed(0)+' yr'; if(n>=730) return (n/365).toFixed(1)+' yr'; return n.toLocaleString()+' d'; }
 function renderDbEstimate(){
