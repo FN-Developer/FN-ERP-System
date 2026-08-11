@@ -5908,7 +5908,9 @@ function go(view){
     const id={add:'stk-add',list:'stk-list',withdraw:'stk-withdraw'}[stockTarget]; stockTarget=null;
     setTimeout(()=>{ const el=document.getElementById(id); if(el){ leadTo(el); el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),3400); } },300);
   }
-  window.scrollTo({top:0,behavior:'smooth'});
+  /* Skip the scroll-to-top when we're leading to a specific Delivery-Check row, so the
+     lead scrolls straight to that item instead of the two scrolls fighting each other. */
+  if(!(view==='check' && ckLeadId)) window.scrollTo({top:0,behavior:'smooth'});
   applyAccess();
 }
 function resetNavGroups(){ document.querySelectorAll('.navmenu .dd-group.open').forEach(x=>x.classList.remove('open')); }
@@ -10025,7 +10027,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-u';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-v';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
