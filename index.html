@@ -578,6 +578,72 @@ select option{background:var(--panel-solid);color:var(--txt)}
 .divider{height:1px;background:var(--line);margin:30px 0}
 .locked-note{color:var(--amber);font-weight:600;font-size:13.5px;display:flex;gap:8px;align-items:center}
 
+/* ---- Work Creation: cost + currency row ---- */
+.cost-row{display:flex;gap:10px}
+.cost-row input{flex:1;min-width:0}
+.cost-row select{width:120px;flex:0 0 auto}
+
+/* ---- Detail Input: mode switch ---- */
+.di-modes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0 22px}
+@media(max-width:640px){.di-modes{grid-template-columns:1fr}}
+.di-mode-btn{display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:16px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);cursor:pointer;transition:.18s}
+.di-mode-btn:hover{border-color:var(--cyan);transform:translateY(-1px)}
+.di-mode-btn.active{border-color:var(--cyan);background:linear-gradient(135deg,color-mix(in srgb,var(--cyan) 16%,transparent),transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--cyan) 18%,transparent)}
+.di-mode-ic{font-size:26px;line-height:1}
+.di-mode-tx{display:flex;flex-direction:column;gap:3px}
+.di-mode-tx b{font-size:15px}
+.di-mode-tx small{font-size:12px;color:var(--muted)}
+
+/* auto Rev field */
+.di-auto{background:color-mix(in srgb,var(--cyan) 10%,var(--inset-bg))!important;font-family:'Orbitron';color:var(--cyan);font-weight:700;letter-spacing:1px}
+
+/* group picker */
+.di-grp{position:relative}
+.di-grp-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-radius:11px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);cursor:pointer;font-size:14px}
+.di-grp-btn:hover{border-color:var(--cyan)}
+.di-grp-chev{color:var(--muted);font-size:12px}
+.di-grp-menu{position:absolute;z-index:60;top:calc(100% + 6px);left:0;right:0;background:var(--card-bg,var(--inset-bg));border:1.5px solid var(--line);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.28);padding:8px;display:none;max-height:280px;overflow:auto}
+.di-grp-menu.open{display:block}
+.di-grp-opt{display:flex;align-items:center;justify-content:space-between;gap:8px;border-radius:8px;padding:2px 4px 2px 10px}
+.di-grp-opt:hover{background:color-mix(in srgb,var(--cyan) 12%,transparent)}
+.di-grp-name{flex:1;cursor:pointer;padding:8px 0;font-size:14px}
+.di-grp-del{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;padding:6px 8px;border-radius:7px}
+.di-grp-del:hover{background:color-mix(in srgb,var(--red) 20%,transparent);color:var(--red)}
+.di-grp-add{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.di-grp-add input{flex:1;padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px}
+.di-grp-add button{border:none;background:var(--cyan);color:#012;border-radius:9px;padding:0 13px;cursor:pointer;font-weight:700}
+
+/* CSV batch */
+.di-csv-intro{font-size:13.5px;color:var(--txt-soft);margin:4px 0 12px}
+.di-csv-cols{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.di-csv-col{font-size:12px;background:var(--inset-bg);border:1px solid var(--line);border-radius:20px;padding:5px 12px;color:var(--txt-soft)}
+.di-drop{border:2px dashed var(--line);border-radius:16px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:.16s;background:var(--inset-bg)}
+.di-drop:hover,.di-drop.over{border-color:var(--cyan);background:color-mix(in srgb,var(--cyan) 8%,var(--inset-bg))}
+.di-drop-ic{font-size:34px}
+.di-drop-tx{text-align:center;display:flex;flex-direction:column;gap:3px}
+.di-drop-tx small{color:var(--muted);font-size:12px}
+.di-csv-note{font-size:12.5px;color:var(--txt-soft);margin:16px 0 8px}
+.di-csv-tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:360px}
+.di-csv-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+.di-csv-table th{position:sticky;top:0;background:var(--inset-bg);text-align:left;padding:9px 12px;border-bottom:1.5px solid var(--line);font-size:12px;color:var(--txt-soft);z-index:1}
+.di-csv-table td{padding:8px 12px;border-bottom:1px solid var(--line)}
+.di-csv-table tbody tr{cursor:pointer}
+.di-csv-table tbody tr:hover{background:color-mix(in srgb,var(--cyan) 7%,transparent)}
+.di-csv-table tbody tr.sel{background:color-mix(in srgb,var(--cyan) 17%,transparent)}
+.di-csv-ck{width:38px;text-align:center}
+.di-csv-n{color:var(--muted);width:44px}
+.di-csv-selinfo{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13px;color:var(--txt-soft)}
+.btn.sm{padding:5px 11px;font-size:12px}
+.di-sec-title{font-family:'Orbitron';font-size:14px;color:var(--cyan);margin:22px 0 6px;letter-spacing:1px}
+.di-apply-note{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+.di-prev-wrap{overflow:auto;max-height:56vh;border:1px solid var(--line);border-radius:10px}
+.di-prev-table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+.di-prev-table th{position:sticky;top:0;background:var(--inset-bg);text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--line);color:var(--txt-soft)}
+.di-prev-table td{padding:7px 10px;border-bottom:1px solid var(--line)}
+.di-miss{display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+.di-miss-row{font-size:13px;background:color-mix(in srgb,var(--red) 10%,transparent);border:1px solid color-mix(in srgb,var(--red) 30%,transparent);border-radius:8px;padding:8px 12px}
+.di-miss-more{font-size:12px;color:var(--muted)}
+
 /* table */
 .table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
 table{border-collapse:collapse;width:100%;min-width:820px;font-size:14px}
@@ -2354,10 +2420,9 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           </div>
         </div>
         <div class="grid two" style="margin-top:18px">
-          <div class="field" id="f-deliveryDate">
-            <label><span data-i18n="lblDelivery">Customer Delivery Date</span> <span style="color:var(--muted);font-weight:500">(วันส่งงาน)</span> <span class="req">*</span></label>
-            <input type="date" id="deliveryDate">
-            <div class="err" data-i18n="errDelivery">Please select the delivery date.</div>
+          <div class="field" id="f-estCost">
+            <label><span data-i18n="lblEstCost">Estimated total project cost</span> <span style="color:var(--muted);font-weight:500">(ประเมินราคาโครงการ)</span></label>
+            <div class="cost-row"><input type="number" id="estCost" step="any" min="0" placeholder="0.00"><select id="estCurrency"><option value="THB">THB (฿)</option><option value="USD">USD ($)</option></select></div>
           </div>
           <div></div>
         </div>
@@ -2384,21 +2449,39 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         <div class="ro-box"><div class="k" data-i18n="lblCustName">Cust Name (Company)</div><div class="v" id="roCust">—</div></div>
         <div class="ro-box"><div class="k" data-i18n="lblCode">Code</div><div class="v" id="roCode">—</div></div>
         <div class="ro-box"><div class="k" data-i18n="roName">WORK NAME</div><div class="v" id="roName">—</div></div>
-        <div class="ro-box"><div class="k">Customer Delivery Date (วันส่งงาน)</div><div class="v" id="roDate">—</div></div>
+        <div class="ro-box"><div class="k" data-i18n="lblEstCost">Estimated total project cost</div><div class="v" id="roCost">—</div></div>
       </div>
     </div>
 
     <div class="card" id="detailFormCard" style="display:none">
       <h2><span class="dot"></span><span data-i18n="inputHead">Input your information</span></h2>
       <div class="card-sub" data-i18n="inputSub">Enter the detail line for the selected work order.</div>
-      <div class="hint-req"><span data-i18n="reqNote">Fields marked</span> <span class="redtext" style="margin:0 4px">*</span> <span data-i18n="reqNote2">are important and must be filled before submit.</span></div>
-      <form id="detailForm" autocomplete="off">
-        <div class="grid three" id="detailFields"></div>
-        <div class="actions">
-          <button type="submit" class="btn primary">⏻ <span data-i18n="btnSubmit">Submit</span></button>
-          <button type="reset" class="btn ghost" data-i18n="btnClear">Clear</button>
-        </div>
-      </form>
+
+      <div class="di-modes">
+        <button type="button" class="di-mode-btn active" id="diModeOne" onclick="diMode('one')">
+          <span class="di-mode-ic">➕</span>
+          <span class="di-mode-tx"><b data-i18n="diOneT">Add one detail</b><small data-i18n="diOneS">Fill a single line manually</small></span>
+        </button>
+        <button type="button" class="di-mode-btn" id="diModeCsv" onclick="diMode('csv')">
+          <span class="di-mode-ic">📑</span>
+          <span class="di-mode-tx"><b data-i18n="diCsvT">Add by Group</b><small data-i18n="diCsvS">CSV upload — fill many lines fast</small></span>
+        </button>
+      </div>
+
+      <!-- ---- MODE: add one detail ---- -->
+      <div id="diOne">
+        <div class="hint-req"><span data-i18n="reqNote">Fields marked</span> <span class="redtext" style="margin:0 4px">*</span> <span data-i18n="reqNote2">are important and must be filled before submit.</span></div>
+        <form id="detailForm" autocomplete="off">
+          <div class="grid three" id="detailFields"></div>
+          <div class="actions">
+            <button type="submit" class="btn primary">⏻ <span data-i18n="btnSubmit">Submit</span></button>
+            <button type="reset" class="btn ghost" data-i18n="btnClear">Clear</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ---- MODE: add by group (CSV) ---- -->
+      <div id="diCsv" style="display:none"></div>
     </div>
   </section>
 
@@ -3729,7 +3812,7 @@ const FIREBASE_CONFIG = {
 };
 
 /* Shared data keys — these sync to the cloud (everyone sees the same data). */
-const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments'];
+const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments','nx_groups'];
 
 /* ===== Merge-on-write config & engine =====
    Each table is one JSON blob. A naive overwrite makes concurrent edits clobber each
@@ -3742,7 +3825,7 @@ const NX_MERGE = {
   nx_leaves:{type:'arr',id:'id'}, nx_ot:{type:'arr',id:'id'}, nx_positions:{type:'arr',id:'id'},
   nx_ta_devices:{type:'arr',id:'id'}, nx_ta_logs:{type:'arr',id:'id'}, nx_pr:{type:'arr',id:'id'},
   nx_vendors:{type:'arr',id:'name'}, nx_customers:{type:'arr',id:'name'},
-  nx_departments:{type:'strarr'},
+  nx_departments:{type:'strarr'}, nx_groups:{type:'strarr'},
   nx_otrates:{type:'obj'}, nx_caldays:{type:'obj'}, nx_workswitch:{type:'obj'},
   nx_defaults:{type:'obj'}, nx_payslips:{type:'obj'}, nx_datefmt:{type:'scalar'}
 };
@@ -4614,21 +4697,22 @@ function gv(id){ const e=document.getElementById(id); return e?e.value.trim():''
 
 /* Field definitions for the 18-field detail form */
 const FIELDS = [
-  {key:'rev',       en:"Rev.",                          th:"Rev. (ฉบับแก้ไข)",           req:false},
-  {key:'module',    en:"Module",                        th:"Module (โมดูล)",             req:false},
+  {key:'rev',       en:"Rev.",                          th:"Rev. (ฉบับแก้ไข)",           req:true,  auto:true},
+  {key:'module',    en:"Module",                        th:"Module (โมดูล)",             req:true},
   {key:'list',      en:"List (รายการ)",                 th:"รายการ (List)",              req:true},
-  {key:'specific',  en:"Specific (รายละเอียด)",         th:"รายละเอียด (Specific)",      req:false},
+  {key:'specific',  en:"Specific (รายละเอียด)",         th:"รายละเอียด (Specific)",      req:true},
   {key:'qty',       en:"Q'ty (จำนวน)",                  th:"จำนวน (Q'ty)",               req:true,  type:'number'},
+  {key:'unit',      en:"Unit (หน่วย)",                  th:"หน่วย (Unit)",               req:true,  type:'unit'},
   {key:'brand',     en:"BRAND",                         th:"แบรนด์ (Brand)",             req:true},
-  {key:'heat',      en:"HEAT TREATMENT",                th:"การอบชุบ (Heat Treatment)",  req:false},
-  {key:'supplier',  en:"SUPPLIER",                      th:"ผู้จัดจำหน่าย (Supplier)",   req:true},
+  {key:'heat',      en:"HEAT TREATMENT",                th:"การอบชุบ (Heat Treatment)",  req:true},
+  {key:'group',     en:"Group (หมวดหมู่)",              th:"หมวดหมู่ (Group)",           req:true,  type:'group'},
+  {key:'supplier',  en:"SUPPLIER",                      th:"ผู้จัดจำหน่าย (Supplier)",   req:false},
   {key:'shipDate',  en:"Shipping Date (วันที่จัดส่ง)",  th:"วันที่จัดส่ง (Shipping Date)",req:false, type:'date'},
   {key:'recvDate',  en:"Received Date (วันที่รับของ)",  th:"วันที่รับของ (Received Date)",req:false, type:'date'},
-  {key:'poNo',      en:"PO NO.",                        th:"เลขที่ PO (PO No.)",         req:true},
+  {key:'poNo',      en:"PO NO.",                        th:"เลขที่ PO (PO No.)",         req:false},
   {key:'estUnitPrice', en:"Est. Unit Price (ราคาประเมิน/หน่วย)", th:"ราคาประเมิน/หน่วย (Est.)", req:false, type:'number'},
-  {key:'unitPrice', en:"Actual Unit Price (ราคาจริง/หน่วย)",    th:"ราคาจริง/หน่วย (Actual)",  req:true,  type:'number'},
-  {key:'total',     en:"Total Amount (จำนวนเงิน)",      th:"จำนวนเงิน (Total Amount)",    req:true,  type:'number'},
-  {key:'group',     en:"Group (หมวดหมู่)",              th:"หมวดหมู่ (Group)",           req:true}
+  {key:'unitPrice', en:"Actual Unit Price (ราคาจริง/หน่วย)",    th:"ราคาจริง/หน่วย (Actual)",  req:false, type:'number'},
+  {key:'total',     en:"Total Amount (จำนวนเงิน)",      th:"จำนวนเงิน (Total Amount)",    req:false, type:'number'}
 ];
 
 /* =================== i18n =================== */
@@ -5685,6 +5769,7 @@ const I18N = {
   errWorkNo:{en:"Please enter the Work No.",th:"กรุณากรอกเลขที่งาน"},
   errWorkName:{en:"Please enter the Work Name.",th:"กรุณากรอกชื่องาน"},
   lblDelivery:{en:"Customer Delivery Date",th:"วันส่งงานลูกค้า"},
+  lblEstCost:{en:"Estimated total project cost",th:"ประเมินราคาโครงการรวม"},
   errDelivery:{en:"Please select the delivery date.",th:"กรุณาเลือกวันส่งงาน"},
   btnSubmit:{en:"Submit",th:"ส่งข้อมูล"},
   btnClear:{en:"Clear",th:"ล้าง"},
@@ -5696,6 +5781,10 @@ const I18N = {
   roName:{en:"WORK NAME",th:"ชื่องาน"},
   inputHead:{en:"Input your information",th:"กรอกข้อมูลของคุณ"},
   inputSub:{en:"Enter the detail line for the selected work order.",th:"กรอกรายละเอียดสำหรับงานที่เลือก"},
+  diOneT:{en:"Add one detail",th:"เพิ่มทีละรายการ"},
+  diOneS:{en:"Fill a single line manually",th:"กรอกทีละบรรทัดด้วยตนเอง"},
+  diCsvT:{en:"Add by Group",th:"เพิ่มเป็นชุด (กลุ่ม)"},
+  diCsvS:{en:"CSV upload — fill many lines fast",th:"อัปโหลด CSV — กรอกหลายรายการอย่างรวดเร็ว"},
   reqNote:{en:"Fields marked",th:"ช่องที่มีเครื่องหมาย"},
   reqNote2:{en:"are important and must be filled before submit.",th:"เป็นข้อมูลสำคัญ ต้องกรอกก่อนกดส่ง"},
   specTitle:{en:"WORK SPECTATOR",th:"ดูรายการงาน"},
@@ -6005,21 +6094,21 @@ function customModal({icon,title,desc,bodyHtml,footButtons,success}){
 /* =================== CREATE FORM =================== */
 document.getElementById('createForm').addEventListener('submit',function(e){
   e.preventDefault();
-  const workNo=val('workNo'), workName=val('workName'), custName=val('custName'), custCode=val('custCode'), deliveryDate=val('deliveryDate');
+  const workNo=val('workNo'), workName=val('workName'), custName=val('custName'), custCode=val('custCode');
+  const estCost=document.getElementById('estCost').value.trim(), estCurrency=document.getElementById('estCurrency').value;
   let ok=true;
   ok = markValid('f-workNo', workNo!=='') && ok;
   ok = markValid('f-workName', workName!=='') && ok;
   ok = markValid('f-custName', custName!=='') && ok;
   ok = markValid('f-custCode', custCode!=='') && ok;
-  ok = markValid('f-deliveryDate', deliveryDate!=='') && ok;
   if(!ok) return;
   if(DB.works().some(w=>w.workNo.toLowerCase()===workNo.toLowerCase())){
     const f=document.getElementById('f-workNo'); f.classList.add('invalid'); f.querySelector('.err').textContent=t('dupWork'); f.querySelector('.err').style.display='block'; return;
   }
   confirmModal(t('mConfirmTitle'),t('mConfirmDesc'),[
-    {k:'WORK NO',v:workNo},{k:'WORK NAME',v:workName},{k:t('lblCustName'),v:custName},{k:t('lblCode'),v:custCode},{k:'Customer Delivery Date (วันส่งงาน)',v:deliveryDate}
+    {k:'WORK NO',v:workNo},{k:'WORK NAME',v:workName},{k:t('lblCustName'),v:custName},{k:t('lblCode'),v:custCode},{k:(LANG==='en'?'Estimated cost':'ประเมินราคา'),v:estCost?(estCost+' '+estCurrency):'—'}
   ],()=>{
-    const works=DB.works(); works.push({workNo,workName,custName,custCode,deliveryDate}); DB.saveWorks(works);
+    const works=DB.works(); works.push({workNo,workName,custName,custCode,estCost,estCurrency}); DB.saveWorks(works);
     upsertCustomer(custName,custCode);
     closeModal(); successModal(t('workCreated'),t('workCreatedSub'));
     document.getElementById('createForm').reset();
@@ -6067,13 +6156,22 @@ function initCreate(){ fillCreateCustSelect(document.getElementById('custName')?
 function buildDetailFields(){
   const wrap=document.getElementById('detailFields'); if(!wrap) return;
   wrap.innerHTML='';
+  const wn=document.getElementById('selWorkNo')?document.getElementById('selWorkNo').value:'';
   FIELDS.forEach((f,i)=>{
     const label = LANG==='en'?f.en:f.th;
     const div=document.createElement('div'); div.className='field'; div.id='df-'+f.key;
     let control, hint='';
     if(f.key==='supplier'){
       control=`<select id="d-supplier" onchange="onSupplierSelect()"></select>`;
-      hint=`<div class="field-hint">${LANG==='en'?'Select from Vendor Directory, or add a new vendor with contact info.':'เลือกจากทำเนียบผู้จัดจำหน่าย หรือเพิ่มผู้ขายใหม่พร้อมข้อมูลติดต่อ'}</div>`;
+      hint=`<div class="field-hint">${LANG==='en'?'Optional — select from Vendor Directory, or add a new vendor with contact info.':'ไม่บังคับ — เลือกจากทำเนียบผู้จัดจำหน่าย หรือเพิ่มผู้ขายใหม่พร้อมข้อมูลติดต่อ'}</div>`;
+    } else if(f.key==='rev'){
+      const nx=diNextRev(wn);
+      control=`<input type="text" id="d-rev" class="di-auto" value="${escapeAttr(nx)}" readonly>`;
+      hint=`<div class="field-hint">${LANG==='en'?'Auto — next revision for this Work No (latest + 1).':'อัตโนมัติ — ฉบับแก้ไขถัดไปของ Work No นี้ (ล่าสุด + 1)'}</div>`;
+    } else if(f.key==='unit'){
+      control=`<select id="d-unit">${diUnitOptions('')}</select>`;
+    } else if(f.key==='group'){
+      control=diGroupPickerHtml('digrp','','d-group');
     } else {
       control=`<input type="${f.type||'text'}" id="d-${f.key}" ${f.type==='number'?'step="any" min="0"':''}>`;
     }
@@ -6085,6 +6183,94 @@ function buildDetailFields(){
   });
   refreshSupplierSelect();
 }
+/* ---- Detail-input helpers (auto Rev, units, group store) ---- */
+function diNextRev(wn){
+  if(!wn) return '1';
+  let mx=0;
+  DB.details().filter(d=>d.workNo===wn).forEach(d=>{
+    const n=parseInt(String(d.rev||'').replace(/[^0-9]/g,''),10);
+    if(!isNaN(n) && n>mx) mx=n;
+  });
+  return String(mx+1);
+}
+function diUnitOptions(sel){
+  return `<option value="">${LANG==='en'?'— Select unit —':'— เลือกหน่วย —'}</option>`+
+    UNITS.map(u=>`<option value="${escapeAttr(u)}"${u===sel?' selected':''}>${escapeHtml(u)}</option>`).join('');
+}
+const DI_GROUP_DEFAULTS=['fab','standard'];
+function diGroups(){
+  try{ const raw=localStorage.getItem('nx_groups'); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)&&a.length) return a; } }catch(_){}
+  return DI_GROUP_DEFAULTS.slice();
+}
+function diSaveGroups(list){
+  const uniq=[...new Set(list.map(s=>String(s).trim()).filter(Boolean))];
+  localStorage.setItem('nx_groups', JSON.stringify(uniq));
+  if(typeof cloudPush==='function'){ try{ cloudPush('nx_groups'); }catch(_){} }
+  return uniq;
+}
+function diGroupPickerHtml(idb,value,hiddenId){
+  const groups=diGroups();
+  const opts=groups.map(g=>`<div class="di-grp-opt" data-g="${escapeAttr(g)}">
+      <span class="di-grp-name" onclick="diGrpPick('${idb}','${escapeAttr(g)}')">${escapeHtml(g)}</span>
+      <button type="button" class="di-grp-del" title="Delete" onclick="diGrpDel('${idb}','${escapeAttr(g)}')">✕</button>
+    </div>`).join('');
+  const cur = value && groups.includes(value) ? value : '';
+  return `<div class="di-grp" id="${idb}-wrap">
+    <input type="hidden" id="${hiddenId}" value="${escapeAttr(cur)}">
+    <button type="button" class="di-grp-btn" id="${idb}-btn" onclick="diGrpToggle('${idb}')">
+      <span id="${idb}-lbl">${cur?escapeHtml(cur):(LANG==='en'?'— Select group —':'— เลือกหมวดหมู่ —')}</span><span class="di-grp-chev">▾</span>
+    </button>
+    <div class="di-grp-menu" id="${idb}-menu">
+      <div class="di-grp-list" id="${idb}-list">${opts}</div>
+      <div class="di-grp-add">
+        <input type="text" id="${idb}-new" placeholder="${LANG==='en'?'Add new group…':'เพิ่มหมวดหมู่ใหม่…'}" onkeydown="if(event.key==='Enter'){event.preventDefault();diGrpAdd('${idb}');}">
+        <button type="button" onclick="diGrpAdd('${idb}')">➕</button>
+      </div>
+    </div>
+  </div>`;
+}
+function diGrpToggle(idb){
+  const m=document.getElementById(idb+'-menu'); if(!m) return;
+  const open=m.classList.contains('open');
+  document.querySelectorAll('.di-grp-menu.open').forEach(x=>x.classList.remove('open'));
+  if(!open) m.classList.add('open');
+}
+function diGrpPick(idb,g){
+  const hid = idb==='digrp' ? 'd-group' : (idb==='dagrp' ? 'da-group' : idb+'-val');
+  const hh=document.getElementById(hid); if(hh) hh.value=g;
+  const lbl=document.getElementById(idb+'-lbl'); if(lbl) lbl.textContent=g;
+  const menu=document.getElementById(idb+'-menu'); if(menu) menu.classList.remove('open');
+  const wrap = document.getElementById(idb==='digrp'?'df-group':null);
+  if(wrap) wrap.classList.remove('invalid');
+}
+function diGrpDel(idb,g){
+  const left=diGroups().filter(x=>x!==g);
+  diSaveGroups(left);
+  diGrpRebuild(idb);
+  // if the deleted one was selected, clear
+  const hid = idb==='digrp' ? 'd-group' : (idb==='dagrp' ? 'da-group' : idb+'-val');
+  const hh=document.getElementById(hid);
+  if(hh && hh.value===g){ hh.value=''; const lbl=document.getElementById(idb+'-lbl'); if(lbl) lbl.textContent=(LANG==='en'?'— Select group —':'— เลือกหมวดหมู่ —'); }
+}
+function diGrpAdd(idb){
+  const inp=document.getElementById(idb+'-new'); if(!inp) return;
+  const name=inp.value.trim(); if(!name) return;
+  const list=diGroups(); if(!list.includes(name)){ list.push(name); diSaveGroups(list); }
+  inp.value='';
+  diGrpRebuild(idb);
+  diGrpPick(idb,name);
+  const menu=document.getElementById(idb+'-menu'); if(menu) menu.classList.add('open');
+}
+function diGrpRebuild(idb){
+  const list=document.getElementById(idb+'-list'); if(!list) return;
+  list.innerHTML=diGroups().map(g=>`<div class="di-grp-opt" data-g="${escapeAttr(g)}">
+      <span class="di-grp-name" onclick="diGrpPick('${idb}','${escapeAttr(g)}')">${escapeHtml(g)}</span>
+      <button type="button" class="di-grp-del" title="Delete" onclick="diGrpDel('${idb}','${escapeAttr(g)}')">✕</button>
+    </div>`).join('');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.di-grp')) document.querySelectorAll('.di-grp-menu.open').forEach(x=>x.classList.remove('open'));
+});
 function refreshSupplierSelect(){
   const sel=document.getElementById('d-supplier'); if(!sel) return;
   const prev=sel.value;
@@ -6129,8 +6315,9 @@ function onSelectWork(){
   document.getElementById('roCust').textContent = w?(w.custName||'—'):'—';
   document.getElementById('roCode').textContent = w?(w.custCode||'—'):'—';
   document.getElementById('roName').textContent = w?w.workName:'—';
-  document.getElementById('roDate').textContent = w?w.deliveryDate:'—';
+  const rc=document.getElementById('roCost'); if(rc) rc.textContent = (w&&w.estCost)?(w.estCost+' '+(w.estCurrency||'THB')):'—';
   document.getElementById('detailFormCard').style.display = w?'block':'none';
+  if(w){ try{ diMode(diCurrentMode); }catch(_){} }
 }
 document.getElementById('detailForm').addEventListener('submit',function(e){
   e.preventDefault();
@@ -6165,10 +6352,234 @@ document.getElementById('detailForm').addEventListener('submit',function(e){
     closeModal(); successModal(t('detailComplete'),t('detailCompleteSub'));
     document.getElementById('detailForm').reset();
     document.querySelectorAll('#view-detail .invalid').forEach(x=>x.classList.remove('invalid'));
-    refreshSupplierSelect();
+    buildDetailFields();   // rebuild so auto Rev advances & group/unit reset
     renderSpectator(); renderTimeline(); computeAlerts();
   });
 });
+
+/* =================== DETAIL INPUT — MODE SWITCH =================== */
+let diCurrentMode='one';
+function diMode(m){
+  diCurrentMode=m;
+  const one=document.getElementById('diOne'), csv=document.getElementById('diCsv');
+  const bOne=document.getElementById('diModeOne'), bCsv=document.getElementById('diModeCsv');
+  if(m==='csv'){
+    if(one) one.style.display='none';
+    if(csv){ csv.style.display='block'; diBuildCsvUI(); }
+    if(bOne) bOne.classList.remove('active');
+    if(bCsv) bCsv.classList.add('active');
+  } else {
+    if(one) one.style.display='block';
+    if(csv) csv.style.display='none';
+    if(bOne) bOne.classList.add('active');
+    if(bCsv) bCsv.classList.remove('active');
+    buildDetailFields();
+  }
+}
+
+/* =================== DETAIL INPUT — CSV BATCH (Add by Group) =================== */
+let diCsvRows=[];      // array of {cells:[...]} parsed from CSV (data rows only)
+let diCsvHeaders=[];   // header cells
+let diCsvSel=new Set();// selected row indices
+let diCsvAnchor=-1;    // last clicked index for shift-range
+/* CSV column order the user specified (header row expected in this order; extra columns ignored) */
+const DI_CSV_COLS=[
+  {key:'module',   en:'Module',            th:'Module'},
+  {key:'list',     en:'List (รายการ)',     th:'รายการ'},
+  {key:'specific', en:'Specific (รายละเอียด)', th:'รายละเอียด'},
+  {key:'qty',      en:"Q'ty (จำนวน)",      th:'จำนวน'},
+  {key:'unit',     en:'Unit (หน่วย)',      th:'หน่วย'},
+  {key:'brand',    en:'Brand',             th:'แบรนด์'},
+  {key:'heat',     en:'Heat Treatment',    th:'การอบชุบ'}
+];
+function diBuildCsvUI(){
+  const c=document.getElementById('diCsv'); if(!c) return;
+  const en=LANG==='en';
+  c.innerHTML=`
+    <div class="di-csv-intro">${en?'Upload a CSV whose columns follow this order. Any column can be left blank and filled below.':'อัปโหลดไฟล์ CSV โดยเรียงคอลัมน์ตามลำดับนี้ คอลัมน์ใดเว้นว่างแล้วมากรอกด้านล่างได้'}</div>
+    <div class="di-csv-cols">${DI_CSV_COLS.map((h,i)=>`<span class="di-csv-col">${i+1}. ${escapeHtml(en?h.en:h.th)}</span>`).join('')}</div>
+    <div class="di-drop" id="diDrop" onclick="document.getElementById('diFile').click()"
+      ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')"
+      ondrop="diDropFile(event)">
+      <div class="di-drop-ic">📄⬇︎</div>
+      <div class="di-drop-tx"><b>${en?'Drop CSV here':'วางไฟล์ CSV ที่นี่'}</b><small>${en?'or click to choose a file':'หรือคลิกเพื่อเลือกไฟล์'}</small></div>
+      <input type="file" id="diFile" accept=".csv,text/csv" style="display:none" onchange="diFileChosen(event)">
+    </div>
+    <div id="diCsvBody"></div>`;
+  if(diCsvRows.length) diRenderCsvTable();
+}
+function diFileChosen(e){ const f=e.target.files&&e.target.files[0]; if(f) diReadFile(f); }
+function diDropFile(e){ e.preventDefault(); const dz=document.getElementById('diDrop'); if(dz) dz.classList.remove('over'); const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) diReadFile(f); }
+function diReadFile(f){
+  const r=new FileReader();
+  r.onload=function(){ diParseCsv(String(r.result||'')); };
+  r.readAsText(f);
+}
+function diParseCsv(text){
+  const rows=csvParse(text).filter(r=>r.some(c=>String(c).trim()!==''));
+  if(!rows.length){ showToast(LANG==='en'?'CSV is empty.':'ไฟล์ CSV ว่างเปล่า'); return; }
+  diCsvHeaders=rows[0];
+  diCsvRows=rows.slice(1).map(cells=>({cells}));
+  diCsvSel=new Set(); diCsvAnchor=-1;
+  diRenderCsvTable();
+}
+function diRenderCsvTable(){
+  const body=document.getElementById('diCsvBody'); if(!body) return;
+  const en=LANG==='en';
+  if(!diCsvRows.length){ body.innerHTML=''; return; }
+  const ncol=Math.max(DI_CSV_COLS.length, diCsvHeaders.length);
+  let head='<th class="di-csv-ck"><input type="checkbox" id="diCsvAll" onclick="diCsvToggleAll(this.checked)"></th><th>#</th>';
+  for(let i=0;i<ncol;i++){
+    const spec=DI_CSV_COLS[i];
+    const nm=spec?(en?spec.en:spec.th):(diCsvHeaders[i]||('Col '+(i+1)));
+    head+=`<th>${escapeHtml(nm)}</th>`;
+  }
+  let rowsHtml='';
+  diCsvRows.forEach((r,idx)=>{
+    const selCls=diCsvSel.has(idx)?' class="sel"':'';
+    let tds=`<td class="di-csv-ck"><input type="checkbox" ${diCsvSel.has(idx)?'checked':''} onclick="diCsvRowClick(event,${idx})"></td><td class="di-csv-n">${idx+1}</td>`;
+    for(let i=0;i<ncol;i++){ tds+=`<td>${escapeHtml(r.cells[i]!=null?r.cells[i]:'')}</td>`; }
+    rowsHtml+=`<tr${selCls} data-idx="${idx}" onclick="diCsvRowClick(event,${idx})">${tds}</tr>`;
+  });
+  body.innerHTML=`
+    <div class="di-csv-note">${en?'Select rows: click a checkbox, <b>Shift-click</b> for a range, <b>Ctrl/Cmd-click</b> to toggle. Then fill the fields below to apply to all selected rows.':'เลือกแถว: คลิกช่องกาถูก, <b>Shift-คลิก</b> เลือกช่วง, <b>Ctrl/Cmd-คลิก</b> สลับเลือก แล้วกรอกข้อมูลด้านล่างเพื่อใช้กับทุกแถวที่เลือก'}</div>
+    <div class="di-csv-tablewrap"><table class="di-csv-table"><thead><tr>${head}</tr></thead><tbody>${rowsHtml}</tbody></table></div>
+    <div class="di-csv-selinfo"><span id="diCsvSelCount">0</span> ${en?'row(s) selected':'แถวที่เลือก'} · <button type="button" class="btn ghost sm" onclick="diCsvSelectAll()">${en?'Select all':'เลือกทั้งหมด'}</button> <button type="button" class="btn ghost sm" onclick="diCsvClearSel()">${en?'Clear':'ล้าง'}</button></div>
+    <div id="diApplyBox"></div>`;
+  diRenderApplyFields();
+  diUpdateSelCount();
+}
+function diCsvRowClick(e,idx){
+  // if the click was on the checkbox itself, let it drive but prevent double toggle from row handler
+  const isCk = e.target && e.target.type==='checkbox';
+  if(e.shiftKey && diCsvAnchor>=0){
+    const a=Math.min(diCsvAnchor,idx), b=Math.max(diCsvAnchor,idx);
+    for(let i=a;i<=b;i++) diCsvSel.add(i);
+  } else if(e.ctrlKey||e.metaKey){
+    if(diCsvSel.has(idx)) diCsvSel.delete(idx); else diCsvSel.add(idx);
+    diCsvAnchor=idx;
+  } else {
+    if(isCk){
+      // plain checkbox click toggles just this row
+      if(diCsvSel.has(idx)) diCsvSel.delete(idx); else diCsvSel.add(idx);
+    } else {
+      // plain row click selects only this row
+      diCsvSel=new Set([idx]);
+    }
+    diCsvAnchor=idx;
+  }
+  e.stopPropagation();
+  diRefreshCsvSelUI();
+}
+function diRefreshCsvSelUI(){
+  document.querySelectorAll('#diCsvBody tbody tr').forEach(tr=>{
+    const i=parseInt(tr.getAttribute('data-idx'),10);
+    tr.classList.toggle('sel',diCsvSel.has(i));
+    const ck=tr.querySelector('input[type=checkbox]'); if(ck) ck.checked=diCsvSel.has(i);
+  });
+  diUpdateSelCount();
+}
+function diUpdateSelCount(){
+  const el=document.getElementById('diCsvSelCount'); if(el) el.textContent=diCsvSel.size;
+  const all=document.getElementById('diCsvAll'); if(all) all.checked = diCsvSel.size===diCsvRows.length && diCsvRows.length>0;
+}
+function diCsvToggleAll(on){ if(on) diCsvSelectAll(); else diCsvClearSel(); }
+function diCsvSelectAll(){ diCsvSel=new Set(diCsvRows.map((_,i)=>i)); diRefreshCsvSelUI(); }
+function diCsvClearSel(){ diCsvSel=new Set(); diRefreshCsvSelUI(); }
+/* the fill-below panel: the same 16 fields (minus CSV-provided ones are still overridable) */
+const DI_APPLY_FIELDS=FIELDS.filter(f=>f.key!=='rev'); // rev auto-assigned per row on finish
+function diRenderApplyFields(){
+  const box=document.getElementById('diApplyBox'); if(!box) return;
+  const en=LANG==='en';
+  let html=`<div class="di-sec-title">${en?'Fill / override fields for selected rows':'กรอก / แทนที่ข้อมูลของแถวที่เลือก'}</div>
+    <div class="di-apply-note">${en?'Leave a field blank to keep the CSV value. Required (*) fields must be present (from CSV or here) before finishing.':'เว้นว่างเพื่อใช้ค่าจาก CSV ช่องที่จำเป็น (*) ต้องมีค่า (จาก CSV หรือกรอกที่นี่) ก่อนบันทึก'}</div>
+    <div class="grid three">`;
+  DI_APPLY_FIELDS.forEach(f=>{
+    const label=en?f.en:f.th;
+    let ctrl;
+    if(f.key==='supplier'){
+      ctrl=`<input type="text" id="da-supplier" placeholder="${en?'Supplier name (optional)':'ชื่อผู้จัดจำหน่าย (ไม่บังคับ)'}">`;
+    } else if(f.key==='unit'){
+      ctrl=`<select id="da-unit">${diUnitOptions('')}</select>`;
+    } else if(f.key==='group'){
+      ctrl=diGroupPickerHtml('dagrp','','da-group');
+    } else {
+      ctrl=`<input type="${f.type||'text'}" id="da-${f.key}" ${f.type==='number'?'step="any" min="0"':''}>`;
+    }
+    html+=`<div class="field"><label>${escapeHtml(label)} ${f.req?'<span class="req">*</span>':''}</label>${ctrl}</div>`;
+  });
+  html+=`</div>
+    <div class="actions">
+      <button type="button" class="btn primary" onclick="diCsvFinish()">✓ ${en?'Finish — review & save':'เสร็จสิ้น — ตรวจสอบและบันทึก'}</button>
+      <button type="button" class="btn ghost" onclick="diCsvReset()">${en?'Reset CSV':'ล้าง CSV'}</button>
+    </div>`;
+  box.innerHTML=html;
+}
+function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvSel=new Set(); diCsvAnchor=-1; diBuildCsvUI(); }
+function diApplyVal(key){
+  if(key==='group'){ const h=document.getElementById('da-group'); return h?h.value.trim():''; }
+  const el=document.getElementById('da-'+key); return el?String(el.value).trim():'';
+}
+function diCsvFinish(){
+  const en=LANG==='en';
+  const wn=document.getElementById('selWorkNo').value;
+  if(!wn){ showToast(en?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
+  if(!diCsvRows.length){ showToast(en?'Upload a CSV first.':'อัปโหลด CSV ก่อน'); return; }
+  const targets = diCsvSel.size? [...diCsvSel].sort((a,b)=>a-b) : diCsvRows.map((_,i)=>i);
+  // override values from the apply panel
+  const ov={}; DI_APPLY_FIELDS.forEach(f=>{ ov[f.key]=diApplyVal(f.key); });
+  // compute rev base once, then increment per new row
+  let revN=parseInt(diNextRev(wn),10); if(isNaN(revN)) revN=1;
+  const built=[]; const missing=[];
+  targets.forEach(idx=>{
+    const cells=diCsvRows[idx].cells;
+    const rec={workNo:wn, id:'d'+Date.now()+idx+Math.floor(Math.random()*1000)};
+    // map CSV columns
+    DI_CSV_COLS.forEach((col,ci)=>{ rec[col.key]=(cells[ci]!=null?String(cells[ci]).trim():''); });
+    // apply overrides (non-blank wins)
+    DI_APPLY_FIELDS.forEach(f=>{ if(ov[f.key]!=='') rec[f.key]=ov[f.key]; if(rec[f.key]==null) rec[f.key]=''; });
+    rec.rev=String(revN++);
+    // check required
+    const miss=FIELDS.filter(f=>f.req && f.key!=='rev' && (!rec[f.key]||rec[f.key]==='')).map(f=>en?f.en:f.th);
+    if(miss.length) missing.push({row:idx+1, miss});
+    built.push(rec);
+  });
+  if(missing.length){
+    const list=missing.slice(0,12).map(m=>`<div class="di-miss-row"><b>${en?'Row':'แถว'} ${m.row}</b>: ${escapeHtml(m.miss.join(', '))}</div>`).join('');
+    customModal({icon:'⚠️', title:(en?'Missing required fields':'ข้อมูลจำเป็นยังไม่ครบ'),
+      desc:(en?'These selected rows are missing required (*) values. Fill them in the CSV, or provide them in the fields below, then finish again.':'แถวที่เลือกเหล่านี้ยังขาดค่าที่จำเป็น (*) กรุณาเติมใน CSV หรือกรอกในช่องด้านล่าง แล้วกดเสร็จสิ้นอีกครั้ง'),
+      bodyHtml:`<div class="di-miss">${list}${missing.length>12?`<div class="di-miss-more">+${missing.length-12} ${en?'more':'เพิ่มเติม'}</div>`:''}</div>`,
+      footButtons:[{label:(en?'OK':'ตกลง'),cls:'primary',onClick:closeModal}]});
+    return;
+  }
+  // preview confirm
+  diCsvPreview(built);
+}
+function diCsvPreview(built){
+  const en=LANG==='en';
+  const cols=['rev'].concat(DI_CSV_COLS.map(c=>c.key)).concat(['group','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total']);
+  const colLbl=k=>{ const f=FIELDS.find(x=>x.key===k); return f?(en?f.en:f.th):k; };
+  let head=cols.map(k=>`<th>${escapeHtml(colLbl(k))}</th>`).join('');
+  let body=built.map(r=>`<tr>${cols.map(k=>`<td>${escapeHtml(r[k]!=null?String(r[k]):'')}</td>`).join('')}</tr>`).join('');
+  customModal({icon:'📋', title:(en?`Review ${built.length} row(s)`:`ตรวจสอบ ${built.length} แถว`),
+    desc:(en?'These records will be added to the selected Work. Confirm to save all.':'รายการเหล่านี้จะถูกเพิ่มเข้างานที่เลือก กดยืนยันเพื่อบันทึกทั้งหมด'),
+    bodyHtml:`<div class="di-prev-wrap"><table class="di-prev-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`,
+    footButtons:[
+      {label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},
+      {label:(en?`✓ Save all ${built.length}`:`✓ บันทึกทั้งหมด ${built.length}`),cls:'primary',onClick:diCsvCommit}
+    ]});
+  window._diCsvBuilt=built;
+}
+function diCsvCommit(){
+  const built=window._diCsvBuilt||[];
+  if(!built.length){ closeModal(); return; }
+  const dets=DB.details(); built.forEach(r=>dets.push(r)); DB.saveDetails(dets);
+  window._diCsvBuilt=null;
+  closeModal();
+  successModal(LANG==='en'?`${built.length} detail(s) added!`:`เพิ่มรายละเอียด ${built.length} รายการแล้ว!`, LANG==='en'?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว');
+  diCsvReset();
+  renderSpectator(); renderTimeline(); computeAlerts();
+}
 
 /* =================== SPECTATOR + FILTER =================== */
 const FILTER_LABELS={workNo:'WORK NO',workName:'WORK NAME',module:'Module',group:'Group',poNo:'PO NO.'};
@@ -10047,7 +10458,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-y';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-z';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
