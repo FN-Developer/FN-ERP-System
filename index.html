@@ -3468,7 +3468,9 @@ function nxMergeForWrite(k, beforeStr, cloudStr, mineStr){
 const NX_GUARD_FLAGS = ['nx_seed_leave','nx_seed_ot','nx_seed_pay','nx_seed_pos','nx_seed_dev','nx_seed_emp','nx_seed_stock_v5','nx_seed_v3','nx_ta_clean1','nx_ta_seed_v2','nx_pr_seed_v1','nx_reset_ah2'];
 
 /* Keep the real setItem so cloud pulls can write locally without echoing. */
-const _nxOrigSetItem = localStorage.setItem.bind(localStorage);
+/* Original setItem taken from the PROTOTYPE (see the override below for why). */
+const _nxProtoSetItem = Storage.prototype.setItem;
+const _nxOrigSetItem = function(k, v){ return _nxProtoSetItem.call(localStorage, k, v); };
 /* Per-key timestamp of this device's most recent LOCAL change. Used to reject a stale
    cloud copy (older than my just-made change) from overwriting it — the cause of a newly
    submitted withdraw/work "appearing then disappearing" on a slow connection, where an
@@ -3534,8 +3536,14 @@ function nxDirtyClear(k){ const a=nxDirtyGet(); const i=a.indexOf(k); if(i>=0){ 
 
 /* Intercept saves: write locally (unchanged behaviour) then push to cloud.
    NX_CLOUD is referenced lexically (a top-level const is NOT a window property);
-   the try/catch also absorbs the brief TDZ window before it is initialised. */
-localStorage.setItem = function(k, v){
+   the try/catch also absorbs the brief TDZ window before it is initialised.
+   IMPORTANT: we override Storage.PROTOTYPE.setItem, not localStorage.setItem. iOS Safari
+   IGNORES an instance-level assignment (localStorage.setItem = fn) — the native method keeps
+   running — so on iPhone every save bypassed this interceptor and never reached the cloud
+   (data saved locally, flashed, then got overwritten by the next pull). Overriding the
+   prototype is honored by every browser including iOS Safari. */
+Storage.prototype.setItem = function(k, v){
+  if(this!==localStorage){ return _nxProtoSetItem.call(this, k, v); }   // leave sessionStorage (and any other Storage) untouched
   /* View-only (Spectator) guard: a view-only user can NEVER write shared data.
      This is the single choke point every DB.saveX() passes through, so it
      enforces read-only regardless of which button was clicked. Per-device keys
@@ -9596,7 +9604,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-z7';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-z8';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
