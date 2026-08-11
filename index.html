@@ -2459,6 +2459,10 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-status .st-badge.sched{color:#7c3aed;background:color-mix(in srgb,#7c3aed 14%,transparent);border-color:color-mix(in srgb,#7c3aed 38%,transparent)}
       #view-status .st-badge.pending{color:var(--muted);background:color-mix(in srgb,var(--muted) 16%,transparent);border-color:color-mix(in srgb,var(--muted) 34%,transparent)}
       #view-status .st-legend{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
+      #view-status #statusTable tbody tr{cursor:pointer;transition:background .15s}
+      #view-status #statusTable tbody tr:hover{background:color-mix(in srgb,var(--blue) 9%,transparent)}
+      #view-status .st-go{color:var(--muted);font-weight:900;opacity:0;transition:opacity .15s,transform .15s;display:inline-block}
+      #view-status #statusTable tbody tr:hover .st-go{opacity:1;color:var(--blue);transform:translateX(2px)}
     </style>
     <div class="page-head"><div class="bar"></div><div class="ph-txt"><h1 data-i18n="statTitle">DELIVERY STATUS</h1><p data-i18n="statSub">Live status of every delivery item · view only</p></div>
       <div class="ph-actions"><span class="st-viewonly">👁 <span data-i18n="viewOnly">View only</span></span></div>
@@ -5540,8 +5544,8 @@ const I18N = {
   navTimelineSub:{en:"Track shipping & received dates",th:"ติดตามวันจัดส่งและรับของ"},
   navCheck:{en:"Delivery Check",th:"ตรวจสอบการส่งมอบ"},
   navCheckSub:{en:"Adjust shipping & received dates",th:"ปรับวันจัดส่งและวันรับของ"},
-  navStatus:{en:"Delivery Status",th:"สถานะการจัดส่ง"},
-  statTitle:{en:"DELIVERY STATUS",th:"สถานะการจัดส่ง"},
+  navStatus:{en:"Status",th:"สถานะ"},
+  statTitle:{en:"STATUS",th:"สถานะ"},
   statSub:{en:"Live status of every delivery item · view only",th:"สถานะการจัดส่งของแต่ละรายการ · ดูอย่างเดียว"},
   viewOnly:{en:"View only",th:"ดูอย่างเดียว"},
   stfWork:{en:"Work",th:"งาน (Work)"},
@@ -6701,7 +6705,8 @@ function renderStatus(){
   );
   const body=document.getElementById('statusBody');
   body.innerHTML=rows.map(d=>{ const s=stStatusOf(d);
-    return '<tr><td><b>'+escapeHtml(d.workNo||'-')+'</b></td><td>'+escapeHtml(wName(d.workNo))+'</td><td>'+escapeHtml(d.module||'-')+'</td><td>'+escapeHtml(d.list||d.module||'-')+'</td><td>'+escapeHtml(d.group||'-')+'</td><td>'+escapeHtml(d.poNo||'-')+'</td><td>'+escapeHtml(d.supplier||'-')+'</td><td>'+escapeHtml(d.qty||'-')+'</td><td>'+(d.shipDate?escapeHtml(nxDateText(d.shipDate)):'—')+'</td><td>'+(d.recvDate?escapeHtml(nxDateText(d.recvDate)):'—')+'</td><td><span class="st-badge '+s.cls+'">'+s.ic+' '+escapeHtml(s.txt)+'</span></td></tr>';
+    const goTitle=(LANG==='th')?'เปิดในหน้าตรวจสอบการส่งมอบ':'Open in Delivery Check';
+    return '<tr class="st-row" onclick="openCheck(\''+escapeAttr(d.id)+'\')" title="'+goTitle+'"><td><b>'+escapeHtml(d.workNo||'-')+'</b></td><td>'+escapeHtml(wName(d.workNo))+'</td><td>'+escapeHtml(d.module||'-')+'</td><td>'+escapeHtml(d.list||d.module||'-')+'</td><td>'+escapeHtml(d.group||'-')+'</td><td>'+escapeHtml(d.poNo||'-')+'</td><td>'+escapeHtml(d.supplier||'-')+'</td><td>'+escapeHtml(d.qty||'-')+'</td><td>'+(d.shipDate?escapeHtml(nxDateText(d.shipDate)):'—')+'</td><td>'+(d.recvDate?escapeHtml(nxDateText(d.recvDate)):'—')+'</td><td><span class="st-badge '+s.cls+'">'+s.ic+' '+escapeHtml(s.txt)+'</span> <span class="st-go">›</span></td></tr>';
   }).join('');
   const c=document.getElementById('stCount'); if(c) c.textContent=rows.length;
   const emp=document.getElementById('statusEmpty'); if(emp) emp.style.display=rows.length?'none':'';
@@ -10013,7 +10018,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-s';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-t';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
