@@ -1682,35 +1682,46 @@ tr.dl-row:hover{background:var(--hover)}
 @keyframes dotFade{to{opacity:1}}
 
 /* Floating alerts — stacked, whole stack scaled to 80% */
-.fab-stack{position:fixed;right:26px;bottom:26px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:12px;transform:scale(var(--fab-scale,.8));transform-origin:bottom right}
-.alert-fab{
-  position:relative;
-  background:linear-gradient(135deg,#ff3b5c,#a01038);color:#fff;border:2px solid #ff8098;
-  border-radius:16px;padding:14px 20px;cursor:pointer;font-family:'Rajdhani';font-weight:700;font-size:15px;
-  display:none;align-items:center;gap:12px;box-shadow:0 12px 40px rgba(255,59,92,0.5);
-  animation:fabpulse 1.1s ease-in-out infinite;
-}
+.fab-stack{position:fixed;right:24px;bottom:24px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:0;transform:scale(var(--fab-scale,1));transform-origin:bottom right}
+/* Collapsible list of individual notifications — hidden until the hub is opened */
+.fab-list{display:flex;flex-direction:column;align-items:flex-end;gap:11px;overflow:hidden;max-height:0;opacity:0;pointer-events:none;transform:translateY(14px) scale(.96);transform-origin:bottom right;transition:max-height .42s cubic-bezier(.2,.9,.25,1),opacity .3s ease,transform .42s cubic-bezier(.2,.9,.25,1),margin-bottom .3s}
+.fab-stack.open .fab-list{max-height:76vh;opacity:1;pointer-events:auto;transform:translateY(0) scale(1);margin-bottom:12px}
+/* Each notification: visionOS frosted glass, tinted by its module colour (--fc) */
+.alert-fab{position:relative;--fc:#e11d2f;
+  background:color-mix(in srgb,var(--fc) 20%,color-mix(in srgb,var(--panel) 74%,transparent));
+  -webkit-backdrop-filter:blur(26px) saturate(1.7);backdrop-filter:blur(26px) saturate(1.7);
+  color:var(--txt);border:1px solid color-mix(in srgb,var(--fc) 42%,rgba(255,255,255,.4));
+  border-radius:18px;padding:13px 18px;cursor:pointer;font-family:'Rajdhani',system-ui;font-weight:700;font-size:15px;
+  display:none;align-items:center;gap:12px;
+  box-shadow:0 16px 40px -14px color-mix(in srgb,var(--fc) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.5);
+  transition:transform .22s cubic-bezier(.2,.9,.25,1),box-shadow .22s}
 .alert-fab.show{display:flex}
-.alert-fab .bell{font-size:20px;animation:swing .8s ease-in-out infinite}
-.alert-fab .count{background:#fff;color:var(--red);border-radius:20px;min-width:26px;height:26px;display:grid;place-items:center;font-family:'Orbitron';font-weight:700;font-size:14px;padding:0 6px}
-.alert-fab small{display:block;font-weight:500;font-size:11.5px;opacity:.9}
+.alert-fab:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 22px 50px -14px color-mix(in srgb,var(--fc) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.6)}
+.alert-fab .bell{font-size:20px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.22));animation:swing .9s ease-in-out infinite}
+.alert-fab .count{background:var(--fc);color:#fff;border-radius:999px;min-width:26px;height:26px;display:grid;place-items:center;font-family:'Orbitron',system-ui;font-weight:700;font-size:14px;padding:0 7px;box-shadow:0 3px 8px -2px color-mix(in srgb,var(--fc) 70%,transparent)}
+.alert-fab small{display:block;font-weight:600;font-size:11.5px;color:var(--muted)}
+.alert-fab.ot-fab{--fc:#0891b2}     /* OT approval → HR colour */
+.alert-fab.pr-fab{--fc:#6d28d9}     /* Purchase → violet */
+.alert-fab.leave-fab{--fc:#06b6d4}  /* Leave → HR family */
+.alert-fab.wd-fab{--fc:#d97706}     /* Withdraw → Stock amber (yellow) */
+/* One consolidated hub button — 70% opacity glass, blinking; click to expand the rest */
+.fab-hub{position:relative;display:none;align-items:center;gap:10px;padding:13px 18px 13px 16px;border-radius:999px;cursor:pointer;
+  background:color-mix(in srgb,var(--panel) 70%,transparent);
+  -webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);
+  border:1px solid rgba(255,255,255,.42);color:var(--txt);font-family:'Rajdhani',system-ui;font-weight:800;font-size:14px;letter-spacing:.3px;
+  box-shadow:0 18px 46px -16px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.55);
+  animation:fabHubBlink 1.5s ease-in-out infinite}
+.fab-hub.show{display:inline-flex}
+.fab-hub:hover{transform:translateY(-1px)}
+.fab-hub .fab-hub-ic{font-size:19px;animation:swing .9s ease-in-out infinite}
+.fab-hub .fab-hub-count{background:var(--red);color:#fff;border-radius:999px;min-width:24px;height:24px;display:grid;place-items:center;font-family:'Orbitron',system-ui;font-weight:700;font-size:13px;padding:0 7px;box-shadow:0 3px 8px -2px rgba(225,29,47,.6)}
+.fab-hub .fab-hub-chev{font-size:14px;color:var(--muted);transition:transform .34s cubic-bezier(.2,.8,.2,1);font-weight:900}
+.fab-stack.open .fab-hub{animation:none;opacity:1}
+.fab-stack.open .fab-hub .fab-hub-chev{transform:rotate(180deg)}
+@keyframes fabHubBlink{0%,100%{opacity:.72;box-shadow:0 18px 46px -16px rgba(0,0,0,.5),0 0 0 0 rgba(225,29,47,.55)}50%{opacity:1;box-shadow:0 20px 52px -16px rgba(0,0,0,.55),0 0 0 12px rgba(225,29,47,0)}}
 /* shrink the floating notifications as the screen gets smaller so they don't block content */
-@media(max-width:1024px){.fab-stack{--fab-scale:.74}}
-@media(max-width:900px){.fab-stack{--fab-scale:.7}}
-@keyframes fabpulse{0%,100%{box-shadow:0 12px 40px rgba(255,59,92,0.45),0 0 0 0 rgba(255,59,92,0.5)}50%{box-shadow:0 12px 46px rgba(255,59,92,0.7),0 0 0 16px rgba(255,59,92,0)}}
-/* orange OT approval alert */
-.alert-fab.ot-fab{background:linear-gradient(135deg,#ff9d2e,#e8590c);border-color:#ffbf80;box-shadow:0 12px 40px rgba(232,89,12,.5);animation:fabpulseOrange 1.1s ease-in-out infinite}
-.alert-fab.ot-fab .count{color:#e8590c}
-@keyframes fabpulseOrange{0%,100%{box-shadow:0 12px 40px rgba(232,89,12,0.45),0 0 0 0 rgba(232,89,12,0.5)}50%{box-shadow:0 12px 46px rgba(232,89,12,0.72),0 0 0 16px rgba(232,89,12,0)}}
-.alert-fab.pr-fab{background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-color:#c4b5fd;box-shadow:0 12px 40px rgba(109,40,217,.5);animation:fabpulseViolet 1.1s ease-in-out infinite}
-.alert-fab.pr-fab .count{color:#6d28d9}
-@keyframes fabpulseViolet{0%,100%{box-shadow:0 12px 40px rgba(109,40,217,0.45),0 0 0 0 rgba(139,92,246,0.5)}50%{box-shadow:0 12px 46px rgba(109,40,217,0.72),0 0 0 16px rgba(139,92,246,0)}}
-.alert-fab.leave-fab{background:linear-gradient(135deg,#22d3ee,#0891b2);border-color:#7de9f5;box-shadow:0 12px 40px rgba(8,145,178,.5);animation:fabpulseAqua 1.1s ease-in-out infinite}
-.alert-fab.leave-fab .count{color:#0891b2}
-@keyframes fabpulseAqua{0%,100%{box-shadow:0 12px 40px rgba(8,145,178,0.45),0 0 0 0 rgba(34,211,238,0.5)}50%{box-shadow:0 12px 46px rgba(8,145,178,0.72),0 0 0 16px rgba(34,211,238,0)}}
-.alert-fab.wd-fab{background:linear-gradient(135deg,#f43f5e,#be123c);border-color:#fda4b4;box-shadow:0 12px 40px rgba(190,18,60,.5);animation:fabpulseRose 1.1s ease-in-out infinite}
-.alert-fab.wd-fab .count{color:#be123c}
-@keyframes fabpulseRose{0%,100%{box-shadow:0 12px 40px rgba(190,18,60,0.45),0 0 0 0 rgba(244,63,94,0.5)}50%{box-shadow:0 12px 46px rgba(190,18,60,0.72),0 0 0 16px rgba(244,63,94,0)}}
+@media(max-width:1024px){.fab-stack{--fab-scale:.92}}
+@media(max-width:900px){.fab-stack{--fab-scale:.85}}
 /* Withdraw request list + status badges */
 .wd-req-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line2);border-radius:12px;margin-bottom:10px;background:var(--inset-bg)}
 .wd-req-row:last-child{margin-bottom:0}
@@ -3322,9 +3333,14 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-head h1{background:linear-gradient(92deg,var(--txt),color-mix(in srgb,var(--blue) 72%,var(--txt)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
       #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:15px;position:relative;z-index:1;padding:4px 4px 8px}
       #view-dbest .dbe-row{display:flex;gap:15px;min-height:0}
-      #view-dbest .dbe-donuts{flex:1 1 46%}
+      #view-dbest .dbe-donuts{flex:1 1 52%}
       #view-dbest .dbe-bars{flex:0 0 auto}
-      #view-dbest .dbe-bottom{flex:1 1 30%}
+      #view-dbest .dbe-bottom{flex:1 1 28%}
+      #view-dbest .dbe-ct-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+      #view-dbest .dbe-seg-ctl{display:inline-flex;gap:2px;padding:3px;border-radius:13px;background:color-mix(in srgb,var(--txt) 7%,transparent);border:1px solid var(--dbe-edge);flex:0 0 auto;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+      #view-dbest .dbe-seg-ctl button{border:none;background:transparent;color:var(--muted);font:800 10.5px/1 system-ui;padding:7px 11px;border-radius:10px;cursor:pointer;transition:background .22s,color .22s,box-shadow .22s}
+      #view-dbest .dbe-seg-ctl button.on{background:color-mix(in srgb,var(--panel) 94%,transparent);color:var(--blue);box-shadow:0 3px 9px -3px rgba(9,6,215,.4)}
+      #view-dbest .dbe-seg-ctl button:not(.on):hover{color:var(--txt)}
       #view-dbest .dbe-card{background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:24px;padding:16px 19px;display:flex;flex-direction:column;min-height:0;min-width:0;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
       #view-dbest .dbe-card:hover{transform:translateY(-2px);box-shadow:0 26px 64px -20px rgba(9,6,215,.46),0 3px 10px -4px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.6)}
       #view-dbest .dbe-donuts .dbe-card{flex:1 1 0}
@@ -3332,7 +3348,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-ct .ic{width:25px;height:25px;border-radius:9px;display:grid;place-items:center;font-size:13px;flex:0 0 auto;background:color-mix(in srgb,var(--blue) 15%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 32%,transparent),0 2px 6px -2px rgba(9,6,215,.3)}
       #view-dbest .dbe-cs{font:600 10.5px/1.3 system-ui;color:var(--muted);margin:4px 0 6px}
       #view-dbest .dbe-donut-flex{flex:1 1 auto;display:flex;gap:10px;align-items:center;min-height:0}
-      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;width:clamp(124px,15.5vw,176px);aspect-ratio:1;filter:drop-shadow(0 10px 22px rgba(9,6,215,.20))}
+      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;width:clamp(140px,18vw,212px);aspect-ratio:1;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
       #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;overflow:visible}
       #view-dbest .dbe-seg{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .32s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
       #view-dbest .dbe-seg.on{transform:translate(calc(var(--mx,0)*7px),calc(var(--my,0)*7px)) scale(1.09);filter:drop-shadow(0 5px 11px rgba(0,0,0,.34)) brightness(1.1)}
@@ -3352,7 +3368,18 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-bar .bl{flex:0 0 132px;font:800 12px/1.2 system-ui;color:var(--txt)}
       #view-dbest .dbe-bar .bt{flex:1 1 auto;height:24px;background:var(--dbe-track);border-radius:999px;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,.16)}
       #view-dbest .dbe-bar .bf{height:100%;border-radius:999px;min-width:5px;transition:width .8s cubic-bezier(.2,.9,.25,1);position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
-      #view-dbest .dbe-bar .bf::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.30),transparent 55%)}
+      #view-dbest .dbe-bar .bf::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.30),transparent 55%);pointer-events:none}
+      /* Idle animations — each bar animates differently to convey what it represents */
+      #view-dbest .dbe-bar .bf::before{content:"";position:absolute;top:0;bottom:0;width:45%;pointer-events:none}
+      #view-dbest .dbe-bar .bf.bf-usage::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:dbeFlow 2.1s linear infinite}   /* Usage: data streaming in */
+      #view-dbest .dbe-bar .bf.bf-avail{animation:dbeBreath 3.2s ease-in-out infinite}   /* Available: gentle breathing headroom */
+      #view-dbest .dbe-bar .bf.bf-avail::before{background:repeating-linear-gradient(115deg,rgba(255,255,255,.16) 0 10px,transparent 10px 22px);width:100%;animation:dbeDrift 6s linear infinite}
+      #view-dbest .dbe-bar .bf.bf-total::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);animation:dbeSheen 3.6s ease-in-out infinite}   /* Total: capacity sheen */
+      @keyframes dbeFlow{0%{transform:translateX(-160%)}100%{transform:translateX(420%)}}
+      @keyframes dbeSheen{0%{transform:translateX(-160%)}55%,100%{transform:translateX(460%)}}
+      @keyframes dbeDrift{0%{background-position:0 0}100%{background-position:44px 0}}
+      @keyframes dbeBreath{0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.15) saturate(1.15)}}
+      @media (prefers-reduced-motion:reduce){#view-dbest .dbe-bar .bf::before,#view-dbest .dbe-bar .bf.bf-avail{animation:none}}
       #view-dbest .dbe-bar .bv{flex:0 0 auto;font:800 12px/1.2 system-ui;color:var(--txt);font-variant-numeric:tabular-nums;width:150px;text-align:right}
       #view-dbest .dbe-bar .bv small{font-weight:700;color:var(--muted)}
       #view-dbest .dbe-bottom{display:flex;gap:12px}
@@ -3407,12 +3434,15 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutTotal" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenTotal"></div></div><div class="dbe-legend" id="dbeLegTotal"></div></div>
         </div>
         <div class="dbe-card">
-          <div class="dbe-ct"><span class="ic">📈</span>Daily Estimate</div><div class="dbe-cs">Estimated data uploaded per day, by type</div>
-          <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutDay" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenDay"></div></div><div class="dbe-legend" id="dbeLegDay"></div></div>
-        </div>
-        <div class="dbe-card">
-          <div class="dbe-ct"><span class="ic">🗓</span>Monthly Estimate</div><div class="dbe-cs">Projected 30-day upload, by type</div>
-          <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutMon" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenMon"></div></div><div class="dbe-legend" id="dbeLegMon"></div></div>
+          <div class="dbe-ct-row">
+            <div><div class="dbe-ct"><span class="ic">📈</span>Data Estimate</div><div class="dbe-cs" id="dbeEstSub">Estimated daily upload, by type</div></div>
+            <div class="dbe-seg-ctl" id="dbeEstSeg">
+              <button type="button" data-p="day" class="on" onclick="dbeSetPeriod('day')">Daily</button>
+              <button type="button" data-p="week" onclick="dbeSetPeriod('week')">Weekly</button>
+              <button type="button" data-p="month" onclick="dbeSetPeriod('month')">Monthly</button>
+            </div>
+          </div>
+          <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutEst" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenEst"></div></div><div class="dbe-legend" id="dbeLegEst"></div></div>
         </div>
       </div>
       <div class="dbe-card dbe-bars">
@@ -3444,7 +3474,8 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
 </main>
 
 <!-- Floating alerts (stacked, scaled to 80%) -->
-<div class="fab-stack">
+<div class="fab-stack" id="fabStack">
+  <div class="fab-list" id="fabList">
   <button class="alert-fab ot-fab" id="otFab" onclick="otFabClick()">
     <span class="bell">📝</span>
     <span><span data-i18n="otFabTitle">OT Approval Requests</span><small data-i18n="otFabSub">Click to review OT to confirm</small></span>
@@ -3469,6 +3500,13 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     <span class="bell">🔔</span>
     <span><span data-i18n="fabTitle">Delivery Alert!</span><small data-i18n="fabSub">Click to review urgent deliveries</small></span>
     <span class="count" id="fabCount">0</span>
+  </button>
+  </div>
+  <button class="fab-hub" id="fabHub" onclick="toggleFabHub()" aria-label="Notifications">
+    <span class="fab-hub-ic">🔔</span>
+    <span class="fab-hub-txt">Notifications</span>
+    <span class="fab-hub-count" id="fabHubCount">0</span>
+    <span class="fab-hub-chev" id="fabHubChev">⌃</span>
   </button>
 </div>
 
@@ -6145,7 +6183,7 @@ function computeAlerts(){
   if(delN>0){
     fab.classList.add('show');
     document.getElementById('fabCount').textContent=alerts.length;
-    fab.style.animationName = urgentCount? 'fabpulse':'fabpulse';
+    fab.style.animationName = 'none';
   } else { fab.classList.remove('show'); }
   nxFabChanged('delivery',delN);
   const st=document.getElementById('stAlerts'); if(st) st.textContent=alerts.length;
@@ -7756,7 +7794,19 @@ function nxNotifySound(){ try{ if(typeof nxSoundOn==='function'&&!nxSoundOn()) r
   tone(988,0,0.16); tone(1319,0.14,0.24);   // E6 → B6, soft "ding-ding"
 }catch(_){}}
 const _notifPrev={delivery:0,ot:0,leave:0,pr:0};
-function nxFabChanged(key,n){ if(n>(_notifPrev[key]||0) && n>0) nxNotifySound(); _notifPrev[key]=n; }
+function nxFabChanged(key,n){ if(n>(_notifPrev[key]||0) && n>0) nxNotifySound(); _notifPrev[key]=n; try{ nxUpdateFabHub(); }catch(_){} }
+/* Consolidated notification hub: sums all active notifications into one blinking glass button;
+   the individual notifications live in a list that expands when the hub is clicked. */
+const NX_FAB_MAP={otFab:'otFabCount',prFab:'prFabCount',leaveFab:'leaveFabCount',wdFab:'wdFabCount',fab:'fabCount'};
+function nxUpdateFabHub(){
+  let total=0, active=0;
+  Object.keys(NX_FAB_MAP).forEach(id=>{ const f=document.getElementById(id); if(f&&f.classList.contains('show')){ active++; const c=document.getElementById(NX_FAB_MAP[id]); total+=(c?(parseInt(c.textContent,10)||0):0); } });
+  const hub=document.getElementById('fabHub'), hc=document.getElementById('fabHubCount'), stack=document.getElementById('fabStack');
+  if(hc) hc.textContent=total;
+  if(hub) hub.classList.toggle('show', active>0);
+  if(active===0 && stack) stack.classList.remove('open');   // nothing left → collapse
+}
+function toggleFabHub(){ const s=document.getElementById('fabStack'); if(s) s.classList.toggle('open'); }
 /* general UI sound library — distinct short tones (no voice) */
 function nxSound(kind){ try{ if(typeof nxSoundOn==='function'&&!nxSoundOn()) return; if(!_fpAudio) fpAudioPrime(); const ctx=_fpAudio; if(!ctx||ctx.state!=='running') return; const now=ctx.currentTime;
   const tone=(f,s,d,v,type)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type||'sine'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,now+s); g.gain.exponentialRampToValueAtTime(v||0.2,now+s+0.012); g.gain.exponentialRampToValueAtTime(0.0001,now+s+d); o.connect(g); g.connect(ctx.destination); o.start(now+s); o.stop(now+s+d+0.03); };
@@ -9730,7 +9780,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-c';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-d';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9875,6 +9925,19 @@ function dbeOpenDetail(chartName, seg, total){
   m.classList.add('on'); document.addEventListener('keydown',dbeEsc);
 }
 function dbeFmtDays(n){ if(!isFinite(n)) return '∞'; if(n>=3650) return (n/365).toFixed(0)+' yr'; if(n>=730) return (n/365).toFixed(1)+' yr'; return n.toLocaleString()+' d'; }
+/* Data-Estimate donut with a Daily / Weekly / Monthly selector (one chart, three scales). */
+function dbeSetPeriod(p){
+  window._dbePeriod=p;
+  const seg=document.getElementById('dbeEstSeg'); if(seg){ [].forEach.call(seg.querySelectorAll('button'),b=>b.classList.toggle('on',b.getAttribute('data-p')===p)); }
+  const d=window._dbeData; if(!d||!d.total){ return; }
+  const mult=(p==='week'?7:(p==='month'?30:1));
+  const per=d.perDay*mult;
+  const label=(p==='week'?'/ week':(p==='month'?'/ month':'/ day'))+(d.estimated?' (est.)':'');
+  const chartName=(p==='week'?'Weekly Estimate':(p==='month'?'Monthly Estimate':'Daily Estimate'));
+  const sub=document.getElementById('dbeEstSub'); if(sub) sub.textContent=(p==='week'?'Estimated weekly upload, by type':(p==='month'?'Projected 30-day upload, by type':'Estimated daily upload, by type'));
+  const map={}; Object.keys(d.sizeMap).forEach(k=>{ map[k]=d.sizeMap[k]/d.total*per; });
+  dbeRenderDonut(chartName,map,'dbeDonutEst','dbeCenEst','dbeLegEst', nxFmtBytes(Math.round(per)), label);
+}
 function renderDbEstimate(){
   try{ nxRecordSize(); }catch(_){}
   const sizeMap={}; let total=0;
@@ -9885,14 +9948,13 @@ function renderDbEstimate(){
   const perMonth=perDay*30;
   // three donuts
   dbeRenderDonut('Entire Database',sizeMap,'dbeDonutTotal','dbeCenTotal','dbeLegTotal','100%', nxFmtBytes(total)+' total');
-  const dayMap={}, monMap={}; Object.keys(sizeMap).forEach(k=>{ dayMap[k]=sizeMap[k]/total*perDay; monMap[k]=sizeMap[k]/total*perMonth; });
-  dbeRenderDonut('Daily Estimate',dayMap,'dbeDonutDay','dbeCenDay','dbeLegDay', nxFmtBytes(Math.round(perDay)), '/ day'+(estimated?' (est.)':''));
-  dbeRenderDonut('Monthly Estimate',monMap,'dbeDonutMon','dbeCenMon','dbeLegMon', nxFmtBytes(Math.round(perMonth)), '/ month'+(estimated?' (est.)':''));
+  window._dbeData={sizeMap:sizeMap, total:total, perDay:perDay, estimated:estimated};
+  dbeSetPeriod(window._dbePeriod||'day');
   // usage bars
   const bars=document.getElementById('dbeBars');
-  if(bars){ const rows=[['Usage',total,'var(--blue)'],['Available',avail,'var(--green)'],['Total Storage',max,'var(--muted)']];
+  if(bars){ const rows=[['Usage',total,'var(--blue)','bf-usage'],['Available',avail,'var(--green)','bf-avail'],['Total Storage',max,'var(--muted)','bf-total']];
     bars.innerHTML=rows.map(r=>{ const pct=max>0?(r[1]/max*100):0; const w=Math.max(pct, r[1]>0?0.4:0);
-      return '<div class="dbe-bar"><div class="bl">'+r[0]+'</div><div class="bt"><div class="bf" style="width:'+w.toFixed(3)+'%;background:'+r[2]+'"></div></div><div class="bv">'+nxFmtBytes(r[1])+' <small>· '+pct.toFixed(pct<1?2:0)+'%</small></div></div>';
+      return '<div class="dbe-bar"><div class="bl">'+r[0]+'</div><div class="bt"><div class="bf '+r[3]+'" style="width:'+w.toFixed(3)+'%;background:'+r[2]+'"></div></div><div class="bv">'+nxFmtBytes(r[1])+' <small>· '+pct.toFixed(pct<1?2:0)+'%</small></div></div>';
     }).join(''); }
   // stats
   const daysNum = perDay>0 ? Math.floor(avail/perDay) : Infinity;
