@@ -3487,7 +3487,13 @@ try{
    records each save step so the user can screenshot it. Off by default — zero effect for everyone else. */
 let _nxDbgOn=false, _nxDbgLog=[];
 try{ _nxDbgOn = /[?&]dbg=1/.test(location.search||'') || localStorage.getItem('nx_dbg')==='1'; if(/[?&]dbg=1/.test(location.search||'')){ try{ _nxOrigSetItem('nx_dbg','1'); }catch(_){} } }catch(_){}
-function nxDbg(m){ if(!_nxDbgOn) return; try{
+let _nxTraceBeatT=0;
+function nxDbg(m){
+  /* ALWAYS record the last few steps to a rolling trail that the heartbeat reports to the cloud,
+     so we can see the iPhone's save path without a screenshot or console. */
+  try{ const cur=String(window.__nxTrace||''); window.__nxTrace=(cur+' > '+new Date().toISOString().slice(14,19)+' '+m).slice(-240); }catch(_){}
+  try{ const n=Date.now(); if(n-_nxTraceBeatT>1500){ _nxTraceBeatT=n; setTimeout(function(){ try{ nxPresenceBeat(); }catch(_){} }, 40); } }catch(_){}   /* push the trail up promptly */
+  if(!_nxDbgOn) return; try{
   _nxDbgLog.push(new Date().toISOString().slice(11,19)+' '+m); if(_nxDbgLog.length>50) _nxDbgLog.shift();
   if(!document.body) return;
   let el=document.getElementById('nxDbgBox');
@@ -7272,7 +7278,7 @@ function saveEmployee(isEdit,id){
     positionId:(existing&&existing.positionId)||staffPosId(),                                                    // new employees default to Staff
     att:(existing&&existing.att)||zeroAtt,
     benefit:(existing&&existing.benefit)||zeroBen};                                                              // preserve benefit on edit (was being wiped)
-  const i=es.findIndex(x=>x.id===rec.id); if(i>=0) es[i]=rec; else es.push(rec); DB.saveEmployees(es);
+  const i=es.findIndex(x=>x.id===rec.id); if(i>=0) es[i]=rec; else es.push(rec); nxDbg('saveEmployee → calling DB.saveEmployees ('+es.length+')'); DB.saveEmployees(es); nxDbg('saveEmployee → after saveEmployees, dirty='+(function(){try{return nxDirtyGet().join(',')}catch(_){return'?'}})());
   closeModal(); showToast(t('empSaved')); renderEmployees(); renderAttendance(); renderLeave(); renderBenefit(); renderMyOt();
 }
 function delEmployee(x){ const id=ub64(x); DB.saveEmployees(DB.employees().filter(e=>e.id!==id)); renderEmployees(); renderAttendance(); showToast(t('empDeleted')); }
@@ -9590,7 +9596,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-z6';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-z7';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9638,7 +9644,7 @@ async function nxPresenceBeat(loggingOut){
   if(!_nxLoginAt) _nxLoginAt=Date.now();
   const dev=nxDeviceInfo(); const ip=_nxIP||{ip:'',city:'',region:'',country:'',org:''}; const sig=nxDeviceSignals();
   try{ await col.doc('_pr_'+nxSid()).set({ sid:nxSid(), kind:'presence', build:NX_BUILD, user:s.user||'—', role:s.role||'', empId:s.empId||'', did:nxDeviceId(), dname:nxDeviceName(), device:dev.type, os:dev.os, browser:dev.browser, name:dev.name, screen:sig.screen||'', cores:sig.cores||'', mem:sig.mem||'', gpu:sig.gpu||'', tz:sig.tz||'', touch:sig.touch||'', ip:ip.ip||'', city:ip.city||'', region:ip.region||'', country:ip.country||'', org:ip.org||'', lastSeen:Date.now(), online:!loggingOut, loginAt:_nxLoginAt,
-      dxReady:!!(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready), dxDirty:(function(){try{return nxDirtyGet().length}catch(_){return -1}})(), dxDirtyKeys:(function(){try{return nxDirtyGet().slice(0,8).join(',')}catch(_){return ''}})(), dxWriteOK:(window.__nxWriteOK||0), dxWriteFail:(window.__nxWriteFail||0), dxLastErr:String(window.__nxLastWriteErr||''), dxIsIOS:(function(){try{return nxIsIOS()}catch(_){return 'err'}})(), dxLastWrite:String(window.__nxLastWrite||''), dxLastSet:String(window.__nxLastSet||''), dxApply:!!_nxApplyingRemote, dxJsErr:String(window.__nxJsErr||'') }); }catch(_){}
+      dxReady:!!(typeof NX_CLOUD!=='undefined'&&NX_CLOUD.ready), dxDirty:(function(){try{return nxDirtyGet().length}catch(_){return -1}})(), dxDirtyKeys:(function(){try{return nxDirtyGet().slice(0,8).join(',')}catch(_){return ''}})(), dxWriteOK:(window.__nxWriteOK||0), dxWriteFail:(window.__nxWriteFail||0), dxLastErr:String(window.__nxLastWriteErr||''), dxIsIOS:(function(){try{return nxIsIOS()}catch(_){return 'err'}})(), dxLastWrite:String(window.__nxLastWrite||''), dxLastSet:String(window.__nxLastSet||''), dxApply:!!_nxApplyingRemote, dxJsErr:String(window.__nxJsErr||''), dxTrace:String(window.__nxTrace||'') }); }catch(_){}
 }
 async function nxListPresence(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_pr_')===0) out.push(d.data()); }); out.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)); return out; }catch(_){ return []; } }
 async function nxPrunePresence(){ const col=nxPresenceCol(); if(!col) return; const now=Date.now(); try{ const list=await nxListPresence(); for(const p of list){ if(now-(p.lastSeen||0) > 2*86400000){ try{ await col.doc('_pr_'+p.sid).delete(); }catch(_){} } } }catch(_){} }
