@@ -2176,6 +2176,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <a class="dd-item sub" data-nav="devlog" onclick="go('devlog')"><span class="ic">🗒</span><span class="dd-txt"><span>Current Log · บันทึกล่าสุด</span></span></a>
           <a class="dd-item sub" data-nav="devdb" onclick="go('devdb')"><span class="ic">🗄</span><span class="dd-txt"><span>List of Database · ฐานข้อมูล</span></span></a>
           <a class="dd-item sub" data-nav="devconn" onclick="go('devconn')"><span class="ic">📡</span><span class="dd-txt"><span>Database Connectivity</span></span></a>
+          <a class="dd-item sub" data-nav="dbest" onclick="go('dbest')"><span class="ic">📊</span><span class="dd-txt"><span>Database Storage Estimate</span></span></a>
           <a class="dd-item sub" data-nav="devset" onclick="go('devset')"><span class="ic">⚙️</span><span class="dd-txt"><span>Settings · ตั้งค่า</span></span></a>
         </div>
       </div>
@@ -3300,6 +3301,84 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <h2 style="margin:0 0 4px"><span class="dot"></span>Database Health</h2>
       <div class="card-sub">Firestore connection, storage and backup status</div>
       <div id="cnHealth" class="cn-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ DATABASE STORAGE ESTIMATE (Firebase) ============ -->
+  <section class="view" id="view-dbest">
+    <style>
+      #view-dbest.active{display:flex;flex-direction:column;height:calc(100dvh - 118px);min-height:520px;overflow:hidden}
+      #view-dbest .dbe-head{margin-bottom:10px;flex:0 0 auto}
+      #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:10px}
+      #view-dbest .dbe-row{display:flex;gap:10px;min-height:0}
+      #view-dbest .dbe-donuts{flex:1 1 46%}
+      #view-dbest .dbe-bars{flex:0 0 auto}
+      #view-dbest .dbe-bottom{flex:1 1 30%}
+      #view-dbest .dbe-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;min-height:0;min-width:0}
+      #view-dbest .dbe-donuts .dbe-card{flex:1 1 0}
+      #view-dbest .dbe-ct{font:800 12.5px/1.2 system-ui,Segoe UI,Roboto;color:var(--txt);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
+      #view-dbest .dbe-cs{font:600 10.5px/1.3 system-ui;color:var(--muted);margin:2px 0 6px}
+      #view-dbest .dbe-donut-flex{flex:1 1 auto;display:flex;gap:10px;align-items:center;min-height:0}
+      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;width:clamp(120px,15vw,168px);aspect-ratio:1}
+      #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
+      #view-dbest .dbe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+      #view-dbest .dbe-center b{font:900 20px/1 system-ui;color:var(--txt)}
+      #view-dbest .dbe-center small{font:700 10px/1.3 system-ui;color:var(--muted);margin-top:3px}
+      #view-dbest .dbe-legend{flex:1 1 auto;min-width:0;overflow:auto;display:flex;flex-direction:column;gap:3px}
+      #view-dbest .dbe-lg{display:flex;align-items:center;gap:6px;font:600 10.5px/1.25 system-ui;color:var(--txt)}
+      #view-dbest .dbe-sw{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+      #view-dbest .dbe-lg .nm{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+      #view-dbest .dbe-lg .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
+      #view-dbest .dbe-lg .pc{flex:0 0 auto;width:34px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+      #view-dbest .dbe-bar{display:flex;align-items:center;gap:12px;margin:7px 0}
+      #view-dbest .dbe-bar .bl{flex:0 0 132px;font:800 12px/1.2 system-ui;color:var(--txt)}
+      #view-dbest .dbe-bar .bt{flex:1 1 auto;height:22px;background:var(--inset-bg,rgba(128,140,180,.14));border-radius:999px;overflow:hidden;position:relative}
+      #view-dbest .dbe-bar .bf{height:100%;border-radius:999px;min-width:3px;transition:width .5s ease}
+      #view-dbest .dbe-bar .bv{flex:0 0 auto;font:800 12px/1.2 system-ui;color:var(--txt);font-variant-numeric:tabular-nums;width:150px;text-align:right}
+      #view-dbest .dbe-bar .bv small{font-weight:700;color:var(--muted)}
+      #view-dbest .dbe-bottom{display:flex;gap:10px}
+      #view-dbest .dbe-stat{flex:1 1 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+      #view-dbest .dbe-stat .k{font:700 10.5px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+      #view-dbest .dbe-stat .v{font:900 clamp(18px,2.3vw,26px)/1.05 system-ui;color:var(--txt);font-variant-numeric:tabular-nums}
+      #view-dbest .dbe-stat .s{font:600 10.5px/1.3 system-ui;color:var(--muted)}
+      #view-dbest .dbe-reco{flex:2.4 1 0;border-radius:16px;padding:12px 15px;display:flex;flex-direction:column;gap:4px;border:1px solid var(--line)}
+      #view-dbest .dbe-reco .rh{font:900 13px/1.2 system-ui;display:flex;align-items:center;gap:7px}
+      #view-dbest .dbe-reco .rb{font:600 11.5px/1.45 system-ui;color:var(--txt)}
+      #view-dbest .dbe-reco .rl{font:600 10.5px/1.35 system-ui;color:var(--muted);margin-top:2px}
+      #view-dbest .dbe-reco.ok{background:color-mix(in srgb,var(--green) 12%,transparent);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
+      #view-dbest .dbe-reco.warn{background:color-mix(in srgb,#eda100 14%,transparent);border-color:color-mix(in srgb,#eda100 45%,transparent)}
+      #view-dbest .dbe-reco.crit{background:color-mix(in srgb,var(--red) 12%,transparent);border-color:color-mix(in srgb,var(--red) 42%,transparent)}
+      #view-dbest .dbe-reco .rh.ok{color:var(--green)} #view-dbest .dbe-reco .rh.warn{color:#b07800} #view-dbest .dbe-reco .rh.crit{color:var(--red)}
+      @media(max-width:900px){ #view-dbest.active{height:auto;overflow:visible} #view-dbest .dbe-donuts,#view-dbest .dbe-bottom{flex-wrap:wrap} #view-dbest .dbe-donuts .dbe-card{flex:1 1 260px} }
+    </style>
+    <div class="page-head dbe-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE STORAGE ESTIMATE</h1><p>Firestore usage, daily upload estimate &amp; days-to-full projection · ประเมินพื้นที่ฐานข้อมูล</p></div>
+      <div class="ph-actions"><button type="button" class="ph-btn ov-cta" onclick="renderDbEstimate()"><span class="ov-cta-ic">⟳</span><span>Refresh</span></button></div>
+    </div>
+    <div class="dbe-wrap">
+      <div class="dbe-row dbe-donuts">
+        <div class="dbe-card">
+          <div class="dbe-ct">🗄 Entire Database</div><div class="dbe-cs">Everything stored now, by data type</div>
+          <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutTotal" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenTotal"></div></div><div class="dbe-legend" id="dbeLegTotal"></div></div>
+        </div>
+        <div class="dbe-card">
+          <div class="dbe-ct">📈 Daily Estimate</div><div class="dbe-cs">Estimated data uploaded per day, by type</div>
+          <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutDay" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenDay"></div></div><div class="dbe-legend" id="dbeLegDay"></div></div>
+        </div>
+        <div class="dbe-card">
+          <div class="dbe-ct">🗓 Monthly Estimate</div><div class="dbe-cs">Projected 30-day upload, by type</div>
+          <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutMon" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenMon"></div></div><div class="dbe-legend" id="dbeLegMon"></div></div>
+        </div>
+      </div>
+      <div class="dbe-card dbe-bars">
+        <div class="dbe-ct">💾 Storage Usage</div>
+        <div id="dbeBars"></div>
+      </div>
+      <div class="dbe-row dbe-bottom">
+        <div class="dbe-stat"><div class="k">Storage / day</div><div class="v" id="dbeRate">—</div><div class="s" id="dbeRateSub">rate of growth</div></div>
+        <div class="dbe-stat"><div class="k">Days until full</div><div class="v" id="dbeDays">—</div><div class="s" id="dbeDaysSub">at current rate</div></div>
+        <div class="dbe-stat"><div class="k">Max capacity</div><div class="v" id="dbeMax">—</div><div class="s">Firestore Spark (free) plan</div></div>
+        <div class="dbe-reco" id="dbeReco"><div class="rh" id="dbeRecoH"></div><div class="rb" id="dbeRecoB"></div><div class="rl" id="dbeRecoL"></div></div>
+      </div>
     </div>
   </section>
 
@@ -5536,7 +5615,7 @@ function go(view){
   if(['salary','otreg','leave','purchaserequest'].includes(view)) document.getElementById('grp-personal')?.classList.add('open');
   if(['prlist'].includes(view)) document.getElementById('grp-purchase')?.classList.add('open');
   if(['workanalysis','stockanalysis','empanalysis'].includes(view)) document.getElementById('grp-analysis')?.classList.add('open');
-  if(['devlog','devdb','devconn','devset'].includes(view)) document.getElementById('grp-devmgmt')?.classList.add('open');
+  if(['devlog','devdb','devconn','dbest','devset'].includes(view)) document.getElementById('grp-devmgmt')?.classList.add('open');
   document.getElementById('navmenu').classList.remove('open');
   const hbg=document.getElementById('homeBg'); if(hbg) hbg.classList.toggle('show',view==='home');
   if(view==='create'){ initCreate(); }
@@ -5571,6 +5650,7 @@ function go(view){
   if(view==='devlog'){ initDevLog(); }
   if(view==='devdb'){ initDevDb(); }
   if(view==='devconn'){ initDevConn(); }
+  if(view==='dbest'){ renderDbEstimate(); }
   if(view==='devset'){ renderDevSettings(); }
   if(view==='stock' && stockTarget){
     const id={add:'stk-add',list:'stk-list',withdraw:'stk-withdraw'}[stockTarget]; stockTarget=null;
@@ -8520,7 +8600,7 @@ function allowedSet(){
   return pos.perms||{};
 }
 const ADMIN_ONLY_PAGES=['permission','account'];
-const DEV_ONLY_PAGES=['devlog','devdb','devconn','devset'];   // Developer role only — NOT in the permission system, cannot be granted to anyone else
+const DEV_ONLY_PAGES=['devlog','devdb','devconn','dbest','devset'];   // Developer role only — NOT in the permission system, cannot be granted to anyone else
 function isDeveloper(){ try{ return DB.role()==='Developer'; }catch(_){ return false; } }
 function pageAllowed(view){ if(DEV_ONLY_PAGES.indexOf(view)>=0) return isDeveloper(); if(ADMIN_ONLY_PAGES.indexOf(view)>=0) return isCEO(); const a=allowedSet(); if(!a) return true; if(allPageKeys().indexOf(view)<0) return true; return !!a[view]; }
 function applyAccess(){
@@ -9604,7 +9684,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.10-z8';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.10-z9';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9663,6 +9743,70 @@ function nxDataBytes(){ let n=0; NX_CLOUD_KEYS.forEach(k=>{ const v=localStorage
 function nxFmtBytes(b){ if(b==null) return '—'; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; if(b<1073741824) return (b/1048576).toFixed(2)+' MB'; return (b/1073741824).toFixed(3)+' GB'; }
 function nxRecordSize(){ try{ const today=todayStr(); let hist=[]; try{ hist=JSON.parse(localStorage.getItem('nx_size_hist')||'[]'); }catch(_){} const b=nxDataBytes(); const last=hist[hist.length-1]; if(last&&last.d===today){ last.b=b; } else hist.push({d:today,b}); if(hist.length>180) hist=hist.slice(-180); _nxOrigSetItem('nx_size_hist', JSON.stringify(hist)); return hist; }catch(_){ return []; } }
 function nxDaysToFull(){ let hist=[]; try{ hist=JSON.parse(localStorage.getItem('nx_size_hist')||'[]'); }catch(_){} const cur=nxDataBytes(); if(hist.length<2) return {perDay:0,days:null,note:'need ≥2 days of history'}; const first=hist[0],last=hist[hist.length-1]; const span=Math.max(1,(new Date(last.d)-new Date(first.d))/86400000); const perDay=(last.b-first.b)/span; if(perDay<=0) return {perDay,days:null,note:'stable — not growing'}; return {perDay, days:Math.floor((NX_DB_MAX_BYTES-cur)/perDay), note:''}; }
+
+/* ---- Database Storage Estimate page (Developer Management) ---- */
+const DBE_COLORS=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];  /* validated categorical palette */
+const DBE_OTHER='#8a93ad';
+const DBE_NAMES={nx_works:'Work Orders',nx_details:'Work Details',nx_vendors:'Vendors',nx_customers:'Customers',nx_stock:'Stock',nx_withdraws:'Withdrawals',nx_employees:'Employees',nx_returns:'Returns',nx_leaves:'Leaves',nx_ot:'Overtime',nx_otrates:'OT Rates',nx_caldays:'Calendar',nx_workswitch:'Work Switch',nx_defaults:'Defaults',nx_positions:'Positions',nx_payslips:'Payslips',nx_ta_devices:'TA Devices',nx_ta_logs:'TA Logs',nx_pr:'Purchase Req.',nx_datefmt:'Date Format',nx_departments:'Departments'};
+function dbeNiceName(k){ return DBE_NAMES[k]||k.replace(/^nx_/,''); }
+function dbeBuildSegs(map){
+  const entries=Object.entries(map).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((n,e)=>n+e[1],0);
+  const top=entries.slice(0,8), rest=entries.slice(8);
+  const restSum=rest.reduce((n,e)=>n+e[1],0);
+  const segs=top.map((e,i)=>({label:dbeNiceName(e[0]),val:e[1],color:DBE_COLORS[i]}));
+  if(restSum>0) segs.push({label:'Other ('+rest.length+')',val:restSum,color:DBE_OTHER});
+  return {segs,total};
+}
+function dbeRenderDonut(map, svgId,cenId,legId, big,small){
+  const {segs,total}=dbeBuildSegs(map);
+  const svg=document.getElementById(svgId), cen=document.getElementById(cenId), leg=document.getElementById(legId);
+  const R=40,SW=13,C=2*Math.PI*R;
+  let acc=0; let arcs='<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="var(--inset-bg,rgba(128,140,180,.16))" stroke-width="'+SW+'"/>';
+  if(total>0){ segs.forEach(s=>{ const len=(s.val/total)*C; const gap=(segs.length>1)?1.6:0; const dash=Math.max(0.01,len-gap); arcs+='<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="'+s.color+'" stroke-width="'+SW+'" stroke-dasharray="'+dash+' '+(C-dash)+'" stroke-dashoffset="'+(-acc)+'"/>'; acc+=len; }); }
+  if(svg) svg.innerHTML=arcs;
+  if(cen) cen.innerHTML='<b>'+big+'</b><small>'+escapeHtml(small)+'</small>';
+  if(leg) leg.innerHTML= total>0 ? segs.map(s=>'<div class="dbe-lg"><span class="dbe-sw" style="background:'+s.color+'"></span><span class="nm">'+escapeHtml(s.label)+'</span><span class="vl">'+nxFmtBytes(Math.round(s.val))+'</span><span class="pc">'+((s.val/total)*100).toFixed(0)+'%</span></div>').join('') : '<div class="muted-line" style="font-size:11px;padding:6px">No data yet</div>';
+}
+function dbeFmtDays(n){ if(!isFinite(n)) return '∞'; if(n>=3650) return (n/365).toFixed(0)+' yr'; if(n>=730) return (n/365).toFixed(1)+' yr'; return n.toLocaleString()+' d'; }
+function renderDbEstimate(){
+  try{ nxRecordSize(); }catch(_){}
+  const sizeMap={}; let total=0;
+  NX_CLOUD_KEYS.forEach(k=>{ const v=localStorage.getItem(k); const b=(v!=null)?(nxByteLen(v)+k.length+32):0; if(b>0){ sizeMap[k]=b; total+=b; } });
+  const max=NX_DB_MAX_BYTES, avail=Math.max(0,max-total), pctUsed=max>0?(total/max*100):0;
+  const d2f=nxDaysToFull(); let perDay=d2f.perDay, estimated=false;
+  if(!(perDay>0)){ perDay=total/30; estimated=true; }
+  const perMonth=perDay*30;
+  // three donuts
+  dbeRenderDonut(sizeMap,'dbeDonutTotal','dbeCenTotal','dbeLegTotal','100%', nxFmtBytes(total)+' total');
+  const dayMap={}, monMap={}; Object.keys(sizeMap).forEach(k=>{ dayMap[k]=sizeMap[k]/total*perDay; monMap[k]=sizeMap[k]/total*perMonth; });
+  dbeRenderDonut(dayMap,'dbeDonutDay','dbeCenDay','dbeLegDay', nxFmtBytes(Math.round(perDay)), '/ day'+(estimated?' (est.)':''));
+  dbeRenderDonut(monMap,'dbeDonutMon','dbeCenMon','dbeLegMon', nxFmtBytes(Math.round(perMonth)), '/ month'+(estimated?' (est.)':''));
+  // usage bars
+  const bars=document.getElementById('dbeBars');
+  if(bars){ const rows=[['Usage',total,'var(--blue)'],['Available',avail,'var(--green)'],['Total Storage',max,'var(--muted)']];
+    bars.innerHTML=rows.map(r=>{ const pct=max>0?(r[1]/max*100):0; const w=Math.max(pct, r[1]>0?0.4:0);
+      return '<div class="dbe-bar"><div class="bl">'+r[0]+'</div><div class="bt"><div class="bf" style="width:'+w.toFixed(3)+'%;background:'+r[2]+'"></div></div><div class="bv">'+nxFmtBytes(r[1])+' <small>· '+pct.toFixed(pct<1?2:0)+'%</small></div></div>';
+    }).join(''); }
+  // stats
+  const daysNum = perDay>0 ? Math.floor(avail/perDay) : Infinity;
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('dbeRate', nxFmtBytes(Math.round(perDay))+(estimated?' *':''));
+  set('dbeRateSub', estimated?'rough estimate · collecting daily history':'measured from '+ (function(){try{return JSON.parse(localStorage.getItem('nx_size_hist')||'[]').length;}catch(_){return 0;}})()+' days of history');
+  set('dbeDays', dbeFmtDays(daysNum));
+  set('dbeDaysSub', isFinite(daysNum)?('≈ '+(daysNum).toLocaleString()+' days at current rate'):'no measurable growth yet');
+  set('dbeMax', nxFmtBytes(max));
+  // recommendation
+  const box=document.getElementById('dbeReco'); const h=document.getElementById('dbeRecoH'), b=document.getElementById('dbeRecoB'), l=document.getElementById('dbeRecoL');
+  let cls,icon,head,body;
+  if(pctUsed>=85 || (isFinite(daysNum)&&daysNum<90)){ cls='crit'; icon='🚨'; head='Action needed now'; body='Storage is filling fast ('+pctUsed.toFixed(1)+'% used'+(isFinite(daysNum)?', ~'+daysNum.toLocaleString()+' days left':'')+'). Free space or add capacity.'; }
+  else if(pctUsed>=60 || (isFinite(daysNum)&&daysNum<365)){ cls='warn'; icon='⚠️'; head='Plan a cleanup soon'; body='Growth is noticeable ('+pctUsed.toFixed(1)+'% used'+(isFinite(daysNum)?', ~'+dbeFmtDays(daysNum)+' left':'')+'). Trim old data before it becomes urgent.'; }
+  else { cls='ok'; icon='✅'; head='Healthy — no action needed'; body='Only '+pctUsed.toFixed(2)+'% used'+(isFinite(daysNum)?' · ~'+dbeFmtDays(daysNum)+' of headroom':'')+'. Plenty of space at the current rate.'; }
+  if(box){ box.className='dbe-reco '+cls; }
+  if(h){ h.className='rh '+cls; h.innerHTML=icon+' '+head; }
+  if(b){ b.textContent=body; }
+  if(l){ l.innerHTML='What to do — ✅ under 60%: keep normal backups. &nbsp;⚠️ 60–85% or under 1 yr left: delete old cloud backups, trim TA logs, export finished work orders &amp; payslips to CSV then clear them. &nbsp;🚨 over 85% or under 90 days: clear running data (backups are kept), remove old logs now, or upgrade Firestore to the Blaze plan for more storage.'; }
+}
 /* ---- Login history (each account login captured as its own doc) ---- */
 async function nxLogLogin(retries){ retries=(retries==null)?10:retries; let s; try{s=DB.session()||{};}catch(_){s={};} if(!s.loggedIn) return; const col=nxPresenceCol(); if(!col){ if(retries>0) setTimeout(()=>{ nxLogLogin(retries-1); }, 1500); return; } const ip=_nxIP||{}; const dev=nxDeviceInfo(); const ts=Date.now(); const id='_lg_'+ts+'_'+Math.floor(Math.random()*1e5).toString(36); try{ await col.doc(id).set({ kind:'login', user:s.user||'—', role:s.role||'', build:NX_BUILD, dname:nxDeviceName(), did:nxDeviceId(), device:dev.type, name:dev.name, ip:ip.ip||'', city:ip.city||'', country:ip.country||'', t:ts }); }catch(_){} }
 async function nxListLogins(){ const col=nxPresenceCol(); if(!col) return []; try{ const s=await col.get(); const out=[]; s.forEach(d=>{ if(d.id.indexOf('_lg_')===0) out.push(Object.assign({_id:d.id}, d.data())); }); out.sort((a,b)=>(b.t||0)-(a.t||0)); return out; }catch(_){ return []; } }
