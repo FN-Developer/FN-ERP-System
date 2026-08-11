@@ -761,6 +761,10 @@ tr.row-blink td{animation:rowBlink 0.9s ease-in-out infinite}
 tr.row-blink td:first-child{box-shadow:inset 4px 0 0 var(--primary)}
 @keyframes rowBlink{0%,100%{background:transparent}50%{background:rgba(9,6,215,0.20)}}
 [data-theme="dark"] tr.row-blink td:nth-child(even){background:transparent}
+/* Lasting highlight on the row you were led to (from Status → Delivery Check) */
+tr.ck-lead td{background:color-mix(in srgb,var(--primary) 12%,transparent)}
+tr.ck-lead:hover td{background:color-mix(in srgb,var(--primary) 17%,transparent)}
+tr.ck-lead td:first-child{box-shadow:inset 4px 0 0 var(--primary)}
 /* rows flagged as delivery alerts (arriving from the home Delivery Alerts KPI) */
 tr.ck-alert-hl>td{background:rgba(225,29,47,0.09)}
 tr.ck-alert-hl:hover>td{background:rgba(225,29,47,0.14)}
@@ -5851,6 +5855,7 @@ function toggleLang(){ LANG = LANG==='en'?'th':'en'; localStorage.setItem('nx_la
 function go(view){
   if(!pageAllowed(view)) view='home';
   if(view!=='check') ckHighlightAlerts=false;
+  if(view!=='check') ckLeadId=null;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
   document.querySelectorAll('.navmenu .dd .dd-item').forEach(a=>a.classList.toggle('active',a.getAttribute('data-nav')===view));
@@ -6464,10 +6469,11 @@ function leaveFabClick(){
 let ckStatus='all';
 let ckSuggestItems=[], ckSuggestIndex=-1;
 let ckBlinkTarget=null;
+let ckLeadId=null;   /* row led-to from Status page — keeps a lasting highlight */
 let ckHighlightAlerts=false;
 function alertsToCheck(){ ckHighlightAlerts=true; ckStatus='all'; setCkPills('all'); go('check'); setTimeout(()=>{ const el=document.querySelector('#ckBody tr.ck-alert-hl'); if(el) leadTo(el); },420); }
 
-function openCheck(id){ ckBlinkTarget=id; ckStatus='all'; setCkPills('all'); go('check'); }
+function openCheck(id){ ckBlinkTarget=id; ckLeadId=id; ckStatus='all'; setCkPills('all'); go('check'); }
 function setCkPills(s){ document.querySelectorAll('#ckPills .pill').forEach(p=>p.classList.toggle('active',p.getAttribute('data-st')===s)); }
 function ckSetStatus(s){ ckStatus=s; setCkPills(s); renderCheck(); }
 function ckTypeChange(){
@@ -6529,6 +6535,7 @@ function renderCheck(){
     const isAlert = (st.level==='lost'||st.level==='urgent'||st.level==='warn'||st.level==='none');
     const tr=document.createElement('tr'); tr.id='ck-'+d.id;
     if(ckHighlightAlerts && isAlert) tr.classList.add('ck-alert-hl','st-'+st.level);
+    if(ckLeadId && d.id===ckLeadId) tr.classList.add('ck-lead');
     tr.innerHTML=`
       <td><span class="badge b-work">${escapeHtml(d.workNo)}</span></td>
       <td>${escapeHtml(w.workName||'')}</td>
@@ -10018,7 +10025,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-t';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-u';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
