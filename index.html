@@ -3343,18 +3343,24 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-seg-ctl button:not(.on):hover{color:var(--txt)}
       #view-dbest .dbe-card{background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:24px;padding:16px 19px;display:flex;flex-direction:column;min-height:0;min-width:0;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
       #view-dbest .dbe-card:hover{transform:translateY(-2px);box-shadow:0 26px 64px -20px rgba(9,6,215,.46),0 3px 10px -4px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.6)}
-      #view-dbest .dbe-donuts .dbe-card{flex:1 1 0}
+      #view-dbest .dbe-donuts .dbe-card{flex:1 1 0;position:relative}
+      #view-dbest .dbe-expand{flex:0 0 auto;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;cursor:pointer;font-size:14px;color:var(--muted);border:1px solid var(--dbe-edge);background:color-mix(in srgb,var(--panel) 60%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:transform .2s,color .2s,background .2s}
+      #view-dbest .dbe-expand:hover{transform:scale(1.1);color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent)}
+      #view-dbest .dbe-ct-tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
       #view-dbest .dbe-ct{font:800 13px/1.2 system-ui;color:var(--txt);letter-spacing:.2px;display:flex;align-items:center;gap:8px}
       #view-dbest .dbe-ct .ic{width:25px;height:25px;border-radius:9px;display:grid;place-items:center;font-size:13px;flex:0 0 auto;background:color-mix(in srgb,var(--blue) 15%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 32%,transparent),0 2px 6px -2px rgba(9,6,215,.3)}
       #view-dbest .dbe-cs{font:600 10.5px/1.3 system-ui;color:var(--muted);margin:4px 0 6px}
       #view-dbest .dbe-donut-flex{flex:1 1 auto;display:flex;gap:10px;align-items:center;min-height:0}
-      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;width:clamp(140px,18vw,212px);aspect-ratio:1;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
+      #view-dbest .dbe-donut-flex{padding:2px 0}
+      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;height:min(100%,190px);aspect-ratio:1;width:auto;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
       #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;overflow:visible}
-      #view-dbest .dbe-seg{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .32s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
-      #view-dbest .dbe-seg.on{transform:translate(calc(var(--mx,0)*7px),calc(var(--my,0)*7px)) scale(1.09);filter:drop-shadow(0 5px 11px rgba(0,0,0,.34)) brightness(1.1)}
-      #view-dbest .dbe-seg.dim{opacity:.3}
+      .dbe-seg{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .32s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
+      .dbe-seg.on{transform:translate(calc(var(--mx,0)*7px),calc(var(--my,0)*7px)) scale(1.09);filter:drop-shadow(0 5px 11px rgba(0,0,0,.34)) brightness(1.1)}
+      .dbe-seg.dim{opacity:.3}
       #view-dbest .dbe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
-      #view-dbest .dbe-center b{font:900 clamp(19px,2vw,25px)/1 system-ui;color:var(--txt);letter-spacing:-.6px;transition:color .2s}
+      #view-dbest .dbe-center b{font:900 clamp(19px,2vw,25px)/1 system-ui;color:var(--txt);letter-spacing:-.6px;transition:color .2s,transform .2s}
+      #view-dbest .dbe-center.dbe-cen-zoom b{transform:scale(1.07)}
+      #view-dbest .dbe-center.dbe-cen-zoom::after{content:"⤢ expand";position:absolute;bottom:16%;left:50%;transform:translateX(-50%);font:800 8px/1 system-ui;color:var(--blue);white-space:nowrap;letter-spacing:.4px;opacity:.9}
       #view-dbest .dbe-center small{font:700 9.5px/1.35 system-ui;color:var(--muted);margin-top:3px;max-width:86%}
       #view-dbest .dbe-legend{flex:1 1 auto;min-width:0;overflow:auto;display:flex;flex-direction:column;gap:1px}
       #view-dbest .dbe-lg{display:flex;align-items:center;gap:7px;font:600 10.5px/1.25 system-ui;color:var(--txt);padding:2.5px 6px;border-radius:9px;transition:background .2s,transform .2s;cursor:default}
@@ -3422,6 +3428,23 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeModal .dbe-mstat span{display:block;font:700 9.5px/1.2 system-ui;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
       #dbeModal .dbe-mstat b{font:900 clamp(15px,2vw,18px)/1.1 system-ui;color:var(--txt);font-variant-numeric:tabular-nums}
       #dbeModal .dbe-mhint{text-align:center;font:600 10.5px/1.3 system-ui;color:var(--muted);margin-top:16px}
+      /* Whole-chart big overview (click a donut to expand) */
+      #dbeModal.chart .dbe-mcard{width:min(95vw,740px)}
+      #dbeModal .dbe-cbig{display:flex;gap:26px;align-items:center;margin-top:8px}
+      #dbeModal .dbe-cbig-donut{position:relative;flex:0 0 auto;width:min(44vw,290px);aspect-ratio:1;filter:drop-shadow(0 18px 38px rgba(9,6,215,.30))}
+      #dbeModal .dbe-cbig-donut svg{width:100%;height:100%;display:block;overflow:visible}
+      #dbeModal .dbe-cbig-donut .dbe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+      #dbeModal .dbe-cbig-donut .dbe-center b{font:900 clamp(30px,6vw,40px)/1 system-ui;color:var(--txt);letter-spacing:-1.2px}
+      #dbeModal .dbe-cbig-donut .dbe-center small{font:700 12px/1.3 system-ui;color:var(--muted);margin-top:5px;max-width:88%}
+      #dbeModal .dbe-cbig-leg{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;max-height:52vh;overflow:auto}
+      #dbeModal .dbe-cbig-leg .dbe-lg{display:flex;align-items:center;gap:9px;font:600 13px/1.3 system-ui;color:var(--txt);padding:6px 10px;border-radius:11px;transition:background .2s,transform .2s;cursor:default}
+      #dbeModal .dbe-cbig-leg .dbe-lg.hi{background:color-mix(in srgb,var(--txt) 9%,transparent);transform:translateX(2px)}
+      #dbeModal .dbe-cbig-leg .dbe-sw{width:13px;height:13px;border-radius:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(255,255,255,.28),0 1px 2px rgba(0,0,0,.2)}
+      #dbeModal .dbe-cbig-leg .nm{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+      #dbeModal .dbe-cbig-leg .dbe-lg.hi .nm{color:var(--txt)}
+      #dbeModal .dbe-cbig-leg .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
+      #dbeModal .dbe-cbig-leg .pc{flex:0 0 auto;width:40px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+      @media(max-width:640px){ #dbeModal .dbe-cbig{flex-direction:column} #dbeModal .dbe-cbig-leg{max-height:34vh;width:100%} }
       @media(max-width:900px){ #view-dbest.active{height:auto;overflow:visible} #view-dbest .dbe-donuts,#view-dbest .dbe-bottom{flex-wrap:wrap} #view-dbest .dbe-donuts .dbe-card{flex:1 1 260px} }
     </style>
     <div class="page-head dbe-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE STORAGE ESTIMATE</h1><p>Firestore usage, daily upload estimate &amp; days-to-full projection · ประเมินพื้นที่ฐานข้อมูล</p></div>
@@ -3430,16 +3453,22 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     <div class="dbe-wrap">
       <div class="dbe-row dbe-donuts">
         <div class="dbe-card">
-          <div class="dbe-ct"><span class="ic">🗄</span>Entire Database</div><div class="dbe-cs">Everything stored now, by data type</div>
+          <div class="dbe-ct-row">
+            <div><div class="dbe-ct"><span class="ic">🗄</span>Entire Database</div><div class="dbe-cs">Everything stored now, by data type</div></div>
+            <button type="button" class="dbe-expand" onclick="dbeOpenChart('total')" aria-label="Big overview" title="Big overview">⤢</button>
+          </div>
           <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutTotal" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenTotal"></div></div><div class="dbe-legend" id="dbeLegTotal"></div></div>
         </div>
         <div class="dbe-card">
           <div class="dbe-ct-row">
             <div><div class="dbe-ct"><span class="ic">📈</span>Data Estimate</div><div class="dbe-cs" id="dbeEstSub">Estimated daily upload, by type</div></div>
-            <div class="dbe-seg-ctl" id="dbeEstSeg">
-              <button type="button" data-p="day" class="on" onclick="dbeSetPeriod('day')">Daily</button>
-              <button type="button" data-p="week" onclick="dbeSetPeriod('week')">Weekly</button>
-              <button type="button" data-p="month" onclick="dbeSetPeriod('month')">Monthly</button>
+            <div class="dbe-ct-tools">
+              <div class="dbe-seg-ctl" id="dbeEstSeg">
+                <button type="button" data-p="day" class="on" onclick="dbeSetPeriod('day')">Daily</button>
+                <button type="button" data-p="week" onclick="dbeSetPeriod('week')">Weekly</button>
+                <button type="button" data-p="month" onclick="dbeSetPeriod('month')">Monthly</button>
+              </div>
+              <button type="button" class="dbe-expand" onclick="dbeOpenChart('est')" aria-label="Big overview" title="Big overview">⤢</button>
             </div>
           </div>
           <div class="dbe-donut-flex"><div class="dbe-donut-box"><svg id="dbeDonutEst" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCenEst"></div></div><div class="dbe-legend" id="dbeLegEst"></div></div>
@@ -9780,7 +9809,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-d';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-e';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9861,7 +9890,7 @@ function dbeArc(cx,cy,R,r,a0,a1){
   return 'M'+o0[0]+' '+o0[1]+' A'+R+' '+R+' 0 '+large+' 1 '+o1[0]+' '+o1[1]+' L'+i1[0]+' '+i1[1]+' A'+r+' '+r+' 0 '+large+' 0 '+i0[0]+' '+i0[1]+' Z';
 }
 function dbeTipEl(){ let t=document.getElementById('dbeTip'); if(!t){ t=document.createElement('div'); t.id='dbeTip'; document.body.appendChild(t); } return t; }
-function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small){
+function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small, expandKey){
   const {segs,total}=dbeBuildSegs(map);
   const svg=document.getElementById(svgId), cen=document.getElementById(cenId), leg=document.getElementById(legId);
   if(!svg||!cen||!leg) return;
@@ -9877,6 +9906,7 @@ function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small){
       meta.push({label:s.label,val:s.val,pct:frac*100,color:s.color});
     });
   }
+  if(expandKey && total>0){ inner+='<circle cx="50" cy="50" r="'+(r-1)+'" fill="rgba(0,0,0,0)" class="dbe-hole" style="pointer-events:all;cursor:zoom-in"/>'; }
   svg.innerHTML=inner;
   cen.innerHTML=defCenter;
   leg.innerHTML= total>0 ? segs.map((s,idx)=>'<div class="dbe-lg" data-i="'+idx+'"><span class="dbe-sw" style="background:'+s.color+'"></span><span class="nm">'+escapeHtml(s.label)+'</span><span class="vl">'+nxFmtBytes(Math.round(s.val))+'</span><span class="pc">'+((s.val/total)*100).toFixed(0)+'%</span></div>').join('') : '<div class="muted-line" style="font-size:11px;padding:6px">No data yet</div>';
@@ -9894,8 +9924,10 @@ function dbeRenderDonut(chartName, map, svgId,cenId,legId, big,small){
   }
   function moveTip(e){ const x=e.clientX,y=e.clientY,w=tip.offsetWidth||140,h=tip.offsetHeight||46; let nx=x+15,ny=y-h-10; if(nx+w>window.innerWidth-8) nx=x-w-15; if(ny<8) ny=y+18; tip.style.left=nx+'px'; tip.style.top=ny+'px'; }
   const openIt=i=>{ tip.classList.remove('on'); dbeOpenDetail(chartName, meta[i], total); };
-  segEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); el.addEventListener('click',()=>openIt(i)); });
-  legEls.forEach((el,i)=>{ el.style.cursor='pointer'; el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); el.addEventListener('click',()=>openIt(i)); });
+  const clickable=!window._dbeSuppressClick;
+  segEls.forEach((el,i)=>{ el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); if(clickable) el.addEventListener('click',()=>openIt(i)); });
+  legEls.forEach((el,i)=>{ if(clickable) el.style.cursor='pointer'; el.addEventListener('mouseenter',e=>{ show(i,true); moveTip(e); }); el.addEventListener('mousemove',moveTip); el.addEventListener('mouseleave',()=>show(i,false)); if(clickable) el.addEventListener('click',()=>openIt(i)); });
+  if(expandKey){ const hole=svg.querySelector('.dbe-hole'); if(hole){ hole.addEventListener('click',()=>{ tip.classList.remove('on'); dbeOpenChart(expandKey); }); hole.addEventListener('mouseenter',()=>{ cen.classList.add('dbe-cen-zoom'); }); hole.addEventListener('mouseleave',()=>{ cen.classList.remove('dbe-cen-zoom'); }); } }
 }
 /* Full-page detail: clicking a slice expands it into a centered glass panel over a 30%-dim backdrop. */
 function dbeModalEl(){ let m=document.getElementById('dbeModal'); if(!m){ m=document.createElement('div'); m.id='dbeModal';
@@ -9905,9 +9937,9 @@ function dbeModalEl(){ let m=document.getElementById('dbeModal'); if(!m){ m=docu
     m.querySelector('.dbe-mclose').addEventListener('click',dbeCloseDetail);
   } return m; }
 function dbeEsc(e){ if(e.key==='Escape') dbeCloseDetail(); }
-function dbeCloseDetail(){ const m=document.getElementById('dbeModal'); if(m) m.classList.remove('on'); document.removeEventListener('keydown',dbeEsc); }
+function dbeCloseDetail(){ const m=document.getElementById('dbeModal'); if(m){ m.classList.remove('on'); m.classList.remove('chart'); } document.removeEventListener('keydown',dbeEsc); }
 function dbeOpenDetail(chartName, seg, total){
-  if(!seg) return; const m=dbeModalEl(); const body=m.querySelector('.dbe-mbody');
+  if(!seg) return; const m=dbeModalEl(); m.classList.remove('chart'); const body=m.querySelector('.dbe-mbody');
   const pct=total>0?(seg.val/total*100):0;
   const RR=54,SW=20,CC=2*Math.PI*RR, dash=Math.max(0.01,pct/100*CC);
   const ring='<svg viewBox="0 0 120 120" class="dbe-mring">'
@@ -9924,6 +9956,19 @@ function dbeOpenDetail(chartName, seg, total){
     +'<div class="dbe-mhint">Tap outside, press Esc, or ✕ to close</div>';
   m.classList.add('on'); document.addEventListener('keydown',dbeEsc);
 }
+/* Big overview: clicking a whole donut (its centre) or the ⤢ button expands the ENTIRE chart large. */
+function dbeOpenChart(which){
+  const c=window._dbeCharts&&window._dbeCharts[which]; if(!c) return;
+  const m=dbeModalEl(); m.classList.add('chart'); const body=m.querySelector('.dbe-mbody');
+  body.innerHTML=
+    '<div class="dbe-mtop"><span class="dbe-msw" style="background:linear-gradient(135deg,var(--blue),#1baf7a)"></span><div><div class="dbe-mname">'+escapeHtml(c.name)+'</div><div class="dbe-mchart">'+escapeHtml(c.sub||'Full breakdown by data type')+'</div></div></div>'
+    +'<div class="dbe-cbig"><div class="dbe-cbig-donut"><svg id="dbeCBigSvg" viewBox="0 0 100 100"></svg><div class="dbe-center" id="dbeCBigCen"></div></div><div class="dbe-cbig-leg" id="dbeCBigLeg"></div></div>'
+    +'<div class="dbe-mhint">Hover a slice for detail · Tap outside, press Esc, or ✕ to close</div>';
+  window._dbeSuppressClick=true;
+  try{ dbeRenderDonut(c.name, c.map, 'dbeCBigSvg','dbeCBigCen','dbeCBigLeg', c.big, c.small); }catch(_){}
+  window._dbeSuppressClick=false;
+  m.classList.add('on'); document.addEventListener('keydown',dbeEsc);
+}
 function dbeFmtDays(n){ if(!isFinite(n)) return '∞'; if(n>=3650) return (n/365).toFixed(0)+' yr'; if(n>=730) return (n/365).toFixed(1)+' yr'; return n.toLocaleString()+' d'; }
 /* Data-Estimate donut with a Daily / Weekly / Monthly selector (one chart, three scales). */
 function dbeSetPeriod(p){
@@ -9934,9 +9979,13 @@ function dbeSetPeriod(p){
   const per=d.perDay*mult;
   const label=(p==='week'?'/ week':(p==='month'?'/ month':'/ day'))+(d.estimated?' (est.)':'');
   const chartName=(p==='week'?'Weekly Estimate':(p==='month'?'Monthly Estimate':'Daily Estimate'));
-  const sub=document.getElementById('dbeEstSub'); if(sub) sub.textContent=(p==='week'?'Estimated weekly upload, by type':(p==='month'?'Projected 30-day upload, by type':'Estimated daily upload, by type'));
+  const subTxt=(p==='week'?'Estimated weekly upload, by type':(p==='month'?'Projected 30-day upload, by type':'Estimated daily upload, by type'));
+  const sub=document.getElementById('dbeEstSub'); if(sub) sub.textContent=subTxt;
   const map={}; Object.keys(d.sizeMap).forEach(k=>{ map[k]=d.sizeMap[k]/d.total*per; });
-  dbeRenderDonut(chartName,map,'dbeDonutEst','dbeCenEst','dbeLegEst', nxFmtBytes(Math.round(per)), label);
+  const big=nxFmtBytes(Math.round(per));
+  window._dbeCharts=window._dbeCharts||{};
+  window._dbeCharts.est={name:chartName, sub:subTxt, map:map, big:big, small:label};
+  dbeRenderDonut(chartName,map,'dbeDonutEst','dbeCenEst','dbeLegEst', big, label, 'est');
 }
 function renderDbEstimate(){
   try{ nxRecordSize(); }catch(_){}
@@ -9947,7 +9996,10 @@ function renderDbEstimate(){
   if(!(perDay>0)){ perDay=total/30; estimated=true; }
   const perMonth=perDay*30;
   // three donuts
-  dbeRenderDonut('Entire Database',sizeMap,'dbeDonutTotal','dbeCenTotal','dbeLegTotal','100%', nxFmtBytes(total)+' total');
+  const totalSmall=nxFmtBytes(total)+' total';
+  window._dbeCharts=window._dbeCharts||{};
+  window._dbeCharts.total={name:'Entire Database', sub:'Everything stored now, by data type', map:sizeMap, big:'100%', small:totalSmall};
+  dbeRenderDonut('Entire Database',sizeMap,'dbeDonutTotal','dbeCenTotal','dbeLegTotal','100%', totalSmall, 'total');
   window._dbeData={sizeMap:sizeMap, total:total, perDay:perDay, estimated:estimated};
   dbeSetPeriod(window._dbePeriod||'day');
   // usage bars
