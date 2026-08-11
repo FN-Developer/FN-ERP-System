@@ -1685,7 +1685,7 @@ tr.dl-row:hover{background:var(--hover)}
 .fab-stack{position:fixed;right:24px;bottom:24px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:0;transform:scale(var(--fab-scale,1));transform-origin:bottom right}
 /* Collapsible list of individual notifications — hidden until the hub is opened */
 .fab-list{display:flex;flex-direction:column;align-items:flex-end;gap:11px;overflow:hidden;max-height:0;opacity:0;pointer-events:none;transform:translateY(14px) scale(.96);transform-origin:bottom right;transition:max-height .42s cubic-bezier(.2,.9,.25,1),opacity .3s ease,transform .42s cubic-bezier(.2,.9,.25,1),margin-bottom .3s}
-.fab-stack.open .fab-list{max-height:76vh;opacity:1;pointer-events:auto;transform:translateY(0) scale(1);margin-bottom:12px}
+.fab-stack.open .fab-list{max-height:76vh;opacity:1;pointer-events:auto;transform:translateY(0) scale(1);margin-bottom:14px;overflow:visible}
 /* Each notification: visionOS frosted glass, tinted by its module colour (--fc) */
 .alert-fab{position:relative;--fc:#e11d2f;
   background:color-mix(in srgb,var(--fc) 20%,color-mix(in srgb,var(--panel) 74%,transparent));
@@ -3333,7 +3333,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-head h1{background:linear-gradient(92deg,var(--txt),color-mix(in srgb,var(--blue) 72%,var(--txt)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
       #view-dbest .dbe-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:15px;position:relative;z-index:1;padding:4px 4px 8px}
       #view-dbest .dbe-row{display:flex;gap:15px;min-height:0}
-      #view-dbest .dbe-donuts{flex:1.85 1 0;min-height:236px}
+      #view-dbest .dbe-donuts{flex:2.15 1 0;min-height:236px}
       #view-dbest .dbe-bars{flex:0 0 auto}
       #view-dbest .dbe-bottom{flex:1 1 0;min-height:150px}
       #view-dbest .dbe-ct-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -3341,7 +3341,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-seg-ctl button{border:none;background:transparent;color:var(--muted);font:800 10.5px/1 system-ui;padding:7px 11px;border-radius:10px;cursor:pointer;transition:background .22s,color .22s,box-shadow .22s}
       #view-dbest .dbe-seg-ctl button.on{background:color-mix(in srgb,var(--panel) 94%,transparent);color:var(--blue);box-shadow:0 3px 9px -3px rgba(9,6,215,.4)}
       #view-dbest .dbe-seg-ctl button:not(.on):hover{color:var(--txt)}
-      #view-dbest .dbe-card{background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:24px;padding:16px 19px;display:flex;flex-direction:column;min-height:0;min-width:0;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
+      #view-dbest .dbe-card{background:var(--dbe-glass);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7);border:1px solid var(--dbe-edge);border-radius:24px;padding:15px 21px 13px 19px;display:flex;flex-direction:column;min-height:0;min-width:0;box-shadow:var(--dbe-shadow);transition:transform .35s cubic-bezier(.2,.9,.25,1),box-shadow .35s}
       #view-dbest .dbe-card:hover{transform:translateY(-2px);box-shadow:0 26px 64px -20px rgba(9,6,215,.46),0 3px 10px -4px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.6)}
       #view-dbest .dbe-donuts .dbe-card{flex:1 1 0;position:relative}
       #view-dbest .dbe-expand{flex:0 0 auto;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;cursor:pointer;font-size:14px;color:var(--muted);border:1px solid var(--dbe-edge);background:color-mix(in srgb,var(--panel) 60%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:transform .2s,color .2s,background .2s}
@@ -3351,8 +3351,8 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-ct .ic{width:25px;height:25px;border-radius:9px;display:grid;place-items:center;font-size:13px;flex:0 0 auto;background:color-mix(in srgb,var(--blue) 15%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 32%,transparent),0 2px 6px -2px rgba(9,6,215,.3)}
       #view-dbest .dbe-cs{font:600 10.5px/1.3 system-ui;color:var(--muted);margin:4px 0 6px}
       #view-dbest .dbe-donut-flex{flex:1 1 auto;display:flex;gap:10px;align-items:center;min-height:0}
-      #view-dbest .dbe-donut-flex{padding:6px 2px;gap:14px}
-      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;height:min(100%,238px);aspect-ratio:1;width:auto;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
+      #view-dbest .dbe-donut-flex{padding:2px 4px 2px 2px;gap:12px}
+      #view-dbest .dbe-donut-box{position:relative;flex:0 0 auto;height:min(100%,320px);aspect-ratio:1;width:auto;filter:drop-shadow(0 12px 26px rgba(9,6,215,.22))}
       #view-dbest .dbe-donut-box svg{width:100%;height:100%;display:block;overflow:visible}
       .dbe-seg{pointer-events:none;transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.2,.9,.25,1),opacity .22s,filter .22s;will-change:transform}
       .dbe-hit{pointer-events:all}
@@ -3363,18 +3363,18 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-center.dbe-cen-zoom b{transform:scale(1.07)}
       #view-dbest .dbe-center.dbe-cen-zoom::after{content:"⤢ expand";position:absolute;bottom:16%;left:50%;transform:translateX(-50%);font:800 8px/1 system-ui;color:var(--blue);white-space:nowrap;letter-spacing:.4px;opacity:.9}
       #view-dbest .dbe-center small{font:700 10px/1.35 system-ui;color:var(--muted);margin-top:3px;max-width:90%}
-      #view-dbest .dbe-legend{flex:1 1 auto;min-width:0;overflow-y:auto;overflow-x:visible;display:flex;flex-direction:column;justify-content:center;gap:2px;scrollbar-width:none;-ms-overflow-style:none}
+      #view-dbest .dbe-legend{flex:1 1 auto;min-width:0;overflow-y:auto;overflow-x:visible;display:flex;flex-direction:column;justify-content:center;gap:1px;scrollbar-width:none;-ms-overflow-style:none}
       #view-dbest .dbe-legend::-webkit-scrollbar{width:0;height:0;display:none}
       #view-dbest .dbe-lg{display:flex;align-items:center;gap:8px;font:600 11.5px/1.3 system-ui;color:var(--txt);padding:3.5px 8px;border-radius:10px;transition:background .2s,transform .2s;cursor:pointer}
       #view-dbest .dbe-lg.hi{background:color-mix(in srgb,var(--txt) 8%,transparent);transform:translateX(2px)}
       #view-dbest .dbe-sw{width:10px;height:10px;border-radius:4px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(255,255,255,.28),0 1px 2px rgba(0,0,0,.22)}
-      #view-dbest .dbe-lg .nm{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+      #view-dbest .dbe-lg .nm{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
       #view-dbest .dbe-lg.hi .nm{color:var(--txt)}
       #view-dbest .dbe-lg .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
-      #view-dbest .dbe-lg .pc{flex:0 0 auto;width:32px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-      #view-dbest .dbe-bar{display:flex;align-items:center;gap:12px;margin:9px 0}
+      #view-dbest .dbe-lg .pc{flex:0 0 auto;width:auto;min-width:28px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+      #view-dbest .dbe-bar{display:flex;align-items:center;gap:12px;margin:6px 0}
       #view-dbest .dbe-bar .bl{flex:0 0 132px;font:800 12px/1.2 system-ui;color:var(--txt)}
-      #view-dbest .dbe-bar .bt{flex:1 1 auto;height:24px;background:var(--dbe-track);border-radius:999px;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,.16)}
+      #view-dbest .dbe-bar .bt{flex:1 1 auto;height:20px;background:var(--dbe-track);border-radius:999px;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,.16)}
       #view-dbest .dbe-bar .bf{height:100%;border-radius:999px;min-width:5px;transition:width .8s cubic-bezier(.2,.9,.25,1);position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
       #view-dbest .dbe-bar .bf::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.30),transparent 55%);pointer-events:none}
       /* Idle animations — each bar animates differently to convey what it represents */
@@ -3404,6 +3404,17 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #view-dbest .dbe-reco.warn{background:color-mix(in srgb,#eda100 17%,var(--dbe-glass))}
       #view-dbest .dbe-reco.crit{background:color-mix(in srgb,var(--red) 16%,var(--dbe-glass))}
       #view-dbest .dbe-reco .rh.ok{color:var(--green)} #view-dbest .dbe-reco .rh.warn{color:#b07800} #view-dbest .dbe-reco .rh.crit{color:var(--red)}
+      #view-dbest .dbe-reco .rh .rh-th{font:800 10.5px/1.2 system-ui;color:var(--muted);opacity:.9}
+      #view-dbest .dbe-reco .hl{font-weight:900;color:var(--blue);background:color-mix(in srgb,var(--blue) 13%,transparent);padding:0 5px;border-radius:6px;white-space:nowrap}
+      #view-dbest .dbe-reco .rb .rb-th{font:600 10px/1.4 system-ui;color:var(--muted);margin-top:2px}
+      #view-dbest .dbe-reco .rl{display:flex;flex-wrap:wrap;align-items:center;gap:5px 6px;margin-top:3px}
+      #view-dbest .dbe-reco .rl .rl-h{font:800 9px/1.2 system-ui;color:var(--txt);text-transform:uppercase;letter-spacing:.5px;width:100%;opacity:.75}
+      #view-dbest .dbe-reco .rl .tier{font:600 9px/1.3 system-ui;padding:3px 8px;border-radius:9px;border:1px solid;display:inline-flex;gap:5px;align-items:baseline}
+      #view-dbest .dbe-reco .rl .tier b{font-weight:900;font-variant-numeric:tabular-nums}
+      #view-dbest .dbe-reco .rl .tier .thm{opacity:.82}
+      #view-dbest .dbe-reco .rl .tier.ok{color:var(--green);border-color:color-mix(in srgb,var(--green) 42%,transparent);background:color-mix(in srgb,var(--green) 10%,transparent)}
+      #view-dbest .dbe-reco .rl .tier.warn{color:#b07800;border-color:color-mix(in srgb,#eda100 46%,transparent);background:color-mix(in srgb,#eda100 12%,transparent)}
+      #view-dbest .dbe-reco .rl .tier.crit{color:var(--red);border-color:color-mix(in srgb,var(--red) 42%,transparent);background:color-mix(in srgb,var(--red) 10%,transparent)}
       #dbeTip{position:fixed;z-index:2147483000;pointer-events:none;opacity:0;transform:translateY(5px);transition:opacity .15s,transform .15s;background:color-mix(in srgb,var(--panel) 70%,transparent);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid color-mix(in srgb,#fff 34%,transparent);border-radius:14px;padding:8px 12px;box-shadow:0 18px 44px -14px rgba(0,0,0,.44);font:600 11px/1.4 system-ui;color:var(--txt);min-width:126px}
       #dbeTip.on{opacity:1;transform:translateY(0)}
       #dbeTip .tt{font-weight:900;display:flex;align-items:center;gap:6px;margin-bottom:3px}
@@ -3412,6 +3423,10 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeTip .td b{color:var(--txt)}
       #dbeModal{position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .28s ease;background:rgba(8,10,26,.32);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
       #dbeModal.on{opacity:1;pointer-events:auto}
+      /* When the modal is closed it is invisible but its over-sized hit-paths (pointer-events:all)
+         would otherwise keep catching hovers in the centre of the page — a phantom donut. Kill them. */
+      #dbeModal:not(.on){pointer-events:none}
+      #dbeModal:not(.on) .dbe-hit,#dbeModal:not(.on) .dbe-hole{pointer-events:none!important}
       #dbeModal .dbe-mcard{position:relative;width:min(94vw,600px);max-height:94vh;overflow:visible;border-radius:30px;padding:30px 34px 24px;background:color-mix(in srgb,var(--panel) 80%,transparent);-webkit-backdrop-filter:blur(42px) saturate(1.8);backdrop-filter:blur(42px) saturate(1.8);border:1px solid color-mix(in srgb,#fff 40%,transparent);box-shadow:0 44px 110px -34px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.6);transform:scale(.92) translateY(10px);transition:transform .36s cubic-bezier(.2,.9,.25,1)}
       #dbeModal.on .dbe-mcard{transform:scale(1) translateY(0)}
       #dbeModal .dbe-mclose{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:color-mix(in srgb,var(--panel) 60%,transparent);color:var(--txt);font:800 15px/1 system-ui;cursor:pointer;display:grid;place-items:center;transition:transform .2s,background .2s,color .2s}
@@ -3447,7 +3462,17 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       #dbeModal .dbe-cbig-leg .vl{flex:0 0 auto;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
       #dbeModal .dbe-cbig-leg .pc{flex:0 0 auto;width:42px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
       @media(max-width:680px){ #dbeModal .dbe-cbig{flex-direction:column;gap:20px} #dbeModal .dbe-cbig-donut{width:min(64vw,240px)} #dbeModal .dbe-cbig-leg{width:100%} }
-      @media(max-width:900px){ #view-dbest.active{height:auto;overflow:visible;margin-bottom:0} #view-dbest .dbe-donuts,#view-dbest .dbe-bottom{flex-wrap:wrap;min-height:0} #view-dbest .dbe-donuts .dbe-card{flex:1 1 260px} }
+      @media(max-width:900px){
+        #view-dbest.active{height:auto;overflow:visible;margin-bottom:0}
+        /* rows size to their content (not flex-basis:0) so the donut can never overflow onto the bars below */
+        #view-dbest .dbe-donuts,#view-dbest .dbe-bottom{flex-wrap:wrap;min-height:0;flex:0 0 auto}
+        #view-dbest .dbe-donuts .dbe-card{flex:1 1 260px}
+        #view-dbest .dbe-bottom>*{flex:1 1 190px}
+        /* donut becomes width-driven & sits above its legend — definite size, parent grows to contain it */
+        #view-dbest .dbe-donut-flex{flex-direction:column;align-items:center;gap:10px;padding:4px 2px}
+        #view-dbest .dbe-donut-box{height:auto;width:min(62vw,210px)}
+        #view-dbest .dbe-legend{width:100%;overflow:visible;max-height:none}
+      }
     </style>
     <div class="page-head dbe-head"><div class="bar"></div><div class="ph-txt"><h1>DATABASE STORAGE ESTIMATE</h1><p>Firestore usage, daily upload estimate &amp; days-to-full projection · ประเมินพื้นที่ฐานข้อมูล</p></div>
       <div class="ph-actions"><button type="button" class="ph-btn ov-cta" onclick="renderDbEstimate()"><span class="ov-cta-ic">⟳</span><span>Refresh</span></button></div>
@@ -9811,7 +9836,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-j';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-k';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -9956,7 +9981,7 @@ function dbeModalEl(){ let m=document.getElementById('dbeModal'); if(!m){ m=docu
     m.querySelector('.dbe-mclose').addEventListener('click',dbeCloseDetail);
   } return m; }
 function dbeEsc(e){ if(e.key==='Escape') dbeCloseDetail(); }
-function dbeCloseDetail(){ const m=document.getElementById('dbeModal'); if(m){ m.classList.remove('on'); m.classList.remove('chart'); } document.removeEventListener('keydown',dbeEsc); }
+function dbeCloseDetail(){ const m=document.getElementById('dbeModal'); if(m){ m.classList.remove('on'); m.classList.remove('chart'); const b=m.querySelector('.dbe-mbody'); if(b) setTimeout(()=>{ if(!m.classList.contains('on')) b.innerHTML=''; },340); } document.removeEventListener('keydown',dbeEsc); }
 function dbeOpenDetail(chartName, seg, total){
   if(!seg) return; const m=dbeModalEl(); m.classList.remove('chart'); const body=m.querySelector('.dbe-mbody');
   const pct=total>0?(seg.val/total*100):0;
@@ -10037,14 +10062,29 @@ function renderDbEstimate(){
   set('dbeMax', nxFmtBytes(max));
   // recommendation
   const box=document.getElementById('dbeReco'); const h=document.getElementById('dbeRecoH'), b=document.getElementById('dbeRecoB'), l=document.getElementById('dbeRecoL');
-  let cls,icon,head,body;
-  if(pctUsed>=85 || (isFinite(daysNum)&&daysNum<90)){ cls='crit'; icon='🚨'; head='Action needed now'; body='Storage is filling fast ('+pctUsed.toFixed(1)+'% used'+(isFinite(daysNum)?', ~'+daysNum.toLocaleString()+' days left':'')+'). Free space or add capacity.'; }
-  else if(pctUsed>=60 || (isFinite(daysNum)&&daysNum<365)){ cls='warn'; icon='⚠️'; head='Plan a cleanup soon'; body='Growth is noticeable ('+pctUsed.toFixed(1)+'% used'+(isFinite(daysNum)?', ~'+dbeFmtDays(daysNum)+' left':'')+'). Trim old data before it becomes urgent.'; }
-  else { cls='ok'; icon='✅'; head='Healthy — no action needed'; body='Only '+pctUsed.toFixed(2)+'% used'+(isFinite(daysNum)?' · ~'+dbeFmtDays(daysNum)+' of headroom':'')+'. Plenty of space at the current rate.'; }
+  const pctTxt=(pctUsed<0.01?'&lt;0.01':pctUsed.toFixed(2))+'%';
+  const leftTxt=isFinite(daysNum)?dbeFmtDays(daysNum):'∞';
+  let cls,icon,head,headTh,body,bodyTh;
+  if(pctUsed>=85 || (isFinite(daysNum)&&daysNum<90)){
+    cls='crit'; icon='🚨'; head='Action needed now'; headTh='ต้องจัดการทันที';
+    body='Storage is filling fast — <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?', only <span class="hl">'+leftTxt+'</span> left':'')+'. Free space or add capacity now.';
+    bodyTh='พื้นที่ใกล้เต็ม — ใช้ไป '+pctTxt+(isFinite(daysNum)?' · เหลือ '+leftTxt:'')+' รีบลบข้อมูลเก่า หรือเพิ่มความจุ (upgrade plan)';
+  } else if(pctUsed>=60 || (isFinite(daysNum)&&daysNum<365)){
+    cls='warn'; icon='⚠️'; head='Plan a cleanup soon'; headTh='ควรวางแผนล้างข้อมูลเร็ว ๆ นี้';
+    body='Growth is noticeable — <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?', ~<span class="hl">'+leftTxt+'</span> left':'')+'. Trim old data before it becomes urgent.';
+    bodyTh='ข้อมูลโตขึ้นชัดเจน — ใช้ไป '+pctTxt+(isFinite(daysNum)?' · เหลือ ~'+leftTxt:'')+' ควรลบข้อมูลเก่า (old data) ก่อนจะเร่งด่วน';
+  } else {
+    cls='ok'; icon='✅'; head='Healthy — no action needed'; headTh='ปกติ — ยังไม่ต้องทำอะไร';
+    body='Only <span class="hl">'+pctTxt+'</span> used'+(isFinite(daysNum)?' · ~<span class="hl">'+leftTxt+'</span> of headroom':'')+'. Plenty of space at the current rate.';
+    bodyTh='ใช้ไปเพียง '+pctTxt+(isFinite(daysNum)?' · เหลือพื้นที่อีกราว '+leftTxt:'')+' — พื้นที่เหลือเฟือที่อัตราปัจจุบัน';
+  }
   if(box){ box.className='dbe-reco '+cls; }
-  if(h){ h.className='rh '+cls; h.innerHTML=icon+' '+head; }
-  if(b){ b.textContent=body; }
-  if(l){ l.innerHTML='What to do — ✅ under 60%: keep normal backups. &nbsp;⚠️ 60–85% or under 1 yr left: delete old cloud backups, trim TA logs, export finished work orders &amp; payslips to CSV then clear them. &nbsp;🚨 over 85% or under 90 days: clear running data (backups are kept), remove old logs now, or upgrade Firestore to the Blaze plan for more storage.'; }
+  if(h){ h.className='rh '+cls; h.innerHTML=icon+' '+head+' <span class="rh-th">· '+headTh+'</span>'; }
+  if(b){ b.innerHTML='<div class="rb-en">'+body+'</div><div class="rb-th">'+bodyTh+'</div>'; }
+  if(l){ l.innerHTML='<span class="rl-h">What to do · แนวทางจัดการ</span>'
+      +'<span class="tier ok"><b>&lt;60%</b> keep backups <span class="thm">· สำรองปกติ (backup)</span></span>'
+      +'<span class="tier warn"><b>60–85% / &lt;1yr</b> trim logs, export CSV <span class="thm">· ลบ log เก่า &amp; export</span></span>'
+      +'<span class="tier crit"><b>&gt;85% / &lt;90d</b> clear data or upgrade Blaze <span class="thm">· ล้างข้อมูล หรืออัปเกรด</span></span>'; }
   /* Size the page to fit the viewport exactly (no scrollbar) — adapts to the real header height
      and the shared main-container bottom padding. Mobile keeps the natural flow (CSS fallback). */
   try{ const v=document.getElementById('view-dbest'); if(v){ v.style.height=''; } }catch(_){}
