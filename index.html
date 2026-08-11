@@ -2100,6 +2100,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <a class="dd-item sub" data-nav="spectator" onclick="go('spectator')"><span class="ic">🔍</span><span class="dd-txt"><span data-i18n="navSpectator">Work Spectator</span></span></a>
           <a class="dd-item sub" data-nav="timeline" onclick="go('timeline')"><span class="ic">⏱</span><span class="dd-txt"><span data-i18n="navTimeline">Delivery Timeline</span></span></a>
           <a class="dd-item sub" data-nav="check" onclick="go('check')"><span class="ic">✔</span><span class="dd-txt"><span data-i18n="navCheck">Delivery Check</span></span></a>
+          <a class="dd-item sub" data-nav="status" onclick="go('status')"><span class="ic">📊</span><span class="dd-txt"><span data-i18n="navStatus">Delivery Status</span></span></a>
           <a class="dd-item sub" data-nav="vendors" onclick="go('vendors')"><span class="ic">📇</span><span class="dd-txt"><span data-i18n="navVendors">Vendor Directory</span></span></a>
           <a class="dd-item sub" data-nav="customers" onclick="go('customers')"><span class="ic">🏢</span><span class="dd-txt"><span data-i18n="navCustomers">Customer List</span></span></a>
         </div>
@@ -2219,7 +2220,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <div class="big-card" id="bc-work" style="--tc:#0906d7">
         <div class="bc-face" onclick="toggleBig('work')">
           <div class="bc-ic">🗂</div>
-          <div class="bc-info"><h2 data-i18n="grpWork">Work Management</h2><p data-i18n="grpWorkSub">Orders, delivery &amp; contacts</p><span class="bc-count">7 <span data-i18n="modules">modules</span></span></div>
+          <div class="bc-info"><h2 data-i18n="grpWork">Work Management</h2><p data-i18n="grpWorkSub">Orders, delivery &amp; contacts</p><span class="bc-count">8 <span data-i18n="modules">modules</span></span></div>
           <span class="bc-chev">⌄</span>
         </div>
         <div class="bc-pop">
@@ -2444,6 +2445,43 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       </div>
       <div class="empty-state" id="specEmpty" style="display:none"><div class="e-ic">🗂</div><div data-i18n="noMatch">No records match your search.</div></div>
     </div>
+  </section>
+
+  <!-- ============ DELIVERY STATUS (view only) ============ -->
+  <section class="view" id="view-status">
+    <style>
+      #view-status .st-filters{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;align-items:flex-end}
+      #view-status .st-filters .field{flex:1 1 150px;min-width:120px}
+      #view-status .st-viewonly{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--txt) 7%,transparent);padding:6px 13px;border-radius:999px;border:1px solid var(--line)}
+      #view-status .st-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;font-weight:800;font-size:12px;white-space:nowrap;border:1px solid transparent}
+      #view-status .st-badge.ok{color:var(--green);background:color-mix(in srgb,var(--green) 15%,transparent);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
+      #view-status .st-badge.transit{color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent);border-color:color-mix(in srgb,var(--blue) 38%,transparent)}
+      #view-status .st-badge.sched{color:#7c3aed;background:color-mix(in srgb,#7c3aed 14%,transparent);border-color:color-mix(in srgb,#7c3aed 38%,transparent)}
+      #view-status .st-badge.pending{color:var(--muted);background:color-mix(in srgb,var(--muted) 16%,transparent);border-color:color-mix(in srgb,var(--muted) 34%,transparent)}
+      #view-status .st-legend{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
+    </style>
+    <div class="page-head"><div class="bar"></div><div class="ph-txt"><h1 data-i18n="statTitle">DELIVERY STATUS</h1><p data-i18n="statSub">Live status of every delivery item · view only</p></div>
+      <div class="ph-actions"><span class="st-viewonly">👁 <span data-i18n="viewOnly">View only</span></span></div>
+    </div>
+    <div class="filter-bar st-filters">
+      <div class="field"><label data-i18n="stfWork">Work</label><select id="st_work" onchange="renderStatus()"></select></div>
+      <div class="field"><label>PO NO.</label><select id="st_po" onchange="renderStatus()"></select></div>
+      <div class="field"><label data-i18n="stfModule">Module</label><select id="st_module" onchange="renderStatus()"></select></div>
+      <div class="field"><label data-i18n="stfGroup">Group</label><select id="st_group" onchange="renderStatus()"></select></div>
+      <div class="field"><label data-i18n="stfShip">Shipping date</label><select id="st_ship" onchange="renderStatus()"></select></div>
+      <div class="field"><label data-i18n="stfRecv">Received date</label><select id="st_recv" onchange="renderStatus()"></select></div>
+      <div class="field" style="flex:0 0 auto"><label>&nbsp;</label><button type="button" class="btn ghost" onclick="stResetFilters()">↺ <span data-i18n="stReset">Reset</span></button></div>
+    </div>
+    <div class="result-count"><span data-i18n="showing">Showing</span> <b id="stCount">0</b> <span data-i18n="records">records</span></div>
+    <div class="table-wrap">
+      <table id="statusTable">
+        <thead><tr>
+          <th data-i18n="thWork">Work No</th><th data-i18n="thName">Work Name</th><th>Module</th><th>List (รายการ)</th><th>Group</th><th>PO No.</th><th>Supplier</th><th>Q'ty</th><th data-i18n="thShip">Shipping</th><th data-i18n="thRecv">Received</th><th data-i18n="stColStatus">Status</th>
+        </tr></thead>
+        <tbody id="statusBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="statusEmpty" style="display:none"><div class="e-ic">📊</div><div data-i18n="noMatch">No records match your search.</div></div>
   </section>
 
   <!-- ============ TIMELINE ============ -->
@@ -5502,6 +5540,17 @@ const I18N = {
   navTimelineSub:{en:"Track shipping & received dates",th:"ติดตามวันจัดส่งและรับของ"},
   navCheck:{en:"Delivery Check",th:"ตรวจสอบการส่งมอบ"},
   navCheckSub:{en:"Adjust shipping & received dates",th:"ปรับวันจัดส่งและวันรับของ"},
+  navStatus:{en:"Delivery Status",th:"สถานะการจัดส่ง"},
+  statTitle:{en:"DELIVERY STATUS",th:"สถานะการจัดส่ง"},
+  statSub:{en:"Live status of every delivery item · view only",th:"สถานะการจัดส่งของแต่ละรายการ · ดูอย่างเดียว"},
+  viewOnly:{en:"View only",th:"ดูอย่างเดียว"},
+  stfWork:{en:"Work",th:"งาน (Work)"},
+  stfModule:{en:"Module",th:"โมดูล (Module)"},
+  stfGroup:{en:"Group",th:"กลุ่ม (Group)"},
+  stfShip:{en:"Shipping date",th:"วันจัดส่ง"},
+  stfRecv:{en:"Received date",th:"วันรับของ"},
+  stReset:{en:"Reset",th:"ล้างตัวกรอง"},
+  stColStatus:{en:"Status",th:"สถานะ"},
   ckTitle:{en:"DELIVERY CHECK",th:"ตรวจสอบการส่งมอบ"},
   ckLead:{en:"Focused checkpoint — adjust only Shipping & Received dates for each item.",th:"จุดตรวจเฉพาะ — ปรับได้เฉพาะวันจัดส่งและวันรับของของแต่ละรายการ"},
   ckHead:{en:"Delivery Check — Shipping & Received",th:"ตรวจสอบการส่งมอบ — วันจัดส่งและวันรับของ"},
@@ -5764,6 +5813,7 @@ function applyLang(){
   renderSpectator();
   renderTimeline();
   renderCheck();
+  try{ renderStatus(); }catch(_){}
   renderVendors();
   renderCustomers();
   renderStockList();
@@ -5800,7 +5850,7 @@ function go(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
   document.querySelectorAll('.navmenu .dd .dd-item').forEach(a=>a.classList.toggle('active',a.getAttribute('data-nav')===view));
-  const _workViews=['create','detail','spectator','timeline','check','vendors','customers'];
+  const _workViews=['create','detail','spectator','timeline','check','status','vendors','customers'];
   if(_workViews.includes(view)) document.getElementById('grp-work')?.classList.add('open');
   if(['addstock','stocklist','withdraw','returnstock','withdrawlog'].includes(view)) document.getElementById('grp-stock')?.classList.add('open');
   if(['employees','attendance','timeattend','benefit','otmgmt','leaveconfirm','calendar','permission','account'].includes(view)) document.getElementById('grp-hr')?.classList.add('open');
@@ -5815,6 +5865,7 @@ function go(view){
   if(view==='spectator'){ onFilterTypeChange(); renderSpectator(); }
   if(view==='timeline'){ renderTimeline(); }
   if(view==='check'){ ckTypeChange(); }
+  if(view==='status'){ renderStatus(); }
   if(view==='vendors'){ renderVendors(); }
   if(view==='customers'){ renderCustomers(); }
   if(view==='addstock'){ initAddStock(); }
@@ -6612,6 +6663,50 @@ function logFollowUpAuto(id,label){
   DB.saveDetails(dets); renderCheck();
 }
 
+/* ============ DELIVERY STATUS (view only) ============ */
+function stStatusOf(d){
+  const th=(LANG==='th');
+  if(d.recvDate) return {cls:'ok', ic:'✅', txt: th?'รับแล้ว':'Received'};
+  if(d.shipDate){
+    let future=false;
+    try{ const today=new Date(); today.setHours(0,0,0,0); const sd=new Date(d.shipDate+'T00:00:00'); if(!isNaN(sd.getTime()) && sd.getTime()>today.getTime()) future=true; }catch(_){}
+    if(future) return {cls:'sched', ic:'📅', txt: th?'กำหนดจัดส่ง':'Scheduled'};
+    return {cls:'transit', ic:'🚚', txt: th?'กำลังจัดส่ง · รอรับ':'In transit'};
+  }
+  return {cls:'pending', ic:'⏳', txt: th?'รอดำเนินการ':'Pending'};
+}
+function stFill(id, values){
+  const sel=document.getElementById(id); if(!sel) return;
+  const th=(LANG==='th'); const all=th?'ทั้งหมด':'All';
+  const uniq=[...new Set(values.filter(v=>v!=null&&v!==''))].sort((a,b)=>(''+a).localeCompare(''+b,undefined,{numeric:true}));
+  const cur=sel.value;
+  sel.innerHTML='<option value="">'+all+'</option>'+uniq.map(v=>'<option value="'+escapeAttr(v)+'">'+escapeHtml(v)+'</option>').join('');
+  sel.value=(cur && uniq.indexOf(cur)>=0)?cur:'';
+}
+function stResetFilters(){ ['st_work','st_po','st_module','st_group','st_ship','st_recv'].forEach(id=>{const s=document.getElementById(id); if(s) s.value='';}); renderStatus(); }
+function renderStatus(){
+  if(!document.getElementById('statusBody')) return;
+  const dets=DB.details(), works=DB.works();
+  const wName=wn=>{ const w=works.find(x=>x.workNo===wn); return w?(w.workName||''):''; };
+  stFill('st_work', dets.map(d=>d.workNo));
+  stFill('st_po', dets.map(d=>d.poNo));
+  stFill('st_module', dets.map(d=>d.module));
+  stFill('st_group', dets.map(d=>d.group));
+  stFill('st_ship', dets.map(d=>d.shipDate));
+  stFill('st_recv', dets.map(d=>d.recvDate));
+  const gv2=id=>{const s=document.getElementById(id); return s?s.value:'';};
+  const fW=gv2('st_work'),fP=gv2('st_po'),fM=gv2('st_module'),fG=gv2('st_group'),fS=gv2('st_ship'),fR=gv2('st_recv');
+  const rows=dets.filter(d=>
+    (!fW||(d.workNo||'')===fW)&&(!fP||(d.poNo||'')===fP)&&(!fM||(d.module||'')===fM)&&(!fG||(d.group||'')===fG)&&(!fS||(d.shipDate||'')===fS)&&(!fR||(d.recvDate||'')===fR)
+  );
+  const body=document.getElementById('statusBody');
+  body.innerHTML=rows.map(d=>{ const s=stStatusOf(d);
+    return '<tr><td><b>'+escapeHtml(d.workNo||'-')+'</b></td><td>'+escapeHtml(wName(d.workNo))+'</td><td>'+escapeHtml(d.module||'-')+'</td><td>'+escapeHtml(d.list||d.module||'-')+'</td><td>'+escapeHtml(d.group||'-')+'</td><td>'+escapeHtml(d.poNo||'-')+'</td><td>'+escapeHtml(d.supplier||'-')+'</td><td>'+escapeHtml(d.qty||'-')+'</td><td>'+(d.shipDate?escapeHtml(nxDateText(d.shipDate)):'—')+'</td><td>'+(d.recvDate?escapeHtml(nxDateText(d.recvDate)):'—')+'</td><td><span class="st-badge '+s.cls+'">'+s.ic+' '+escapeHtml(s.txt)+'</span></td></tr>';
+  }).join('');
+  const c=document.getElementById('stCount'); if(c) c.textContent=rows.length;
+  const emp=document.getElementById('statusEmpty'); if(emp) emp.style.display=rows.length?'none':'';
+  const tw=document.querySelector('#view-status .table-wrap'); if(tw) tw.style.display=rows.length?'':'none';
+}
 function renderVendors(){
   const body=document.getElementById('vendorBody'); if(!body) return;
   const q=(document.getElementById('vSearch').value||'').trim().toLowerCase();
@@ -6640,6 +6735,10 @@ function openVendorDetail(x){
   const nm=ub64(x); const v=DB.vendors().find(a=>a.name===nm); if(!v) return;
   const tel=v.phone?`<a href="tel:${escapeAttr(v.phone)}" style="color:var(--primary);font-weight:700;text-decoration:none">${escapeHtml(v.phone)}</a>`:'';
   const mail=v.email?`<a href="mailto:${escapeAttr(v.email)}" style="color:var(--primary);font-weight:700;text-decoration:none">${escapeHtml(v.email)}</a>`:'';
+  const TH=(typeof LANG!=='undefined'&&LANG==='th');
+  const payTxt = v.payTerm==='credit'
+    ? ((TH?'เครดิต':'Credit')+(v.termVal?(' · '+escapeHtml(v.termVal)):''))
+    : (TH?'เงินสด':'Cash');
   const body=`<div class="mod-section"><h5>📇 ${t('contactInfo')}</h5><div class="summary">
     ${detailRow(t('vContact'),v.contact)}
     ${detailRow(t('vPhone'),v.phone,tel)}
@@ -6647,14 +6746,22 @@ function openVendorDetail(x){
     ${detailRow(t('vLine'),v.line)}
     ${detailRow(t('vLead'),v.leadTime?escapeHtml(v.leadTime)+' '+t('days'):'')}
     ${detailRow(t('vNote'),v.note)}
+  </div></div>
+  <div class="mod-section"><h5>🏦 ${TH?'บัญชี & การชำระเงิน':'Bank & Payment'}</h5><div class="summary">
+    ${detailRow(TH?'เลขที่บัญชีธนาคาร':'Bank account no.',v.bankNo)}
+    ${detailRow(TH?'ชื่อบัญชีธนาคาร':'Bank account name',v.bankName)}
+    ${detailRow(TH?'เงื่อนไขการชำระเงิน':'Payment term',payTxt)}
   </div></div>`;
   customModal({icon:'📇',title:v.name,desc:t('vendorDetailDesc'),bodyHtml:body,footButtons:[
     {label:'✎ '+t('edit'),cls:'ghost',onClick:()=>{ closeModal(); openVendorForm(b64(v.name),true); }},
     {label:t('mClose'),cls:'primary',onClick:closeModal}
   ]});
 }
+function vfPayTermToggle(){ const c=(gv('vf_payTerm')==='credit'); const w=document.getElementById('vf_termWrap'); if(w) w.style.display=c?'':'none'; }
+function vfTermTypeToggle(){ const inp=document.getElementById('vf_termVal'); if(inp) inp.type=(gv('vf_termType')==='text')?'text':'number'; }
 function openVendorForm(arg,isEdit){
-  let v={name:'',contact:'',phone:'',email:'',line:'',leadTime:'',note:''};
+  const TH=(typeof LANG!=='undefined'&&LANG==='th');
+  let v={name:'',contact:'',phone:'',email:'',line:'',leadTime:'',note:'',bankNo:'',bankName:'',payTerm:'cash',termType:'number',termVal:''};
   if(isEdit){ const nm=ub64(arg); const f=DB.vendors().find(x=>x.name===nm); if(f) v=Object.assign(v,f); }
   else if(arg){ v.name=arg; }
   const body=`<div class="vform">
@@ -6664,6 +6771,24 @@ function openVendorForm(arg,isEdit){
      <div class="field"><label>${t('vEmail')}</label><input id="vf_email" value="${escapeAttr(v.email)}"></div>
      <div class="field"><label>${t('vLine')}</label><input id="vf_line" value="${escapeAttr(v.line)}"></div>
      <div class="field"><label>${t('vLead')}</label><input id="vf_lead" type="number" min="0" value="${escapeAttr(v.leadTime)}"></div>
+     <div class="field"><label>${TH?'เลขที่บัญชีธนาคาร':'Bank account no.'}</label><input id="vf_bankNo" type="number" inputmode="numeric" value="${escapeAttr(v.bankNo)}"></div>
+     <div class="field"><label>${TH?'ชื่อบัญชีธนาคาร':'Bank account name'}</label><input id="vf_bankName" value="${escapeAttr(v.bankName)}"></div>
+     <div class="field"><label>${TH?'เงื่อนไขการชำระเงิน':'Payment term'}</label>
+       <select id="vf_payTerm" onchange="vfPayTermToggle()">
+         <option value="cash" ${v.payTerm!=='credit'?'selected':''}>${TH?'เงินสด (Cash)':'Cash'}</option>
+         <option value="credit" ${v.payTerm==='credit'?'selected':''}>${TH?'เครดิต (Credit)':'Credit'}</option>
+       </select>
+     </div>
+     <div class="field" id="vf_termWrap" style="${v.payTerm==='credit'?'':'display:none'}">
+       <label>${TH?'เงื่อนไขเครดิต (term)':'Credit term'}</label>
+       <div style="display:flex;gap:8px">
+         <select id="vf_termType" onchange="vfTermTypeToggle()" style="flex:0 0 auto;max-width:130px">
+           <option value="number" ${v.termType!=='text'?'selected':''}>${TH?'ตัวเลข':'Number'}</option>
+           <option value="text" ${v.termType==='text'?'selected':''}>${TH?'ข้อความ':'Text'}</option>
+         </select>
+         <input id="vf_termVal" type="${v.termType==='text'?'text':'number'}" value="${escapeAttr(v.termVal)}" placeholder="${TH?'เช่น 30 (วัน)':'e.g. 30 (days)'}" style="flex:1 1 auto">
+       </div>
+     </div>
      <div class="field full"><label>${t('vNote')}</label><input id="vf_note" value="${escapeAttr(v.note)}"></div>
    </div>
    <div id="vfErr" class="redtext" style="display:none;margin-top:12px;font-size:13px;font-weight:600">${t('vErr')}</div>`;
@@ -6684,7 +6809,7 @@ function saveVendor(isEdit){
     ok=false;
   }
   if(!ok) return;
-  const rec={name,contact:gv('vf_contact'),phone,email,line:gv('vf_line'),leadTime:gv('vf_lead'),note:gv('vf_note')};
+  const rec={name,contact:gv('vf_contact'),phone,email,line:gv('vf_line'),leadTime:gv('vf_lead'),note:gv('vf_note'),bankNo:gv('vf_bankNo'),bankName:gv('vf_bankName'),payTerm:gv('vf_payTerm'),termType:gv('vf_termType'),termVal:gv('vf_termVal')};
   const vs=DB.vendors(); const i=vs.findIndex(x=>x.name===name);
   if(i>=0) vs[i]=rec; else vs.push(rec);
   DB.saveVendors(vs);
@@ -9888,7 +10013,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-r';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-s';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
