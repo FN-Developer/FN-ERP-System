@@ -655,6 +655,95 @@ select option{background:var(--panel-solid);color:var(--txt)}
 #diConfirmBtn.confirmed{background:color-mix(in srgb,var(--green,#16a34a) 18%,transparent);border-color:var(--green,#16a34a);color:var(--green,#16a34a)}
 #diConfirmBtn.nudge{animation:diNudge .3s ease 2}
 @keyframes diNudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+/* ---- Spectator inline edit ---- */
+.spec-ck{width:38px;text-align:center}
+#specTable tbody tr.spec-selrow{background:color-mix(in srgb,var(--cyan) 12%,transparent)}
+select.spec-inline{padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px;min-width:92px;max-width:150px}
+select.spec-inline:hover{border-color:var(--cyan)}
+select.spec-inline-grp{min-width:80px}
+.ship-fix-btn{cursor:pointer}
+.spec-bulk{background:linear-gradient(135deg,color-mix(in srgb,var(--cyan) 12%,var(--inset-bg)),var(--inset-bg));border:1.5px solid color-mix(in srgb,var(--cyan) 40%,var(--line));border-radius:14px;padding:14px 16px;margin:6px 0 14px}
+.spec-bulk-head{font-size:13.5px;font-weight:600;margin-bottom:10px}
+.spec-bulk-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+.spec-bulk-cell{display:flex;flex-direction:column;gap:5px}
+.spec-bulk-cell label{font-size:11.5px;font-weight:700;color:var(--txt-soft);text-transform:uppercase;letter-spacing:.5px}
+.spec-bulk-ctrl{display:flex;gap:7px;align-items:center}
+.spec-bulk-ctrl select{padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px;min-width:150px}
+/* ---- Delivery Check: scope + assign + update ---- */
+.ck-scope,.ck-find,.ck-assign{margin:0 0 14px}
+.ck-scope .cf-label,.ck-find .cf-label{display:block;margin-bottom:8px}
+.ck-scope-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.ck-scope-cell{display:flex;flex-direction:column;gap:5px;min-width:150px;flex:1 1 180px}
+.ck-scope-cell label{font-size:12px;font-weight:700;color:var(--txt-soft);display:flex;align-items:center;gap:6px}
+.ck-step{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--cyan);color:#012;font-size:11px;font-weight:800}
+.ck-scope-cell select{padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13.5px}
+.ck-scope-cell select:hover{border-color:var(--cyan)}
+.ck-scope-arrow{align-self:center;color:var(--muted);font-size:16px;padding-bottom:8px}
+@media(max-width:720px){.ck-scope-arrow{display:none}}
+.ck-find-row{display:flex;gap:10px;align-items:stretch}
+.ck-find-row>select{padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13.5px;flex:0 0 auto;max-width:220px}
+.ck-assign{background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 12%,var(--inset-bg)),var(--inset-bg));border:1.5px solid color-mix(in srgb,var(--amber) 40%,var(--line));border-radius:14px;padding:14px 16px}
+.ck-assign-head{font-size:13.5px;margin-bottom:10px}
+.ck-assign-head small{color:var(--muted);font-weight:400}
+.ck-assign-row{display:flex;flex-wrap:wrap;gap:14px}
+.ck-assign-cell{display:flex;flex-direction:column;gap:5px;flex:1 1 180px;min-width:150px}
+.ck-assign-cell label{font-size:11.5px;font-weight:700;color:var(--txt-soft);text-transform:uppercase;letter-spacing:.5px}
+.ck-assign-cell select,.ck-assign-cell input{padding:9px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13.5px}
+.ck-assign-ctrl{display:flex;gap:7px;align-items:center}
+.ck-assign-ctrl select,.ck-assign-ctrl input{flex:1 1 auto;min-width:0}
+.ck-assign-ctrl .btn{flex:0 0 auto}
+.ck-assign.nudge{animation:diNudge .3s ease 2}
+.ck-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 12px}
+.ck-update-btn{display:inline-flex;align-items:center;gap:8px}
+.ck-update-btn.is-locked{opacity:.55;filter:grayscale(.3)}
+.ck-pending{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#fff;color:var(--red);font-size:12px;font-weight:800}
+.ck-sup-sel{max-width:170px}
+.ck-need-sup{font-size:10.5px;color:var(--amber);font-weight:700;margin-top:3px}
+#ckBody tr.ck-dirty{background:color-mix(in srgb,var(--amber) 10%,transparent)}
+.ck-dirty-dot{color:var(--amber);margin-left:6px;font-size:14px;vertical-align:middle}
+/* ---- click-to-sort headers ---- */
+th.nx-sortable{cursor:pointer;user-select:none;white-space:nowrap;transition:color .12s}
+th.nx-sortable:hover{color:var(--cyan)}
+th.nx-sortable::after{content:" " attr(data-arrow);font-size:10px;opacity:.35;margin-left:2px}
+th.nx-sortable.nx-sorted{color:var(--cyan)}
+th.nx-sortable.nx-sorted::after{opacity:1;color:var(--cyan)}
+tr.nx-datelead td{background:color-mix(in srgb,var(--cyan) 16%,transparent)!important}
+tr.nx-datelead td:first-child{box-shadow:inset 3px 0 0 var(--cyan)}
+/* ---- Delivery Check best-rate / est cell ---- */
+.ck-best{white-space:nowrap;font-size:12px;line-height:1.35}
+.ck-best-u{color:#c79a00;font-weight:800}
+.ck-best-u small{color:var(--muted);font-weight:600;font-size:10px}
+.ck-best-t{color:#e8590c;font-weight:700;margin-top:1px}
+.ck-best-t small{color:var(--muted);font-weight:600;font-size:10px}
+.ck-best .muted{color:var(--muted)}
+.ck-reco{margin-top:2px;font-size:10.5px;font-weight:700;color:var(--red);cursor:pointer;line-height:1.3;max-width:210px;text-decoration:underline dotted;text-underline-offset:2px}
+.ck-reco:hover{text-decoration:underline}
+.ck-reco small{color:var(--red);font-weight:600;opacity:.8}
+.ck-reco-ok{margin-top:2px;font-size:10.5px;font-weight:800;color:#16a34a}
+.ck-valcell{white-space:nowrap}
+.ck-baht{color:var(--muted);font-weight:700;margin-right:2px}
+.ck-val{width:96px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-weight:800;font-size:13px}
+.ck-val:hover{border-color:var(--cyan)}
+#ckBody tr.ck-dirty .ck-val{border-color:var(--amber)}
+/* ---- vendor module prices + module comparison ---- */
+.vmp-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:4px}
+.vmp-table,.mc-table{width:100%;border-collapse:collapse;font-size:13px}
+.vmp-table th,.mc-table th{text-align:left;padding:8px 11px;border-bottom:1.5px solid var(--line);color:var(--txt-soft);font-size:12px;white-space:nowrap}
+.vmp-table td,.mc-table td{padding:8px 11px;border-bottom:1px solid var(--line)}
+.vmp-best,.mc-best{font-weight:800;color:#16a34a}
+.vmp-latest,.mc-latest{font-weight:700}
+.mc-controls{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
+.mc-count{font-size:13px;color:var(--txt-soft);margin:2px 0 10px}
+.mc-hint{color:var(--muted);font-weight:400;font-size:11.5px}
+.mc-vname{border:none;background:transparent;color:var(--cyan);font-weight:800;cursor:pointer;padding:0;font-size:13px;text-decoration:underline}
+.mc-vname:hover{opacity:.8}
+tr.mc-low td{background:color-mix(in srgb,#16a34a 14%,transparent)}
+tr.mc-high td{background:color-mix(in srgb,var(--red) 12%,transparent)}
+tr.mc-low .mc-best{color:#16a34a}
+tr.mc-high .mc-best{color:var(--red)}
+.mc-tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;margin-left:6px;white-space:nowrap}
+.mc-tag-low{background:color-mix(in srgb,#16a34a 20%,transparent);color:#16a34a}
+.mc-tag-high{background:color-mix(in srgb,var(--red) 20%,transparent);color:var(--red)}
 
 /* table */
 .table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
@@ -2544,9 +2633,22 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         </div>
       </div>
       <div class="result-count"><span data-i18n="showing">Showing</span> <b id="rc">0</b> <span data-i18n="records">records</span></div>
+      <div class="spec-bulk" id="specBulk" style="display:none">
+        <div class="spec-bulk-head">✎ <b id="specSelCount">0</b> <span data-i18n="specSelLbl">selected — set the same value for all of them:</span></div>
+        <div class="spec-bulk-row">
+          <div class="spec-bulk-cell"><label data-i18n="specSetModule">Set Module</label>
+            <div class="spec-bulk-ctrl"><select id="specBulkModule" onchange="specBulkOnPick('module',this)"></select><button type="button" class="btn primary sm" onclick="specBulkApply('module')" data-i18n="specApply">Apply</button></div>
+          </div>
+          <div class="spec-bulk-cell"><label data-i18n="specSetGroup">Set Group</label>
+            <div class="spec-bulk-ctrl"><select id="specBulkGroup" onchange="specBulkOnPick('group',this)"></select><button type="button" class="btn primary sm" onclick="specBulkApply('group')" data-i18n="specApply">Apply</button></div>
+          </div>
+          <button type="button" class="btn ghost sm" onclick="specClearSel()" data-i18n="specClearSel">Clear selection</button>
+        </div>
+      </div>
       <div class="table-wrap">
         <table id="specTable">
           <thead><tr>
+            <th class="spec-ck"><input type="checkbox" id="specAll" onclick="specToggleAll(this.checked)" title="Select all"></th>
             <th data-i18n="thWork">Work No</th><th data-i18n="thName">Work Name</th><th data-i18n="thCustName">Customer</th><th data-i18n="thCode">Code</th><th>Rev.</th><th>Module</th>
             <th>List (รายการ)</th><th>Q'ty</th><th>Brand</th><th>Supplier</th><th>PO No.</th>
             <th data-i18n="thEstUnit">Est. Unit</th><th data-i18n="thActUnit">Actual Unit</th><th data-i18n="thMgUnit">Margin/Unit</th><th data-i18n="thMgTot">Total Margin</th><th>Total</th><th>Group</th><th data-i18n="thShip">Shipping</th><th data-i18n="thRecv">Received</th><th></th>
@@ -2646,30 +2748,67 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
             <button type="button" class="pill p-ok" data-st="ok" onclick="ckSetStatus('ok')" data-i18n="pOk">🟢 On Track</button>
           </div>
         </div>
-        <div class="cf-search">
-          <span class="cf-label" data-i18n="ckFind">② Find By</span>
-          <div class="cf-row">
-            <select id="ckType" onchange="ckTypeChange()">
-              <option value="workNo">WORK NO</option>
-              <option value="workName">WORK NAME</option>
-              <option value="custName">CUST NAME (COMPANY)</option>
-              <option value="custCode">CODE</option>
-              <option value="poNo">PO NO.</option>
-              <option value="group">Group</option>
-              <option value="shipDate">DATE OF SHIPPING</option>
-            </select>
-            <div class="auto-wrap" style="flex:1">
-              <input type="text" id="ckInput" placeholder="Type to search…" oninput="ckInputHandler()" onkeydown="ckKey(event)" onfocus="ckInputHandler()">
-              <div class="suggest" id="ckSuggest"></div>
-            </div>
+      </div>
+
+      <!-- ② Scope: cascading Work No → Group → Module -->
+      <div class="ck-scope">
+        <span class="cf-label" data-i18n="ckScope">② Narrow the data (scope)</span>
+        <div class="ck-scope-row">
+          <div class="ck-scope-cell"><label><span class="ck-step">1</span> <span data-i18n="ckScopeWork">Work No</span></label>
+            <select id="ckScopeWork" onchange="ckScopeChange('work')"></select></div>
+          <div class="ck-scope-arrow">▸</div>
+          <div class="ck-scope-cell"><label><span class="ck-step">2</span> <span data-i18n="ckScopeGroup">Group</span></label>
+            <select id="ckScopeGroup" onchange="ckScopeChange('group')"></select></div>
+          <div class="ck-scope-arrow">▸</div>
+          <div class="ck-scope-cell"><label><span class="ck-step">3</span> Module</label>
+            <select id="ckScopeModule" onchange="ckScopeChange('module')"></select></div>
+          <button type="button" class="btn ghost sm" onclick="ckScopeReset()">↺ <span data-i18n="stReset">Reset</span></button>
+        </div>
+      </div>
+
+      <!-- ③ Find By (search within scope) -->
+      <div class="ck-find">
+        <span class="cf-label" data-i18n="ckFind">③ Find By</span>
+        <div class="ck-find-row">
+          <select id="ckType" onchange="ckTypeChange()">
+            <option value="workNo">WORK NO</option>
+            <option value="workName">WORK NAME</option>
+            <option value="custName">CUST NAME (COMPANY)</option>
+            <option value="custCode">CODE</option>
+            <option value="poNo">PO NO.</option>
+            <option value="group">Group</option>
+            <option value="module">Module</option>
+            <option value="shipDate">DATE OF SHIPPING</option>
+          </select>
+          <div class="auto-wrap" style="flex:1">
+            <input type="text" id="ckInput" placeholder="Type to search…" oninput="ckInputHandler()" onkeydown="ckKey(event)" onfocus="ckInputHandler()">
+            <div class="suggest" id="ckSuggest"></div>
           </div>
         </div>
       </div>
-      <div class="result-count"><span data-i18n="showing">Showing</span> <b id="ckCount">0</b> <span data-i18n="records">records</span> &nbsp;·&nbsp; <span data-i18n="totalValueLbl">Total value</span>: <b id="ckTotalVal" style="color:var(--green)">฿0</b></div>
+
+      <!-- Batch assign: fill once → apply to every checked row (staged, live) -->
+      <div class="ck-assign">
+        <div class="ck-assign-head">⚡ <b data-i18n="ckAssignHead">Batch assign to checked rows</b> <small data-i18n="ckAssignSub">— check rows, set a value, then press its Apply. It previews live in the table; nothing saves until Update.</small></div>
+        <div class="ck-assign-row">
+          <div class="ck-assign-cell"><label data-i18n="thSupplier">Supplier</label>
+            <div class="ck-assign-ctrl"><select id="ckAsgSupplier" onchange="ckAsgSupplierChange(this)"></select><button type="button" class="btn primary sm" onclick="ckAssignApply('supplier')" data-i18n="specApply">Apply</button></div></div>
+          <div class="ck-assign-cell"><label data-i18n="thShip">Shipping Date</label>
+            <div class="ck-assign-ctrl"><input type="date" id="ckAsgShip"><button type="button" class="btn primary sm" onclick="ckAssignApply('shipDate')" data-i18n="specApply">Apply</button></div></div>
+          <div class="ck-assign-cell"><label data-i18n="thRecv">Received Date</label>
+            <div class="ck-assign-ctrl"><input type="date" id="ckAsgRecv"><button type="button" class="btn primary sm" onclick="ckAssignApply('recvDate')" data-i18n="specApply">Apply</button></div></div>
+        </div>
+      </div>
+
+      <div class="ck-toolbar">
+        <div class="result-count" style="margin:0"><span data-i18n="showing">Showing</span> <b id="ckCount">0</b> <span data-i18n="records">records</span> &nbsp;·&nbsp; <span data-i18n="ckSelected">Checked</span>: <b id="ckSelCount">0</b> &nbsp;·&nbsp; <span data-i18n="totalValueLbl">Total value</span>: <b id="ckTotalVal" style="color:var(--green)">฿0</b></div>
+        <button type="button" class="btn primary ck-update-btn is-locked" id="ckUpdateBtn" onclick="ckUpdateCommit()">⬆ <span data-i18n="ckUpdate">Update</span> <span class="ck-pending" id="ckPendingBadge" style="display:none">0</span></button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th data-i18n="thWork">Work No</th><th data-i18n="thName">Work Name</th><th data-i18n="thItem">Item</th><th>PO No.</th><th>Supplier</th><th data-i18n="thValue">Value (THB)</th>
+            <th class="spec-ck"><input type="checkbox" id="ckAll" onclick="ckToggleAll(this.checked)" title="Select all"></th>
+            <th data-i18n="thWork">Work No</th><th data-i18n="thName">Work Name</th><th data-i18n="thItem">Item</th><th>Module</th><th>Group</th><th>PO No.</th><th data-i18n="thSupplier">Supplier</th><th data-i18n="thBestRate">Best rate · Est.</th><th data-i18n="thValue">Value (THB)</th>
             <th class="col-focus" data-i18n="thShip">Shipping Date</th><th class="col-focus" data-i18n="thRecv">Received Date</th><th data-i18n="thStatus">Status</th><th data-i18n="thFollow">Vendor / Follow-up</th>
           </tr></thead>
           <tbody id="ckBody"></tbody>
@@ -2724,6 +2863,23 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         </table>
       </div>
       <div class="empty-state" id="vendorEmpty" style="display:none"><div class="e-ic">📇</div><div data-i18n="vNoData">No vendors found.</div></div>
+    </div>
+
+    <!-- ===== Module price comparison ===== -->
+    <div class="card">
+      <h2><span class="dot"></span><span data-i18n="mcHead">Module Price Comparison</span></h2>
+      <div class="card-sub" data-i18n="mcSub">Pick a module to compare every vendor's cheapest and latest value/unit. Lowest price is green, highest is red.</div>
+      <div class="mc-controls">
+        <div class="field" style="flex:1;min-width:180px"><label data-i18n="mcSearch">Search module</label>
+          <input type="text" id="mcSearch" placeholder="Type to filter modules…" oninput="mcFillModules()"></div>
+        <div class="field" style="flex:1;min-width:180px"><label data-i18n="mcModuleLbl">Module</label>
+          <select id="mcModule" onchange="mcModuleChanged()"></select></div>
+        <div class="field" style="flex:1;min-width:180px"><label data-i18n="mcItemSearch">Search item</label>
+          <input type="text" id="mcItemSearch" placeholder="Type to filter items…" oninput="mcFillItems()"></div>
+        <div class="field" style="flex:1;min-width:180px"><label data-i18n="mcItem">Specific item (List)</label>
+          <select id="mcItem" onchange="renderModuleCompare()"></select></div>
+      </div>
+      <div id="mcResult"></div>
     </div>
   </section>
 
@@ -3824,7 +3980,7 @@ const FIREBASE_CONFIG = {
 };
 
 /* Shared data keys — these sync to the cloud (everyone sees the same data). */
-const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments','nx_groups'];
+const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments','nx_groups','nx_modules','nx_pricelog'];
 
 /* ===== Merge-on-write config & engine =====
    Each table is one JSON blob. A naive overwrite makes concurrent edits clobber each
@@ -3836,8 +3992,8 @@ const NX_MERGE = {
   nx_withdraws:{type:'arr',id:'id'}, nx_employees:{type:'arr',id:'id'}, nx_returns:{type:'arr',id:'id'},
   nx_leaves:{type:'arr',id:'id'}, nx_ot:{type:'arr',id:'id'}, nx_positions:{type:'arr',id:'id'},
   nx_ta_devices:{type:'arr',id:'id'}, nx_ta_logs:{type:'arr',id:'id'}, nx_pr:{type:'arr',id:'id'},
-  nx_vendors:{type:'arr',id:'name'}, nx_customers:{type:'arr',id:'name'},
-  nx_departments:{type:'strarr'}, nx_groups:{type:'strarr'},
+  nx_vendors:{type:'arr',id:'name'}, nx_customers:{type:'arr',id:'name'}, nx_pricelog:{type:'arr',id:'id'},
+  nx_departments:{type:'strarr'}, nx_groups:{type:'strarr'}, nx_modules:{type:'strarr'},
   nx_otrates:{type:'obj'}, nx_caldays:{type:'obj'}, nx_workswitch:{type:'obj'},
   nx_defaults:{type:'obj'}, nx_payslips:{type:'obj'}, nx_datefmt:{type:'scalar'}
 };
@@ -4084,6 +4240,7 @@ function nxRerenderAll(){
      re-navigating would rebuild every field and scroll to top, losing their work. Skip the
      view re-render while they're busy there; the data itself is already merged in localStorage. */
   try{ if(typeof diBusy==='function' && diBusy()){ return; } }catch(_){}
+  try{ if(typeof ckBusy==='function' && ckBusy()){ return; } }catch(_){}
   try{ if(typeof go==='function') go(nxCurrentView()); }catch(_){}
 }
 
@@ -5677,7 +5834,7 @@ const I18N = {
   ckHead:{en:"Delivery Check — Shipping & Received",th:"ตรวจสอบการส่งมอบ — วันจัดส่งและวันรับของ"},
   ckSub:{en:"⚠ Only the Shipping Date and Received Date can be edited here. Every change is saved instantly.",th:"⚠ แก้ไขได้เฉพาะวันจัดส่งและวันรับของ ทุกการเปลี่ยนแปลงจะถูกบันทึกทันที"},
   ckStatus:{en:"① Status Focus",th:"① กรองตามสถานะ"},
-  ckFind:{en:"② Find By",th:"② ค้นหาโดย"},
+  ckFind:{en:"③ Find By",th:"③ ค้นหาโดย"},
   pAll:{en:"All",th:"ทั้งหมด"},
   pUrgent:{en:"🔴 Urgent",th:"🔴 เร่งด่วน"},
   pWarn:{en:"🟠 Warning",th:"🟠 เตือน"},
@@ -5797,6 +5954,25 @@ const I18N = {
   roName:{en:"WORK NAME",th:"ชื่องาน"},
   inputHead:{en:"Input your information",th:"กรอกข้อมูลของคุณ"},
   inputSub:{en:"Enter the detail line for the selected work order.",th:"กรอกรายละเอียดสำหรับงานที่เลือก"},
+  thBestRate:{en:"Best rate · Est.",th:"ราคาถูกสุด · ประเมิน"},
+  mcHead:{en:"Module Price Comparison",th:"เปรียบเทียบราคาต่อโมดูล"},
+  mcSub:{en:"Pick a module to compare every vendor's cheapest and latest value/unit. Lowest price is green, highest is red.",th:"เลือกโมดูลเพื่อเปรียบเทียบราคาถูกสุดและล่าสุดของแต่ละผู้ขาย ถูกสุดสีเขียว แพงสุดสีแดง"},
+  mcSearch:{en:"Search module",th:"ค้นหาโมดูล"},
+  mcModuleLbl:{en:"Module",th:"โมดูล"},
+  mcItemSearch:{en:"Search item",th:"ค้นหารายการ"},
+  mcItem:{en:"Specific item (List)",th:"รายการเฉพาะ (List)"},
+  ckScope:{en:"② Narrow the data (scope)",th:"② จำกัดขอบเขตข้อมูล"},
+  ckScopeWork:{en:"Work No",th:"เลขที่งาน"},
+  ckScopeGroup:{en:"Group",th:"หมวดหมู่"},
+  ckAssignHead:{en:"Batch assign to checked rows",th:"กำหนดค่าเป็นชุดให้แถวที่ติ๊ก"},
+  ckAssignSub:{en:"— check rows, set a value, then press its Apply. It previews live in the table; nothing saves until Update.",th:"— ติ๊กเลือกแถว ตั้งค่า แล้วกด Apply ของช่องนั้น จะแสดงตัวอย่างในตารางทันที บันทึกเมื่อกด Update"},
+  ckSelected:{en:"Checked",th:"ติ๊กเลือก"},
+  ckUpdate:{en:"Update",th:"อัปเดต"},
+  specSelLbl:{en:"selected — set the same value for all of them:",th:"ที่เลือก — กำหนดค่าเดียวกันให้ทั้งหมด:"},
+  specSetModule:{en:"Set Module",th:"กำหนด Module"},
+  specSetGroup:{en:"Set Group",th:"กำหนดหมวดหมู่"},
+  specApply:{en:"Apply",th:"ใช้"},
+  specClearSel:{en:"Clear selection",th:"ล้างการเลือก"},
   diOneT:{en:"Add one detail",th:"เพิ่มทีละรายการ"},
   diOneS:{en:"Fill a single line manually",th:"กรอกทีละบรรทัดด้วยตนเอง"},
   diCsvT:{en:"Add by Group",th:"เพิ่มเป็นชุด (กลุ่ม)"},
@@ -5991,7 +6167,7 @@ function go(view){
   if(view==='detail'){ refreshWorkSelect(); refreshSupplierSelect(); }
   if(view==='spectator'){ onFilterTypeChange(); renderSpectator(); }
   if(view==='timeline'){ renderTimeline(); }
-  if(view==='check'){ ckTypeChange(); }
+  if(view==='check'){ ckInit(); }
   if(view==='status'){ renderStatus(); }
   if(view==='vendors'){ renderVendors(); }
   if(view==='customers'){ renderCustomers(); }
@@ -6363,7 +6539,7 @@ document.getElementById('detailForm').addEventListener('submit',function(e){
   FIELDS.forEach(f=>rows.push({k:(LANG==='en'?f.en:f.th),v:data[f.key]}));
   if(stockWithdraw) rows.push({k:t('stockWithdraw'),v:stockWithdraw.qty+' '+stockWithdraw.unit+' · '+stockWithdraw.list});
   confirmModal(t('mConfirmTitle'),t('mConfirmDesc'),rows,()=>{
-    const dets=DB.details(); dets.push(data); DB.saveDetails(dets);
+    const dets=DB.details(); dets.push(data); DB.saveDetails(dets); priceLogAppend(data);
     if(stockWithdraw){ doWithdraw(stockWithdraw.stockId, stockWithdraw.qty, {workNo:wn, reason:t('workLabel')+' '+wn, by:''}); renderStockList(); }
     detailStockPick=null; setStockDateLabels(false);
     closeModal(); successModal(t('detailComplete'),t('detailCompleteSub'));
@@ -6620,7 +6796,7 @@ function diCsvUpload(){
   const scope=merged.filter(m=>m.inScope);
   if(scope.some(m=>m.missing.length)){ diCsvConfirmed=false; diUpdateCsvButtons(); diCsvConfirm(); return; }
   const dets=DB.details();
-  scope.forEach((m,i)=>{ const rec=Object.assign({}, m.rec); rec.id='d'+Date.now()+i+Math.floor(Math.random()*1000); rec.workNo=wn; dets.push(rec); });
+  scope.forEach((m,i)=>{ const rec=Object.assign({}, m.rec); rec.id='d'+Date.now()+i+Math.floor(Math.random()*1000); rec.workNo=wn; dets.push(rec); priceLogAppend(rec); });
   DB.saveDetails(dets);
   const n=scope.length;
   successModal(en?`${n} detail(s) uploaded!`:`อัปโหลดรายละเอียด ${n} รายการแล้ว!`, en?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว');
@@ -6699,6 +6875,64 @@ function currentFilter(){
   const typed=document.getElementById('filterInput').value.trim().toLowerCase();
   return {type,pick,typed};
 }
+/* =================== CLICK-TO-SORT ENGINE (shared by 4 tables) ===================
+   Click a column header to sort. Text→A-Z/Z-A · Number→low-high/high-low ·
+   Date→nearest-to-today/farthest. On a date sort the row nearest today's date is
+   highlighted and led-to, and stays highlighted until another column/filter is chosen. */
+const nxSortState={spec:null,check:null,status:null,stock:null};   /* {key,type,dir} dir:1|-1 */
+const nxSortJustChanged={};
+function nxDateDist(s){ if(!s) return null; const d=new Date(s+'T00:00:00'); if(isNaN(d.getTime())) return null; const t=new Date(); t.setHours(0,0,0,0); return Math.abs(d.getTime()-t.getTime()); }
+function nxSortCmp(av,bv,type,dir){
+  let r;
+  if(type==='number'||type==='rank'){ r=(parseFloat(av)||0)-(parseFloat(bv)||0); }
+  else if(type==='date'){
+    const da=nxDateDist(av), db=nxDateDist(bv);
+    if(da==null && db==null) r=0;
+    else if(da==null) return 1;      // blanks always last
+    else if(db==null) return -1;
+    else r=da-db;                    // nearest-to-today first when dir=1
+  } else { r=String(av==null?'':av).localeCompare(String(bv==null?'':bv), undefined, {numeric:true, sensitivity:'base'}); }
+  return dir<0 ? -r : r;
+}
+function nxApplySort(rows, tableKey, getVal){
+  const s=nxSortState[tableKey]; if(!s||!s.key) return rows;
+  const arr=rows.map((r,i)=>({r,i}));
+  arr.sort((A,B)=>{ const c=nxSortCmp(getVal(A.r,s.key),getVal(B.r,s.key),s.type,s.dir); return c!==0?c:A.i-B.i; });
+  return arr.map(x=>x.r);
+}
+function nxSortBy(tableKey,key,type){
+  const s=nxSortState[tableKey];
+  if(s && s.key===key) s.dir=-s.dir; else nxSortState[tableKey]={key,type,dir:1};
+  nxSortJustChanged[tableKey]=true;
+  ({spec:renderSpectator,check:renderCheck,status:renderStatus,stock:renderStockList}[tableKey]||function(){})();
+}
+function nxWireHeaders(theadTr, tableKey, cols){
+  if(!theadTr) return; const ths=[...theadTr.children]; const s=nxSortState[tableKey];
+  cols.forEach((c,idx)=>{ const th=ths[idx]; if(!th) return;
+    if(!c){ th.classList.remove('nx-sortable','nx-sorted'); th.removeAttribute('data-arrow'); th.onclick=null; return; }
+    th.classList.add('nx-sortable');
+    th.onclick=(e)=>{ if(e.target && e.target.tagName==='INPUT') return; nxSortBy(tableKey,c.k,c.t); };
+    const active = s && s.key===c.k;
+    th.classList.toggle('nx-sorted',!!active);
+    th.setAttribute('data-arrow', active ? (s.dir>0?'▲':'▼') : '↕');
+  });
+}
+/* after DOM build: if a date sort is active, highlight + lead to the row nearest today */
+function nxDateLead(tableKey, body, rows, getVal){
+  const s=nxSortState[tableKey];
+  if(!s || s.type!=='date' || !body) { return; }
+  let best=-1,bestDist=Infinity;
+  rows.forEach((r,i)=>{ const d=nxDateDist(getVal(r,s.key)); if(d!=null && d<bestDist){ bestDist=d; best=i; } });
+  if(best<0) return;
+  const tr=body.children[best]; if(!tr) return;
+  tr.classList.add('nx-datelead');
+  if(nxSortJustChanged[tableKey]){ nxSortJustChanged[tableKey]=false; setTimeout(()=>{ try{ leadTo(tr); }catch(_){ try{ tr.scrollIntoView({block:'center'}); }catch(e){} } },140); }
+}
+const SPEC_SORT_COLS=[null,{k:'workNo',t:'text'},{k:'workName',t:'text'},{k:'custName',t:'text'},{k:'custCode',t:'text'},{k:'rev',t:'number'},{k:'module',t:'text'},{k:'list',t:'text'},{k:'qty',t:'number'},{k:'brand',t:'text'},{k:'supplier',t:'text'},{k:'poNo',t:'text'},{k:'estUnit',t:'number'},{k:'actUnit',t:'number'},{k:'mgUnit',t:'number'},{k:'mgTot',t:'number'},{k:'total',t:'number'},{k:'group',t:'text'},{k:'shipDate',t:'date'},{k:'recvDate',t:'date'},null];
+const CHECK_SORT_COLS=[null,{k:'workNo',t:'text'},{k:'workName',t:'text'},{k:'item',t:'text'},{k:'module',t:'text'},{k:'group',t:'text'},{k:'poNo',t:'text'},{k:'supplier',t:'text'},{k:'best',t:'number'},{k:'value',t:'number'},{k:'shipDate',t:'date'},{k:'recvDate',t:'date'},{k:'status',t:'rank'},null];
+const STATUS_SORT_COLS=[{k:'workNo',t:'text'},{k:'workName',t:'text'},{k:'module',t:'text'},{k:'list',t:'text'},{k:'group',t:'text'},{k:'poNo',t:'text'},{k:'supplier',t:'text'},{k:'qty',t:'number'},{k:'shipDate',t:'date'},{k:'recvDate',t:'date'},{k:'status',t:'rank'}];
+const STOCK_SORT_COLS=[{k:'no',t:'text'},{k:'date',t:'date'},{k:'supplier',t:'text'},{k:'work',t:'text'},{k:'list',t:'text'},{k:'qty',t:'number'},{k:'unit',t:'text'},{k:'estUnit',t:'number'},{k:'actUnit',t:'number'},{k:'mgUnit',t:'number'},{k:'mgTot',t:'number'},{k:'value',t:'number'},{k:'shipDate',t:'date'},{k:'recvDate',t:'date'},{k:'by',t:'text'},{k:'prNo',t:'text'},{k:'payment',t:'number'},{k:'note',t:'text'},null];
+
 function renderSpectator(){
   const works=DB.works(), dets=DB.details();
   // stats
@@ -6713,20 +6947,37 @@ function renderSpectator(){
   if(pick){ rows=rows.filter(d=>detailFieldValue(d,type)===pick); }
   else if(typed){ rows=rows.filter(d=>detailFieldValue(d,type).toLowerCase().startsWith(typed)); }
 
+  // click-to-sort
+  const _wmap={}; works.forEach(w=>{ _wmap[w.workNo]=w; });
+  const getSpec=(d,key)=>{ const w=_wmap[d.workNo]||{}; switch(key){
+    case 'workNo':return d.workNo; case 'workName':return w.workName; case 'custName':return w.custName; case 'custCode':return w.custCode;
+    case 'rev':return d.rev; case 'module':return d.module; case 'list':return d.list; case 'qty':return d.qty; case 'brand':return d.brand;
+    case 'supplier':return d.supplier; case 'poNo':return d.poNo; case 'estUnit':return matEstUnit(d); case 'actUnit':return d.unitPrice;
+    case 'mgUnit':return mgUnit(d); case 'mgTot':return mgTot(d); case 'total':return d.total; case 'group':return d.group;
+    case 'shipDate':return d.shipDate; case 'recvDate':return d.recvDate; } return ''; };
+  rows=nxApplySort(rows,'spec',getSpec);
+
+  // keep selection only for rows still visible
+  const visIds=new Set(rows.map(r=>r.id));
+  specSel.forEach(id=>{ if(!visIds.has(id)) specSel.delete(id); });
+  specVisibleIds=rows.map(r=>r.id);
+
   const body=document.getElementById('specBody'); body.innerHTML='';
   rows.forEach(d=>{
     const w=works.find(x=>x.workNo===d.workNo)||{};
     const noShip=!d.shipDate;
     const shipCell=noShip?`<span class="ship-fix">⚠ ${t('setShip')}</span>`:escapeHtml(d.shipDate);
     const tr=document.createElement('tr');
-    if(noShip){ tr.className='row-noship'; tr.title=t('shipFixHint'); tr.onclick=(e)=>{ if(!e.target.closest('button')) openShipFix(d.id); }; }
+    if(noShip){ tr.className='row-noship'; tr.title=t('shipFixHint'); }
+    if(specSel.has(d.id)) tr.classList.add('spec-selrow');
     tr.innerHTML=`
-      <td><span class="badge b-work">${escapeHtml(d.workNo)}</span></td>
+      <td class="spec-ck"><input type="checkbox" ${specSel.has(d.id)?'checked':''} onclick="event.stopPropagation();specToggle('${d.id}',this.checked)"></td>
+      <td>${noShip?`<span class="ship-fix-btn" onclick="event.stopPropagation();openShipFix('${d.id}')" title="${escapeAttr(t('shipFixHint'))}">`:''}<span class="badge b-work">${escapeHtml(d.workNo)}</span>${noShip?'</span>':''}</td>
       <td>${escapeHtml(w.workName||'')}</td>
       <td>${escapeHtml(w.custName||'')}</td>
       <td>${w.custCode?'<span class="badge b-grp">'+escapeHtml(w.custCode)+'</span>':''}</td>
       <td>${escapeHtml(d.rev||'')}</td>
-      <td>${escapeHtml(d.module||'')}</td>
+      <td><select class="spec-inline" onchange="specRowSet('${d.id}','module',this)">${specModuleOptions(d.module||'')}</select></td>
       <td>${escapeHtml(d.list||'')}</td>
       <td>${escapeHtml(d.qty||'')}</td>
       <td>${escapeHtml(d.brand||'')}</td>
@@ -6737,7 +6988,7 @@ function renderSpectator(){
       ${marginCell(mgUnit(d))}
       ${marginCell(mgTot(d))}
       <td class="money">${d.total?fmtTHB(d.total):''}</td>
-      <td><span class="badge b-grp">${escapeHtml(d.group||'')}</span></td>
+      <td><select class="spec-inline spec-inline-grp" onchange="specRowSet('${d.id}','group',this)">${specGroupOptions(d.group||'')}</select></td>
       <td>${shipCell}</td>
       <td>${escapeHtml(d.recvDate||'—')}</td>
       <td><button class="btn danger" style="padding:6px 12px;font-size:13px" onclick="event.stopPropagation();delDetail('${d.id}')">✕</button></td>`;
@@ -6746,7 +6997,92 @@ function renderSpectator(){
   document.getElementById('rc').textContent=rows.length;
   document.getElementById('specEmpty').style.display = rows.length? 'none':'block';
   document.getElementById('specTable').style.display = rows.length? 'table':'none';
+  specUpdateBulkBar();
+  nxWireHeaders(document.querySelector('#specTable thead tr'),'spec',SPEC_SORT_COLS);
+  nxDateLead('spec',body,rows,getSpec);
   if(typeof dmSyncBars==='function') dmSyncBars();
+}
+/* ---- Spectator inline edit: module/group stores, per-row + bulk ---- */
+let specSel=new Set(); let specVisibleIds=[];
+function diModules(){ try{ const raw=localStorage.getItem('nx_modules'); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)) return a; } }catch(_){} return []; }
+function diSaveModule(name){ name=(name||'').trim(); if(!name) return; const l=diModules(); if(!l.some(m=>m.toLowerCase()===name.toLowerCase())){ l.push(name); localStorage.setItem('nx_modules', JSON.stringify(l)); } }
+function specModuleList(){ const set=new Set(); DB.details().forEach(d=>{ if(d.module) set.add(d.module); }); diModules().forEach(m=>set.add(m)); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
+function specGroupList(){ const set=new Set(diGroups()); DB.details().forEach(d=>{ if(d.group) set.add(d.group); }); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
+function specOptsFrom(list,sel,addLabel){
+  const en=LANG==='en';
+  let html=`<option value="">${en?'—':'—'}</option>`;
+  let has=false;
+  list.forEach(v=>{ const s=(v===sel); if(s) has=true; html+=`<option value="${escapeAttr(v)}"${s?' selected':''}>${escapeHtml(v)}</option>`; });
+  if(sel && !has) html=`<option value="${escapeAttr(sel)}" selected>${escapeHtml(sel)}</option>`+html;
+  html+=`<option value="__add__">➕ ${addLabel}</option>`;
+  return html;
+}
+function specModuleOptions(sel){ return specOptsFrom(specModuleList(),sel,LANG==='en'?'Add new module…':'เพิ่มโมดูลใหม่…'); }
+function specGroupOptions(sel){ return specOptsFrom(specGroupList(),sel,LANG==='en'?'Add new group…':'เพิ่มหมวดหมู่ใหม่…'); }
+function specToggle(id,on){ if(on) specSel.add(id); else specSel.delete(id); const tr=document.querySelector(`#specBody input[onclick*="${id}"]`)?.closest('tr'); if(tr) tr.classList.toggle('spec-selrow',on); specUpdateBulkBar(); }
+function specToggleAll(on){ specSel = on ? new Set(specVisibleIds) : new Set(); renderSpectator(); }
+function specClearSel(){ specSel=new Set(); renderSpectator(); }
+function specUpdateBulkBar(){
+  const bar=document.getElementById('specBulk'); if(!bar) return;
+  const n=specSel.size;
+  bar.style.display = n? 'block':'none';
+  const c=document.getElementById('specSelCount'); if(c) c.textContent=n;
+  const all=document.getElementById('specAll'); if(all) all.checked = n>0 && n===specVisibleIds.length;
+  if(n){
+    const bm=document.getElementById('specBulkModule'); if(bm) bm.innerHTML=specModuleOptions('');
+    const bg=document.getElementById('specBulkGroup'); if(bg) bg.innerHTML=specGroupOptions('');
+  }
+}
+/* choosing "add new" from a bulk select → prompt, then re-select that new value */
+function specBulkOnPick(field,sel){
+  if(sel.value==='__add__'){ sel.value=''; specAddValue(field,(nv)=>{ if(field==='module'){ document.getElementById('specBulkModule').innerHTML=specModuleOptions(nv); } else { document.getElementById('specBulkGroup').innerHTML=specGroupOptions(nv); } }); }
+}
+/* per-row change */
+function specRowSet(id,field,sel){
+  const val=sel.value;
+  if(val==='__add__'){ const d=DB.details().find(x=>x.id===id); sel.value=(d&&d[field])||''; specAddValue(field,(nv)=>{ specApplyRow(id,field,nv); }); return; }
+  specApplyRow(id,field,val);
+}
+function specApplyRow(id,field,val){
+  const dets=DB.details(); const d=dets.find(x=>x.id===id); if(!d) return;
+  d[field]=val; DB.saveDetails(dets);
+  if(field==='module') diSaveModule(val); else if(field==='group' && val){ const g=diGroups(); if(!g.includes(val)){ g.push(val); diSaveGroups(g); } }
+  renderSpectator(); if(typeof renderStatus==='function') renderStatus(); computeAlerts();
+  showToast(LANG==='en'?'Updated':'อัปเดตแล้ว');
+}
+/* bulk apply to every checked row */
+function specBulkApply(field){
+  const en=LANG==='en';
+  const sel=document.getElementById(field==='module'?'specBulkModule':'specBulkGroup');
+  const val=sel?sel.value:'';
+  if(val==='__add__'){ specBulkOnPick(field,sel); return; }
+  if(!specSel.size){ showToast(en?'Select rows first.':'เลือกแถวก่อน'); return; }
+  const ids=[...specSel];
+  const dets=DB.details(); let n=0;
+  dets.forEach(d=>{ if(specSel.has(d.id)){ d[field]=val; n++; } });
+  DB.saveDetails(dets);
+  if(field==='module' && val) diSaveModule(val); else if(field==='group' && val){ const g=diGroups(); if(!g.includes(val)){ g.push(val); diSaveGroups(g); } }
+  renderSpectator(); if(typeof renderStatus==='function') renderStatus(); computeAlerts();
+  showToast((en?`Updated ${n} row(s) · `:`อัปเดต ${n} แถว · `)+(field==='module'?'Module':'Group')+' → '+(val||'—'));
+}
+/* add-new value modal for module/group */
+function specAddValue(kind,cb){
+  const en=LANG==='en';
+  const isMod=kind==='module';
+  customModal({icon:isMod?'🧩':'🏷', title:(isMod?(en?'Add new module':'เพิ่มโมดูลใหม่'):(en?'Add new group':'เพิ่มหมวดหมู่ใหม่')),
+    desc:(en?'Type a name — it is saved for future use across the app.':'พิมพ์ชื่อ — จะถูกบันทึกไว้ใช้ทั่วทั้งระบบ'),
+    bodyHtml:`<div class="field"><input type="text" id="specNewVal" placeholder="${isMod?(en?'e.g. CONTROL PANEL':'เช่น CONTROL PANEL'):(en?'e.g. fab':'เช่น fab')}" onkeydown="if(event.key==='Enter'){event.preventDefault();specAddValueSave('${kind}');}"></div>`,
+    footButtons:[{label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},{label:'➕ '+(en?'Add':'เพิ่ม'),cls:'primary',onClick:()=>specAddValueSave(kind)}]});
+  window._specAddCb=cb;
+  setTimeout(()=>{ const el=document.getElementById('specNewVal'); if(el) el.focus(); },60);
+}
+function specAddValueSave(kind){
+  const el=document.getElementById('specNewVal'); const name=el?el.value.trim():'';
+  if(!name){ if(el) el.style.borderColor='var(--red)'; return; }
+  if(kind==='module') diSaveModule(name); else { const g=diGroups(); if(!g.includes(name)){ g.push(name); diSaveGroups(g); } }
+  const cb=window._specAddCb; window._specAddCb=null;
+  closeModal();
+  if(cb) cb(name);
 }
 function delDetail(id){
   const dets=DB.details().filter(d=>d.id!==id); DB.saveDetails(dets);
@@ -6944,9 +7280,12 @@ let ckSuggestItems=[], ckSuggestIndex=-1;
 let ckBlinkTarget=null;
 let ckLeadId=null;   /* row led-to from Status page — keeps a lasting highlight */
 let ckHighlightAlerts=false;
+let ckScope={work:'',group:'',module:''};   /* cascading scope selectors */
+let ckStage={};      /* id -> {supplier,shipDate,recvDate} staged edits, saved only on Update */
+let ckSel=new Set(); /* checked row ids for batch assign */
 function alertsToCheck(){ ckHighlightAlerts=true; ckStatus='all'; setCkPills('all'); go('check'); setTimeout(()=>{ const el=document.querySelector('#ckBody tr.ck-alert-hl'); if(el) leadTo(el); },420); }
 
-function openCheck(id){ ckBlinkTarget=id; ckLeadId=id; ckStatus='all'; setCkPills('all'); go('check'); }
+function openCheck(id){ ckBlinkTarget=id; ckLeadId=id; ckStatus='all'; ckScope={work:'',group:'',module:''}; setCkPills('all'); go('check'); }
 function setCkPills(s){ document.querySelectorAll('#ckPills .pill').forEach(p=>p.classList.toggle('active',p.getAttribute('data-st')===s)); }
 function ckSetStatus(s){ ckStatus=s; setCkPills(s); renderCheck(); }
 function ckTypeChange(){
@@ -6985,16 +7324,57 @@ function ckKey(e){
   else if(e.key==='Escape'){ hideCkSuggest(); return; } else return;
   items.forEach((it,i)=>it.classList.toggle('hi',i===ckSuggestIndex));
 }
+/* ---- staged-value helpers: displayed values come from ckStage overlaid on DB ---- */
+/* busy while there are unsaved staged edits, or focus is inside the Check page */
+function ckBusy(){
+  try{
+    if(typeof nxCurrentView==='function' && nxCurrentView()!=='check') return false;
+    if(ckPendingIds().length) return true;
+    const ae=document.activeElement;
+    if(ae && ae.closest && ae.closest('#view-check')) return true;
+    return false;
+  }catch(_){ return false; }
+}
+function ckStagedVal(d,field){ const s=ckStage[d.id]; return (s && (field in s)) ? s[field] : (d[field]||''); }
+function ckIsDirty(d){ const s=ckStage[d.id]; if(!s) return false; return ['supplier','shipDate','recvDate','total'].some(f=>(f in s) && String(s[f]||'')!==String(d[f]||'')); }
+function ckPendingIds(){ return DB.details().filter(d=>ckIsDirty(d)).map(d=>d.id); }
+/* an item's status computed from its STAGED (live) dates */
+function ckStagedStatus(d){ return itemStatus({shipDate:ckStagedVal(d,'shipDate'),recvDate:ckStagedVal(d,'recvDate')}); }
+/* build a supplier <select> for one row (vendors + add-new + keep current) */
+function ckSupplierOptions(sel){
+  const en=LANG==='en';
+  const vendors=DB.vendors().slice().sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  let html=`<option value="">${en?'— none —':'— ไม่มี —'}</option>`;
+  let has=false;
+  vendors.forEach(v=>{ const s=(v.name===sel); if(s) has=true; html+=`<option value="${escapeAttr(v.name)}"${s?' selected':''}>${escapeHtml(v.name)}</option>`; });
+  if(sel && !has) html=`<option value="${escapeAttr(sel)}" selected>${escapeHtml(sel)}</option>`+html;  // e.g. "Stock: ..." keeps showing
+  html+=`<option value="__add__">➕ ${en?'Add vendor…':'เพิ่มผู้ขาย…'}</option>`;
+  return html;
+}
 function renderCheck(){
   const body=document.getElementById('ckBody'); if(!body) return;
   const works=DB.works(), dets=DB.details();
   const type=document.getElementById('ckType').value;
   const typed=document.getElementById('ckInput').value.trim().toLowerCase();
-  let rows=dets.map(d=>({d,st:itemStatus(d),w:works.find(x=>x.workNo===d.workNo)||{}}));
+  let rows=dets.map(d=>({d,st:ckStagedStatus(d),w:works.find(x=>x.workNo===d.workNo)||{}}));
+  // ② scope filter (cascading)
+  if(ckScope.work) rows=rows.filter(r=>r.d.workNo===ckScope.work);
+  if(ckScope.group) rows=rows.filter(r=>(r.d.group||'')===ckScope.group);
+  if(ckScope.module) rows=rows.filter(r=>(r.d.module||'')===ckScope.module);
   if(ckStatus!=='all') rows=rows.filter(r=>r.st.level===ckStatus);
   if(typed) rows=rows.filter(r=>detailFieldValue(r.d,type).toLowerCase().startsWith(typed));
   const order={lost:0,urgent:1,warn:2,none:3,ok:4};
   rows.sort((a,b)=>order[a.st.level]-order[b.st.level] || ((a.st.days??999)-(b.st.days??999)));
+  // click-to-sort override
+  const getCheck=(r,key)=>{ const d=r.d,w=r.w; switch(key){
+    case 'workNo':return d.workNo; case 'workName':return w.workName; case 'item':return d.list||d.module; case 'module':return d.module; case 'group':return d.group; case 'poNo':return d.poNo;
+    case 'supplier':return ckStagedVal(d,'supplier'); case 'value':return d.total; case 'shipDate':return ckStagedVal(d,'shipDate'); case 'recvDate':return ckStagedVal(d,'recvDate');
+    case 'best':{ const b=priceBest(d.module,ckStagedVal(d,'supplier')); return b==null?Infinity:b; }
+    case 'status':return order[r.st.level]!=null?order[r.st.level]:9; } return ''; };
+  rows=nxApplySort(rows,'check',getCheck);
+  // drop selection/stage-focus for rows no longer visible-safe: keep stage (persist edits) but prune selection
+  const visIds=new Set(rows.map(r=>r.d.id));
+  ckSel.forEach(id=>{ if(!visIds.has(id)) ckSel.delete(id); });
   body.innerHTML='';
   rows.forEach(({d,st,w})=>{
     let sb='st-ok',stx=t('stOkTxt');
@@ -7006,25 +7386,52 @@ function renderCheck(){
     const lastTxt = last ? '🕑 '+t('followedOn')+' '+nxFmtDT(last.ts) : t('notFollowed');
     const needFollow = (st.level==='lost'||st.level==='urgent'||st.level==='warn') && !last;
     const isAlert = (st.level==='lost'||st.level==='urgent'||st.level==='warn'||st.level==='none');
+    const sSup=ckStagedVal(d,'supplier'), sShip=ckStagedVal(d,'shipDate'), sRecv=ckStagedVal(d,'recvDate');
+    const noSup=!sSup;
+    const dirty=ckIsDirty(d);
     const tr=document.createElement('tr'); tr.id='ck-'+d.id;
     if(ckHighlightAlerts && isAlert) tr.classList.add('ck-alert-hl','st-'+st.level);
     if(ckLeadId && d.id===ckLeadId) tr.classList.add('ck-lead');
+    if(ckSel.has(d.id)) tr.classList.add('spec-selrow');
+    if(dirty) tr.classList.add('ck-dirty');
     tr.innerHTML=`
+      <td class="spec-ck"><input type="checkbox" ${ckSel.has(d.id)?'checked':''} onclick="event.stopPropagation();ckToggle('${d.id}',this.checked)"></td>
       <td><span class="badge b-work">${escapeHtml(d.workNo)}</span></td>
       <td>${escapeHtml(w.workName||'')}</td>
       <td>${escapeHtml(d.list||d.module||'-')}</td>
+      <td>${escapeHtml(d.module||'-')}</td>
+      <td>${d.group?'<span class="badge b-grp">'+escapeHtml(d.group)+'</span>':'-'}</td>
       <td>${escapeHtml(d.poNo||'-')}</td>
-      <td>${escapeHtml(d.supplier||'-')}</td>
-      <td class="money" style="font-weight:800">${d.total?fmtTHB(d.total):'—'}</td>
-      <td class="col-focus"><input type="date" class="ck-date" value="${escapeHtml(d.shipDate||'')}" onchange="ckEdit('${d.id}','shipDate',this.value)"></td>
-      <td class="col-focus"><input type="date" class="ck-date" value="${escapeHtml(d.recvDate||'')}" onchange="ckEdit('${d.id}','recvDate',this.value)"></td>
-      <td><span class="tl-status ck-badge-static ${sb}">${stx}</span></td>
+      <td><select class="spec-inline ck-sup-sel" onchange="ckRowSupplier('${d.id}',this)">${ckSupplierOptions(sSup)}</select></td>
+      <td class="ck-best">${(function(){
+        const en=LANG==='en'; const q=parseFloat(d.qty)||0;
+        const sBest=priceBest(d.module,sSup);
+        const overall=moduleBestVendor(d.module);
+        let html='';
+        if(sSup && sBest!=null){ html+=`<div class="ck-best-u">${fmtTHB(sBest)}<small>/unit</small></div>`+(q?`<div class="ck-best-t">≈ ${fmtTHB(sBest*q)} <small>×${q}</small></div>`:''); }
+        else if(!sSup) html+=`<div class="muted" style="font-size:10.5px">${en?'pick a supplier':'เลือกผู้ขาย'}</div>`;
+        if(overall){
+          const better = (!sSup) || (overall.supplier!==sSup && (sBest==null || overall.price<sBest));
+          if(better) html+=`<div class="ck-reco" title="${escapeAttr(en?'A cheaper vendor supplies this module — click to switch to it':'มีผู้ขายที่ถูกกว่าสำหรับโมดูลนี้ — คลิกเพื่อเปลี่ยน')}" onclick="event.stopPropagation();ckRecoApply('${d.id}','${b64(overall.supplier)}')">↓ ${en?'cheaper':'ถูกกว่า'}: ${escapeHtml(overall.supplier)} ${fmtTHB(overall.price)}<small>/u</small></div>`;
+          else if(sSup && overall.supplier===sSup) html+=`<div class="ck-reco-ok">✓ ${en?'cheapest':'ถูกสุด'}</div>`;
+        }
+        return html||'<span class="muted">—</span>';
+      })()}</td>
+      <td class="ck-valcell"><span class="ck-baht">฿</span><input type="number" step="any" min="0" class="ck-val" value="${escapeHtml(ckStagedVal(d,'total'))}" placeholder="0.00" title="${escapeAttr(LANG==='en'?'Current price (THB) for this line':'ราคาปัจจุบัน (บาท) ของรายการนี้')}" onchange="ckStageSet('${d.id}','total',this.value)"></td>
+      <td class="col-focus"><input type="date" class="ck-date" value="${escapeHtml(sShip)}" ${noSup?'disabled title="'+escapeAttr(LANG==='en'?'Select a supplier first':'เลือกผู้จัดจำหน่ายก่อน')+'"':''} onchange="ckStageSet('${d.id}','shipDate',this.value)">${noSup?'<div class="ck-need-sup">'+(LANG==='en'?'supplier first':'เลือกผู้ขายก่อน')+'</div>':''}</td>
+      <td class="col-focus"><input type="date" class="ck-date" value="${escapeHtml(sRecv)}" onchange="ckStageSet('${d.id}','recvDate',this.value)"></td>
+      <td><span class="tl-status ck-badge-static ${sb}">${stx}</span>${dirty?'<span class="ck-dirty-dot" title="'+escapeAttr(LANG==='en'?'Unsaved — press Update':'ยังไม่บันทึก — กด Update')+'">●</span>':''}</td>
       <td><button class="btn-mini" onclick="openFollowUp('${d.id}')">📇 ${t('followBtn')}</button><div class="fu-last ${needFollow?'redtext':''}">${needFollow?'⚠ ':''}${lastTxt}</div></td>`;
     body.appendChild(tr);
   });
   document.getElementById('ckCount').textContent=rows.length;
   const ctv=document.getElementById('ckTotalVal'); if(ctv) ctv.textContent=fmtTHB(rows.reduce((a,r)=>a+(parseFloat(r.d.total)||0),0));
+  const sc=document.getElementById('ckSelCount'); if(sc) sc.textContent=ckSel.size;
+  const all=document.getElementById('ckAll'); if(all) all.checked = ckSel.size>0 && ckSel.size===rows.length;
   document.getElementById('ckEmpty').style.display = rows.length? 'none':'block';
+  ckUpdatePending();
+  nxWireHeaders(document.querySelector('#view-check table thead tr'),'check',CHECK_SORT_COLS);
+  nxDateLead('check',body,rows,getCheck);
   if(ckBlinkTarget){
     const id=ckBlinkTarget; ckBlinkTarget=null;
     // Re-query the row FRESH at scroll time — an earlier render may have replaced the tbody,
@@ -7046,28 +7453,135 @@ function renderCheck(){
     },360);
   }
 }
-function ckEdit(id,field,value){
-  const dets=DB.details(); const d=dets.find(x=>x.id===id); if(!d) return;
-  d[field]=value;
-  let toastMsg=t('dateUpdated');
-  if(field==='recvDate'){
+/* ---- STAGED editing: nothing saves until "Update" ---- */
+function ckStageSet(id,field,value){
+  const d=DB.details().find(x=>x.id===id); if(!d) return;
+  if(field==='shipDate' && !ckStagedVal(d,'supplier')){ showToast(LANG==='en'?'Select a supplier first.':'เลือกผู้จัดจำหน่ายก่อน'); renderCheck(); return; }
+  if(!ckStage[id]) ckStage[id]={};
+  ckStage[id][field]=value;
+  ckIsDirty(d) || (function(){ /* if reverted to original on all fields, drop the stage entry */ const s=ckStage[id]; const clean=['supplier','shipDate','recvDate','total'].every(f=>!(f in s) || String(s[f]||'')===String(d[f]||'')); if(clean) delete ckStage[id]; })();
+  renderCheck();
+}
+function ckRecoApply(id,b){ try{ ckStageSet(id,'supplier',ub64(b)); showToast(LANG==='en'?'Supplier set to cheapest — press Update to save':'ตั้งผู้ขายเป็นราคาถูกสุด — กด Update เพื่อบันทึก'); }catch(_){} }
+function ckRowSupplier(id,sel){
+  const val=sel.value;
+  if(val==='__add__'){
+    const d=DB.details().find(x=>x.id===id); sel.value=ckStagedVal(d,'supplier')||'';
+    vendorSaveCallback=(name)=>{ ckStageSet(id,'supplier',name); };
+    openVendorForm();
+    return;
+  }
+  ckStageSet(id,'supplier',val);
+}
+function ckToggle(id,on){ if(on) ckSel.add(id); else ckSel.delete(id); const c=document.getElementById('ckSelCount'); if(c) c.textContent=ckSel.size; const tr=document.getElementById('ck-'+id); if(tr) tr.classList.toggle('spec-selrow',on); const all=document.getElementById('ckAll'); if(all){ const rows=document.querySelectorAll('#ckBody tr').length; all.checked=ckSel.size>0&&ckSel.size===rows; } }
+function ckToggleAll(on){ const ids=[...document.querySelectorAll('#ckBody tr')].map(tr=>tr.id.replace('ck-','')); ckSel = on ? new Set(ids) : new Set(); renderCheck(); }
+/* choosing "Add vendor…" in the batch Supplier select → open the form, then keep the new name selected */
+function ckAsgSupplierChange(sel){
+  if(sel.value==='__add__'){ sel.value=''; vendorSaveCallback=(name)=>{ ckInitAssign(); const s=document.getElementById('ckAsgSupplier'); if(s) s.value=name; }; openVendorForm(); }
+}
+/* batch assign: each input type has its own Apply button (Task-1 style) → applies that field
+   to every checked row as a STAGED change, previewed live in the table; saves only on Update. */
+function ckAssignApply(field){
+  const en=LANG==='en';
+  let val;
+  if(field==='supplier'){ const s=document.getElementById('ckAsgSupplier'); if(s.value==='__add__'){ ckAsgSupplierChange(s); return; } val=s.value; }
+  else if(field==='shipDate'){ val=document.getElementById('ckAsgShip').value; }
+  else { val=document.getElementById('ckAsgRecv').value; }
+  if(!ckSel.size){ showToast(en?'Check some rows first.':'ติ๊กเลือกแถวก่อน'); const bar=document.querySelector('.ck-assign'); if(bar){ bar.classList.add('nudge'); setTimeout(()=>bar.classList.remove('nudge'),600); } return; }
+  let applied=0, skipped=0;
+  ckSel.forEach(id=>{
+    const d=DB.details().find(x=>x.id===id); if(!d) return;
+    if(field==='shipDate' && !ckStagedVal(d,'supplier')){ skipped++; return; }   // force supplier first
+    if(!ckStage[id]) ckStage[id]={};
+    ckStage[id][field]=val; applied++;
+  });
+  renderCheck();
+  const lbl = field==='supplier'?(en?'Supplier':'ผู้ขาย'):(field==='shipDate'?(en?'Shipping':'จัดส่ง'):(en?'Received':'รับของ'));
+  let msg=(en?`${lbl} applied to ${applied} row(s)`:`${lbl} ใช้กับ ${applied} แถว`);
+  if(skipped) msg+=(en?` · ${skipped} skipped (no supplier)`:` · ข้าม ${skipped} (ไม่มีผู้ขาย)`);
+  showToast(msg);
+}
+/* ② scope cascading dropdowns */
+function ckScopeChange(which){
+  if(which==='work'){ ckScope.work=document.getElementById('ckScopeWork').value; ckScope.group=''; ckScope.module=''; }
+  else if(which==='group'){ ckScope.group=document.getElementById('ckScopeGroup').value; ckScope.module=''; }
+  else if(which==='module'){ ckScope.module=document.getElementById('ckScopeModule').value; }
+  ckFillScopeSelects(); renderCheck();
+}
+function ckScopeReset(){ ckScope={work:'',group:'',module:''}; ckFillScopeSelects(); renderCheck(); }
+function ckFillScopeSelects(){
+  const en=LANG==='en'; const dets=DB.details(), works=DB.works();
+  // work options (with name)
+  const wSel=document.getElementById('ckScopeWork'); if(!wSel) return;
+  const wIds=[...new Set(dets.map(d=>d.workNo).filter(Boolean))];
+  wSel.innerHTML=`<option value="">${en?'All works':'ทุกงาน'}</option>`+wIds.sort().map(wn=>{ const w=works.find(x=>x.workNo===wn)||{}; return `<option value="${escapeAttr(wn)}"${wn===ckScope.work?' selected':''}>${escapeHtml(wn)}${w.workName?' · '+escapeHtml(w.workName):''}</option>`; }).join('');
+  // group options within work
+  const inWork=dets.filter(d=>!ckScope.work||d.workNo===ckScope.work);
+  const gVals=[...new Set(inWork.map(d=>d.group).filter(Boolean))].sort();
+  const gSel=document.getElementById('ckScopeGroup');
+  gSel.innerHTML=`<option value="">${en?'All groups':'ทุกหมวดหมู่'}</option>`+gVals.map(g=>`<option value="${escapeAttr(g)}"${g===ckScope.group?' selected':''}>${escapeHtml(g)}</option>`).join('');
+  // module options within work+group
+  const inGrp=inWork.filter(d=>!ckScope.group||(d.group||'')===ckScope.group);
+  const mVals=[...new Set(inGrp.map(d=>d.module).filter(Boolean))].sort();
+  const mSel=document.getElementById('ckScopeModule');
+  mSel.innerHTML=`<option value="">${en?'All modules':'ทุกโมดูล'}</option>`+mVals.map(m=>`<option value="${escapeAttr(m)}"${m===ckScope.module?' selected':''}>${escapeHtml(m)}</option>`).join('');
+}
+function ckInitAssign(){ const s=document.getElementById('ckAsgSupplier'); if(s) s.innerHTML=ckSupplierOptions(''); }
+function ckInit(){ ckFillScopeSelects(); ckInitAssign(); ckTypeChange(); }
+/* Update button state */
+function ckUpdatePending(){
+  const n=ckPendingIds().length;
+  const btn=document.getElementById('ckUpdateBtn'); const badge=document.getElementById('ckPendingBadge');
+  if(btn) btn.classList.toggle('is-locked',n===0);
+  if(badge){ badge.style.display=n?'inline-flex':'none'; badge.textContent=n; }
+}
+/* commit ONE staged detail into DB with the received→stock side-effects */
+function ckCommitDetail(dets,d){
+  const s=ckStage[d.id]; if(!s) return;
+  if('supplier' in s) d.supplier=s.supplier;
+  if('total' in s){ d.total=s.total; const q=parseFloat(d.qty)||0; const tot=parseFloat(s.total)||0; if(q>0 && tot>0) d.unitPrice=String(+(tot/q).toFixed(4)); }
+  if('shipDate' in s) d.shipDate=s.shipDate;
+  if('recvDate' in s){
+    const value=s.recvDate;
+    d.recvDate=value;
     const isStockWithdraw=(d.supplier||'').startsWith('Stock:');
     if(value && !d.stockedId && !isStockWithdraw){
-      // Received from a vendor delivery → deposit into Stock Inventory, tagged with the Work name
-      const w=DB.works().find(x=>x.workNo===d.workNo)||{};
       const stk=DB.stock();
       const rec={ id:'stk'+Date.now()+Math.floor(Math.random()*1000), no:'RC-'+(d.poNo||d.workNo||'X')+'-'+String(Date.now()).slice(-4), date:value, supplier:d.supplier||'', work:(d.workNo||'Stock'), list:d.list||'', qty:d.qty||'0', qtyInit:d.qty||'0', unit:'pcs', estUnitPrice:d.estUnitPrice||'', unitPrice:d.unitPrice||'', shipDate:d.shipDate||'', recvDate:value, submittedBy:'', payment:d.total||'', paymentImg:'', prNo:d.poNo||'', note:t('fromDelivery')+' '+(d.workNo||''), fromDetail:d.id };
-      stk.push(rec); DB.saveStock(stk); d.stockedId=rec.id; toastMsg=t('receivedToStock');
+      stk.push(rec); DB.saveStock(stk); d.stockedId=rec.id;
     } else if(!value && d.stockedId){
-      DB.saveStock(DB.stock().filter(s=>s.id!==d.stockedId)); d.stockedId='';
+      DB.saveStock(DB.stock().filter(x=>x.id!==d.stockedId)); d.stockedId='';
     } else if(value && d.stockedId){
-      const stk=DB.stock(); const it=stk.find(s=>s.id===d.stockedId); if(it){ it.recvDate=value; it.date=value; DB.saveStock(stk); }
+      const stk=DB.stock(); const it=stk.find(x=>x.id===d.stockedId); if(it){ it.recvDate=value; it.date=value; DB.saveStock(stk); }
     }
   }
-  DB.saveDetails(dets);
-  renderCheck(); renderTimeline(); renderSpectator(); computeAlerts(); renderStockList(); renderStockAnalysis(); renderWithdrawLog();
-  showToast(toastMsg);
+  try{ priceLogAppend(d); }catch(_){}   // record this supplier's price for future comparison
 }
+/* UPDATE — confirm, then write every staged change to the database */
+function ckUpdateCommit(){
+  const en=LANG==='en';
+  const ids=ckPendingIds();
+  if(!ids.length){ showToast(en?'No changes to update.':'ไม่มีการเปลี่ยนแปลง'); return; }
+  const dets=DB.details(); const works=DB.works();
+  const rows=ids.map(id=>{ const d=dets.find(x=>x.id===id)||{}; const w=works.find(x=>x.workNo===d.workNo)||{}; const s=ckStage[id]||{};
+    const parts=[];
+    if('supplier' in s && String(s.supplier||'')!==String(d.supplier||'')) parts.push((en?'Supplier→':'ผู้ขาย→')+(s.supplier||'—'));
+    if('total' in s && String(s.total||'')!==String(d.total||'')) parts.push((en?'Value→':'ราคา→')+(s.total?fmtTHB(s.total):'—'));
+    if('shipDate' in s && String(s.shipDate||'')!==String(d.shipDate||'')) parts.push((en?'Ship→':'จัดส่ง→')+(s.shipDate||'—'));
+    if('recvDate' in s && String(s.recvDate||'')!==String(d.recvDate||'')) parts.push((en?'Recv→':'รับ→')+(s.recvDate||'—'));
+    return {k:d.workNo+' · '+(d.list||d.module||''), v:parts.join('  ')}; });
+  confirmModal((en?`Update ${ids.length} item(s)?`:`อัปเดต ${ids.length} รายการ?`), (en?'These staged changes will be saved to the database.':'การเปลี่ยนแปลงเหล่านี้จะถูกบันทึกลงฐานข้อมูล'), rows, ()=>{
+    const dets2=DB.details();
+    ids.forEach(id=>{ const d=dets2.find(x=>x.id===id); if(d) ckCommitDetail(dets2,d); });
+    DB.saveDetails(dets2);
+    ckStage={};
+    closeModal();
+    successModal(en?`${ids.length} item(s) updated!`:`อัปเดต ${ids.length} รายการแล้ว!`, en?'Saved to the database and synced.':'บันทึกลงฐานข้อมูลและซิงค์แล้ว');
+    renderCheck(); renderTimeline(); renderSpectator(); computeAlerts(); renderStockList(); renderStockAnalysis(); renderWithdrawLog(); if(typeof renderStatus==='function') renderStatus();
+  });
+}
+/* legacy single-field save (kept for any external callers) — now routes through staging+commit */
+function ckEdit(id,field,value){ ckStageSet(id,field,value); }
 
 /* =================== VENDORS & FOLLOW-UP =================== */
 let pendingVendorName='';
@@ -7187,9 +7701,14 @@ function renderStatus(){
   stFill('st_recv', dets.map(d=>d.recvDate));
   const gv2=id=>{const s=document.getElementById(id); return s?s.value:'';};
   const fW=gv2('st_work'),fP=gv2('st_po'),fM=gv2('st_module'),fG=gv2('st_group'),fS=gv2('st_ship'),fR=gv2('st_recv');
-  const rows=dets.filter(d=>
+  let rows=dets.filter(d=>
     (!fW||(d.workNo||'')===fW)&&(!fP||(d.poNo||'')===fP)&&(!fM||(d.module||'')===fM)&&(!fG||(d.group||'')===fG)&&(!fS||(d.shipDate||'')===fS)&&(!fR||(d.recvDate||'')===fR)
   );
+  const _stoRank={late:0,transit:1,sched:2,pending:3,ok:4};
+  const getStatus=(d,key)=>{ switch(key){
+    case 'workNo':return d.workNo; case 'workName':return wName(d.workNo); case 'module':return d.module; case 'list':return d.list||d.module; case 'group':return d.group; case 'poNo':return d.poNo; case 'supplier':return d.supplier; case 'qty':return d.qty;
+    case 'shipDate':return d.shipDate; case 'recvDate':return d.recvDate; case 'status':{ const cls=stStatusOf(d).cls; return _stoRank[cls]!=null?_stoRank[cls]:9; } } return ''; };
+  rows=nxApplySort(rows,'status',getStatus);
   const body=document.getElementById('statusBody');
   body.innerHTML=rows.map(d=>{ const s=stStatusOf(d);
     const goTitle=(LANG==='th')?'เปิดในหน้าตรวจสอบการส่งมอบ':'Open in Delivery Check';
@@ -7198,6 +7717,8 @@ function renderStatus(){
   const c=document.getElementById('stCount'); if(c) c.textContent=rows.length;
   const emp=document.getElementById('statusEmpty'); if(emp) emp.style.display=rows.length?'none':'';
   const tw=document.querySelector('#view-status .table-wrap'); if(tw) tw.style.display=rows.length?'':'none';
+  nxWireHeaders(document.querySelector('#statusTable thead tr'),'status',STATUS_SORT_COLS);
+  nxDateLead('status',body,rows,getStatus);
 }
 function renderVendors(){
   const body=document.getElementById('vendorBody'); if(!body) return;
@@ -7221,6 +7742,60 @@ function renderVendors(){
     body.appendChild(tr);
   });
   document.getElementById('vendorEmpty').style.display=vs.length?'none':'block';
+  mcFillModules();
+}
+/* ===== Module price comparison (Vendors page) ===== */
+function mcFillModules(){
+  const sel=document.getElementById('mcModule'); if(!sel) return;
+  const q=(document.getElementById('mcSearch')?document.getElementById('mcSearch').value:'').trim().toLowerCase();
+  let mods=comparableModules();   // only modules shared by 2+ vendors
+  if(q) mods=mods.filter(m=>String(m).toLowerCase().includes(q));
+  const prev=sel.value;
+  const en=LANG==='en';
+  const emptyLbl = comparableModules().length ? (en?'— Select a module —':'— เลือกโมดูล —') : (en?'— No shared modules yet —':'— ยังไม่มีโมดูลที่ใช้ร่วมกัน —');
+  sel.innerHTML=`<option value="">${emptyLbl}</option>`+mods.map(m=>{ const n=modulePricedVendors(m).length; return `<option value="${escapeAttr(m)}"${m===prev?' selected':''}>${escapeHtml(m)} (${n} ${en?'vendors':'ผู้ขาย'})</option>`; }).join('');
+  if(mods.includes(prev)) sel.value=prev;
+  mcFillItems();
+}
+function mcModuleChanged(){ mcFillItems(); }
+/* item (List) dropdown — narrows the comparison to one specific detail inside the module */
+function mcFillItems(){
+  const isel=document.getElementById('mcItem'); if(!isel) return;
+  const module=document.getElementById('mcModule').value;
+  const q=(document.getElementById('mcItemSearch')?document.getElementById('mcItemSearch').value:'').trim().toLowerCase();
+  let items=module?moduleListItems(module):[];
+  if(q) items=items.filter(i=>String(i).toLowerCase().includes(q));
+  const prev=isel.value; const en=LANG==='en';
+  isel.innerHTML=`<option value="">${en?'All items in module':'ทุกรายการในโมดูล'}</option>`+items.map(i=>`<option value="${escapeAttr(i)}"${i===prev?' selected':''}>${escapeHtml(i)}</option>`).join('');
+  isel.value = items.includes(prev) ? prev : '';
+  renderModuleCompare();
+}
+function renderModuleCompare(){
+  const box=document.getElementById('mcResult'); if(!box) return;
+  const en=LANG==='en';
+  const module=document.getElementById('mcModule').value;
+  const list=document.getElementById('mcItem')?document.getElementById('mcItem').value:'';
+  if(!module){ box.innerHTML=`<div class="muted-line">${en?'Pick a module above to compare vendors.':'เลือกโมดูลด้านบนเพื่อเปรียบเทียบผู้ขาย'}</div>`; return; }
+  const vendors=modulePricedVendors(module,list);
+  const scopeTxt = `<b>${escapeHtml(module)}</b>${list?` · <b>${escapeHtml(list)}</b>`:''}`;
+  if(!vendors.length){ box.innerHTML=`<div class="muted-line">${en?'No vendors have priced ':'ยังไม่มีผู้ขายที่ระบุราคา '}${scopeTxt} ${en?'yet.':''}</div>`; return; }
+  const rows=vendors.map(name=>({name, best:priceBest(module,name,list), latest:priceLatest(module,name,list)}));
+  const bests=rows.map(r=>r.best).filter(x=>x!=null);
+  const minBest=bests.length?Math.min.apply(null,bests):null, maxBest=bests.length?Math.max.apply(null,bests):null;
+  rows.sort((a,b)=>((a.best==null?Infinity:a.best)-(b.best==null?Infinity:b.best)));
+  const trs=rows.map(r=>{
+    const cls = r.best!=null && minBest!=null ? (r.best===minBest?'mc-low':(r.best===maxBest && maxBest!==minBest?'mc-high':'')) : '';
+    const tag = r.best!=null && r.best===minBest ? `<span class="mc-tag mc-tag-low">${en?'cheapest':'ถูกสุด'}</span>` : (r.best!=null && r.best===maxBest && maxBest!==minBest ? `<span class="mc-tag mc-tag-high">${en?'highest':'แพงสุด'}</span>` : '');
+    return `<tr class="${cls}">
+      <td><button type="button" class="mc-vname" onclick="openVendorDetail('${b64(r.name)}')">${escapeHtml(r.name)}</button> ${tag}</td>
+      <td class="mc-best">${r.best!=null?fmtTHB(r.best):'—'}</td>
+      <td class="mc-latest">${r.latest!=null?fmtTHB(r.latest):'—'}</td>
+    </tr>`;
+  }).join('');
+  box.innerHTML=`<div class="mc-count">${vendors.length} ${en?'vendor(s) supply':'ผู้ขายที่มี'} ${scopeTxt}${list?'':` <span class="mc-hint">${en?'(all items combined — pick a specific item to narrow)':'(รวมทุกรายการ — เลือกรายการเพื่อเจาะจง)'}</span>`}</div>
+    <div class="table-wrap"><table class="mc-table">
+      <thead><tr><th>${en?'Vendor':'ผู้ขาย'}</th><th>${en?'Best / unit (cheapest)':'ถูกสุด/หน่วย'}</th><th>${en?'Latest / unit':'ล่าสุด/หน่วย'}</th></tr></thead>
+      <tbody>${trs}</tbody></table></div>`;
 }
 function detailRow(k,val,link){ const has=!!(val&&String(val).trim()); return `<div class="s-row"><span class="sk">${k}</span><span class="sv ${has?'':'empty'}">${has?(link||escapeHtml(val)):'—'}</span></div>`; }
 function openVendorDetail(x){
@@ -7243,11 +7818,24 @@ function openVendorDetail(x){
     ${detailRow(TH?'เลขที่บัญชีธนาคาร':'Bank account no.',v.bankNo)}
     ${detailRow(TH?'ชื่อบัญชีธนาคาร':'Bank account name',v.bankName)}
     ${detailRow(TH?'เงื่อนไขการชำระเงิน':'Payment term',payTxt)}
-  </div></div>`;
+  </div></div>
+  ${vendorModulePricesHtml(v.name)}`;
   customModal({icon:'📇',title:v.name,desc:t('vendorDetailDesc'),bodyHtml:body,footButtons:[
     {label:'✎ '+t('edit'),cls:'ghost',onClick:()=>{ closeModal(); openVendorForm(b64(v.name),true); }},
     {label:t('mClose'),cls:'primary',onClick:closeModal}
   ]});
+}
+/* section: every module this vendor has priced, with best (cheapest) & latest value/unit */
+function vendorModulePricesHtml(name){
+  const en=LANG==='en';
+  const mods=vendorPricedModules(name);
+  const head=`<div class="mod-section"><h5>🏷 ${en?'Module Prices (value / unit)':'ราคาต่อโมดูล (ราคา/หน่วย)'}</h5>`;
+  if(!mods.length) return head+`<div class="muted-line">${en?'No priced items recorded for this vendor yet.':'ยังไม่มีการบันทึกราคาของผู้ขายรายนี้'}</div></div>`;
+  const rows=mods.map(m=>{ const best=priceBest(m,name), latest=priceLatest(m,name);
+    return `<tr><td><b>${escapeHtml(m)}</b></td><td class="vmp-best">${best!=null?fmtTHB(best):'—'}</td><td class="vmp-latest">${latest!=null?fmtTHB(latest):'—'}</td></tr>`; }).join('');
+  return head+`<div class="vmp-wrap"><table class="vmp-table">
+    <thead><tr><th>${en?'Module':'โมดูล'}</th><th>${en?'Best / unit':'ถูกสุด/หน่วย'}</th><th>${en?'Latest / unit':'ล่าสุด/หน่วย'}</th></tr></thead>
+    <tbody>${rows}</tbody></table></div></div>`;
 }
 function vfPayTermToggle(){ const c=(gv('vf_payTerm')==='credit'); const w=document.getElementById('vf_termWrap'); if(w) w.style.display=c?'':'none'; }
 function vfTermTypeToggle(){ const inp=document.getElementById('vf_termVal'); if(inp) inp.type=(gv('vf_termType')==='text')?'text':'number'; }
@@ -7522,6 +8110,11 @@ function renderStockList(){
   let rows=stock;
   if(pick) rows=rows.filter(s=>(''+stockFieldValue(s,type))===pick);
   else if(typed) rows=rows.filter(s=>(''+stockFieldValue(s,type)).toLowerCase().startsWith(typed));
+  const getStock=(s,key)=>{ switch(key){
+    case 'no':return s.no; case 'date':return s.date; case 'supplier':return s.supplier; case 'work':return s.work; case 'list':return s.list; case 'qty':return s.qty; case 'unit':return s.unit;
+    case 'estUnit':return matEstUnit(s); case 'actUnit':return s.unitPrice; case 'mgUnit':return mgUnit(s); case 'mgTot':return mgTot(s); case 'value':return stockLineValue(s);
+    case 'shipDate':return s.shipDate; case 'recvDate':return s.recvDate; case 'by':return s.submittedBy; case 'prNo':return s.prNo; case 'payment':return s.payment; case 'note':return s.note; } return ''; };
+  rows=nxApplySort(rows,'stock',getStock);
   body.innerHTML='';
   const hl=slHighlight; let firstHit=null;
   rows.forEach(s=>{
@@ -7539,6 +8132,8 @@ function renderStockList(){
   st('slCount').textContent=rows.length;
   st('slEmpty').style.display=rows.length?'none':'block';
   if(hl && firstHit){ setTimeout(()=>{ leadTo(firstHit); },120); slHighlight=null; }
+  nxWireHeaders(document.getElementById('slBody').closest('table').querySelector('thead tr'),'stock',STOCK_SORT_COLS);
+  nxDateLead('stock',body,rows,getStock);
   if(typeof dmSyncBars==='function') dmSyncBars();
 }
 function delStock(id){ DB.saveStock(DB.stock().filter(s=>s.id!==id)); renderStockList(); showToast(t('stockDeleted')); }
@@ -7888,6 +8483,46 @@ function mgUnit(m){ const e=matEstUnit(m); return {__hasEst:e>0,__mg:matMarginUn
 function mgTot(m){ const e=matEstUnit(m); return {__hasEst:e>0,__mg:matMarginTotal(m)}; }
 function workDetails(wn){ return DB.details().filter(d=>d.workNo===wn); }
 function workMaterial(wn){ return workDetails(wn).reduce((s,d)=>s+(parseFloat(d.total)||0),0); }
+
+/* =================== MODULE PRICE HISTORY (per module + supplier) ===================
+   Every time a detail line carries a unit price for a module+supplier, we append a
+   snapshot to nx_pricelog so cheapest/latest rates survive future edits & deletions.
+   All queries union the log with the CURRENT details, so they're always up to date. */
+function getPriceLog(){ try{ const a=JSON.parse(localStorage.getItem('nx_pricelog')||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function savePriceLog(a){ try{ localStorage.setItem('nx_pricelog', JSON.stringify(a)); }catch(_){} }
+/* the comparable unit price of a detail — actual first, else estimated */
+function detUnitPrice(d){ const a=parseFloat(d.unitPrice)||0; if(a>0) return {price:a,kind:'act'}; const e=parseFloat(d.estUnitPrice)||0; return e>0?{price:e,kind:'est'}:null; }
+function isRealSupplier(s){ s=s||''; return s && !/^stock:/i.test(s); }
+function priceLogAppend(d){
+  if(!d||!d.module||!isRealSupplier(d.supplier)) return;
+  const p=detUnitPrice(d); if(!p) return;
+  const date=d.recvDate||d.shipDate||new Date().toISOString().slice(0,10);
+  const log=getPriceLog();
+  if(log.some(x=>x.module===d.module&&x.supplier===d.supplier&&(x.list||'')===(d.list||'')&&(+x.price)===p.price&&x.kind===p.kind&&x.date===date)) return; // dedup identical
+  log.push({id:'pl'+Date.now()+Math.floor(Math.random()*100000), module:d.module, list:d.list||'', supplier:d.supplier, price:p.price, kind:p.kind, date:date, workNo:d.workNo||'', ts:Date.now()});
+  savePriceLog(log);
+}
+/* all price points for a module+supplier (log + current details); optional `list` narrows to one item */
+function pricePoints(module,supplier,list){
+  const out=[];
+  getPriceLog().forEach(x=>{ if(x.module===module && x.supplier===supplier && (+x.price)>0 && (!list||(x.list||'')===list)) out.push({price:+x.price,kind:x.kind||'act',date:x.date||'',ts:x.ts||0}); });
+  DB.details().forEach(d=>{ if(d.module===module && d.supplier===supplier && isRealSupplier(d.supplier) && (!list||(d.list||'')===list)){ const p=detUnitPrice(d); if(p) out.push({price:p.price,kind:p.kind,date:d.recvDate||d.shipDate||'',ts:0}); } });
+  return out;
+}
+function priceBest(module,supplier,list){ const pts=pricePoints(module,supplier,list); if(!pts.length) return null; return Math.min.apply(null,pts.map(p=>p.price)); }
+function priceLatest(module,supplier,list){ const pts=pricePoints(module,supplier,list); if(!pts.length) return null; pts.sort((a,b)=> (a.date<b.date?-1:a.date>b.date?1:(a.ts-b.ts)) ); return pts[pts.length-1].price; }
+/* distinct modules a supplier has priced */
+function vendorPricedModules(supplier){ const set=new Set(); getPriceLog().forEach(x=>{ if(x.supplier===supplier && x.module) set.add(x.module); }); DB.details().forEach(d=>{ if(d.supplier===supplier && d.module && detUnitPrice(d)) set.add(d.module); }); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
+/* distinct suppliers that have priced a module (optionally a specific item) */
+function modulePricedVendors(module,list){ const set=new Set(); getPriceLog().forEach(x=>{ if(x.module===module && isRealSupplier(x.supplier) && (!list||(x.list||'')===list)) set.add(x.supplier); }); DB.details().forEach(d=>{ if(d.module===module && isRealSupplier(d.supplier) && detUnitPrice(d) && (!list||(d.list||'')===list)) set.add(d.supplier); }); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
+/* distinct item names (List) within a module that have a priced vendor */
+function moduleListItems(module){ if(!module) return []; const set=new Set(); getPriceLog().forEach(x=>{ if(x.module===module && isRealSupplier(x.supplier) && x.list) set.add(x.list); }); DB.details().forEach(d=>{ if(d.module===module && isRealSupplier(d.supplier) && detUnitPrice(d) && d.list) set.add(d.list); }); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
+/* every module that has at least one priced supplier */
+function allPricedModules(){ const set=new Set(); getPriceLog().forEach(x=>{ if(x.module && isRealSupplier(x.supplier)) set.add(x.module); }); DB.details().forEach(d=>{ if(d.module && isRealSupplier(d.supplier) && detUnitPrice(d)) set.add(d.module); }); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
+/* only modules that TWO OR MORE vendors share — the ones actually worth comparing */
+function comparableModules(){ return allPricedModules().filter(m=>modulePricedVendors(m).length>=2); }
+/* cheapest vendor overall for a module → {supplier, price} (or null) */
+function moduleBestVendor(module){ if(!module) return null; let best=null; modulePricedVendors(module).forEach(v=>{ const b=priceBest(module,v); if(b!=null && (best==null||b<best.price)) best={supplier:v,price:b}; }); return best; }
 function workLabor(wn){ return 0; }  /* labor field removed — project cost is materials-only */
 function workCost(wn){ return workMaterial(wn); }
 function workBudget(wn){ const w=DB.works().find(x=>x.workNo===wn); if(w&&w.budget!=null&&w.budget!=='') return parseFloat(w.budget)||0; return Math.round(workCost(wn)*1.4/100)*100; }
@@ -10505,7 +11140,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-z1';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-z5';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
