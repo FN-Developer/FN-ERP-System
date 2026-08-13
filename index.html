@@ -683,7 +683,9 @@ tr.spec-dirty>td:first-child{box-shadow:inset 4px 0 0 var(--green)}
 .spec-pending-note{font-size:13px;font-weight:700;color:var(--green)}
 .spec-update-btn .ck-pending{margin-left:6px;background:rgba(255,255,255,.28);border-radius:999px;padding:1px 8px;font-weight:800}
 .spec-update-btn.is-locked{opacity:.5;filter:grayscale(.4);cursor:not-allowed}
-.spec-update-btn.spec-update-blink{background:var(--green)!important;border-color:var(--green)!important;color:#fff!important;animation:specUpdPulse 1.05s ease-in-out infinite;opacity:1;filter:none}
+/* shared BLINKING GREEN "you have unsaved changes" state — used by BOTH the Work Spectator
+   and Delivery Check Update buttons when their tables have staged (unsaved) edits */
+.nx-update-blink{background:var(--green)!important;border-color:var(--green)!important;color:#fff!important;animation:specUpdPulse 1.05s ease-in-out infinite;opacity:1!important;filter:none!important}
 @keyframes specUpdPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 65%,transparent);transform:translateY(0)}50%{box-shadow:0 0 0 9px color-mix(in srgb,var(--green) 0%,transparent);transform:translateY(-1px)}}
 /* Actual Unit Price is auto-derived from Delivery Check — show a faint hint when unset */
 .spec-auto-hint{font-size:10.5px;color:var(--muted);font-style:italic}
@@ -4064,7 +4066,7 @@ const FIREBASE_CONFIG = {
 };
 
 /* Shared data keys — these sync to the cloud (everyone sees the same data). */
-const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments','nx_groups','nx_modules','nx_pricelog'];
+const NX_CLOUD_KEYS = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_positions','nx_payslips','nx_ta_devices','nx_ta_logs','nx_pr','nx_datefmt','nx_departments','nx_groups','nx_modules','nx_pricelog','nx_po'];
 
 /* ===== Merge-on-write config & engine =====
    Each table is one JSON blob. A naive overwrite makes concurrent edits clobber each
@@ -4076,7 +4078,7 @@ const NX_MERGE = {
   nx_withdraws:{type:'arr',id:'id'}, nx_employees:{type:'arr',id:'id'}, nx_returns:{type:'arr',id:'id'},
   nx_leaves:{type:'arr',id:'id'}, nx_ot:{type:'arr',id:'id'}, nx_positions:{type:'arr',id:'id'},
   nx_ta_devices:{type:'arr',id:'id'}, nx_ta_logs:{type:'arr',id:'id'}, nx_pr:{type:'arr',id:'id'},
-  nx_vendors:{type:'arr',id:'name'}, nx_customers:{type:'arr',id:'name'}, nx_pricelog:{type:'arr',id:'id'},
+  nx_vendors:{type:'arr',id:'name'}, nx_customers:{type:'arr',id:'name'}, nx_pricelog:{type:'arr',id:'id'}, nx_po:{type:'arr',id:'id'},
   nx_departments:{type:'strarr'}, nx_groups:{type:'strarr'}, nx_modules:{type:'strarr'},
   nx_otrates:{type:'obj'}, nx_caldays:{type:'obj'}, nx_workswitch:{type:'obj'},
   nx_defaults:{type:'obj'}, nx_payslips:{type:'obj'}, nx_datefmt:{type:'scalar'}
@@ -4237,7 +4239,7 @@ Storage.prototype.setItem = function(k, v){
    so a single malformed entry can NEVER crash startup (a crash would silently
    disable cloud sync and leave a device looking normal but not syncing). Runs
    before any boot render, and again after each cloud pull. */
-const NX_ARRAY_KEYS  = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_positions','nx_ta_devices','nx_ta_logs','nx_pr','nx_departments'];
+const NX_ARRAY_KEYS  = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_positions','nx_ta_devices','nx_ta_logs','nx_pr','nx_departments','nx_po'];
 const NX_OBJECT_KEYS = ['nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_payslips'];
 /* Removed detail fields (CNC/Turning/Milling/Labor) — strip their leftover data
    from stored work details so the removed columns never resurface anywhere. */
@@ -7141,7 +7143,7 @@ function renderSpectator(){
       <td>${escapeHtml(d.qty||'')}</td>
       <td>${escapeHtml(d.brand||'')}</td>
       <td>${escapeHtml(d.supplier||'')}</td>
-      <td><input type="text" class="spec-inline spec-inline-txt spec-editable${stg('poNo')}" value="${escapeAttr(dv.poNo||'')}" placeholder="PO NO." onchange="specRowInput('${d.id}','poNo',this)" onclick="event.stopPropagation()"></td>
+      <td><select class="spec-inline spec-inline-txt spec-editable${stg('poNo')}" onchange="specPoSelect('${d.id}',this)" onclick="event.stopPropagation()">${specPoOptions(d)}</select></td>
       <td class="money"><input type="number" step="any" min="0" class="spec-inline spec-inline-num spec-editable${stg('estUnitPrice')}" value="${dv.estUnitPrice?escapeAttr(dv.estUnitPrice):''}" placeholder="0.00" onchange="specRowInput('${d.id}','estUnitPrice',this)" onclick="event.stopPropagation()"></td>
       <td class="money" title="${escapeAttr(LANG==='en'?"Auto — set from Delivery Check: value(THB) ÷ Q'ty":'อัตโนมัติ — มาจาก Delivery Check: value(THB) ÷ จำนวน')}">${dv.unitPrice?fmtTHB(dv.unitPrice):'<span class="spec-auto-hint">'+(LANG==='en'?'auto':'อัตโนมัติ')+'</span>'}</td>
       ${marginCell(mgUnit(dv))}
@@ -7236,7 +7238,7 @@ function specUpdatePending(){
   const n=specPendingIds().length;
   const btn=document.getElementById('specUpdateBtn'), badge=document.getElementById('specPendingBadge');
   const bar=document.getElementById('specActionBar'), pnote=document.getElementById('specPendingNote'), cnote=document.getElementById('specCleanNote'), disc=document.getElementById('specDiscardBtn'), cnt=document.getElementById('specPendingCount');
-  if(btn){ btn.classList.toggle('is-locked',n===0); btn.classList.toggle('spec-update-blink',n>0); }
+  if(btn){ btn.classList.toggle('is-locked',n===0); btn.classList.toggle('nx-update-blink',n>0); }
   if(badge){ badge.style.display=n?'inline-flex':'none'; badge.textContent=n; }
   if(cnt) cnt.textContent=n;
   if(bar) bar.classList.toggle('is-clean',n===0);
@@ -7250,15 +7252,19 @@ function specUpdateCommit(){
   const en=LANG==='en';
   const ids=specPendingIds();
   if(!ids.length){ showToast(en?'No changes to update.':'ไม่มีการเปลี่ยนแปลง'); return; }
-  const dets=DB.details(); let n=0;
+  const dets=DB.details(); let n=0; const touchedPo=[];
   ids.forEach(id=>{ const d=dets.find(x=>x.id===id); const s=specStage[id]; if(!d||!s) return;
     SPEC_EDIT_FIELDS.forEach(f=>{ if(f in s){ d[f]=s[f];
       if(f==='module' && s[f]) diSaveModule(s[f]);
       else if(f==='group' && s[f]){ const g=diGroups(); if(!g.includes(s[f])){ g.push(s[f]); diSaveGroups(g); } }
     } });
+    if('poNo' in s) touchedPo.push({poNo:d.poNo, workNo:d.workNo});
     n++;
   });
   DB.saveDetails(dets);
+  // keep the PO registry (per-customer table) in sync with what was just saved
+  touchedPo.forEach(p=>{ try{ poRegUpsert(p.poNo, p.workNo); }catch(_){} });
+  try{ poRegEnsureFromDetails(); }catch(_){}
   specStage={};
   renderSpectator(); if(typeof renderStatus==='function') renderStatus(); computeAlerts();
   showToast((en?`Saved ${n} item(s)`:`บันทึก ${n} รายการแล้ว`));
@@ -7277,6 +7283,75 @@ function specBulkApply(field){
   renderSpectator();
   const lbl = field==='module'?'Module':(field==='group'?'Group':'PO NO.');
   showToast((en?`Staged ${lbl} on ${n} row(s) · press Update to save`:`เตรียม ${lbl} ${n} แถว · กด Update เพื่อบันทึก`));
+}
+
+/* ============ PO REGISTRY (nx_po) — persisted per-customer table of PO NO. + Work No. + Work Name ============
+   Kept in the database (synced) so a PO created once is selectable again on any future detail row.
+   Each entry: {id, poNo, workNo, workName, custName, custCode}. id is stable = poNo|workNo. */
+function poRegAll(){ try{ const a=JSON.parse(localStorage.getItem('nx_po')||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function savePoReg(a){ try{ localStorage.setItem('nx_po', JSON.stringify(a)); }catch(_){} }
+function poRegId(poNo,workNo){ return String(poNo||'')+'|'+String(workNo||''); }
+/* upsert one PO entry; returns true if the registry changed */
+function poRegUpsert(poNo,workNo){
+  poNo=(poNo||'').trim(); if(!poNo) return false;
+  const w=DB.works().find(x=>x.workNo===workNo)||{};
+  const id=poRegId(poNo,workNo);
+  const reg=poRegAll();
+  const cur=reg.find(p=>p.id===id);
+  const rec={ id, poNo, workNo:workNo||'', workName:w.workName||'', custName:w.custName||'', custCode:w.custCode||'' };
+  if(cur){ if(cur.workName===rec.workName && cur.custName===rec.custName && cur.custCode===rec.custCode) return false; Object.assign(cur,rec); savePoReg(reg); return true; }
+  reg.push(rec); savePoReg(reg); return true;
+}
+/* make sure every PO currently used on a detail line exists in the registry (seed from existing data) */
+function poRegEnsureFromDetails(){
+  const reg=poRegAll(); const have=new Set(reg.map(p=>p.id)); let changed=false;
+  const works=DB.works(); const wmap={}; works.forEach(w=>wmap[w.workNo]=w);
+  DB.details().forEach(d=>{ const po=(d.poNo||'').trim(); if(!po) return; const id=poRegId(po,d.workNo); if(have.has(id)) return; const w=wmap[d.workNo]||{}; reg.push({id, poNo:po, workNo:d.workNo||'', workName:w.workName||'', custName:w.custName||'', custCode:w.custCode||''}); have.add(id); changed=true; });
+  if(changed) savePoReg(reg);
+  return changed;
+}
+/* POs for one customer (for the customer detail table + the Spectator dropdown) */
+function poRegForCustomer(custName){ return poRegAll().filter(p=>p.custName===custName).sort((a,b)=>String(a.poNo).localeCompare(String(b.poNo),undefined,{numeric:true})); }
+/* dropdown <option>s for a detail row — scoped to that row's CUSTOMER */
+function specPoOptions(d){
+  const en=LANG==='en';
+  const cur=specStagedVal(d,'poNo');
+  const w=DB.works().find(x=>x.workNo===d.workNo)||{};
+  const cust=w.custName||'';
+  const set=new Set();
+  poRegForCustomer(cust).forEach(p=>{ if(p.poNo) set.add(p.poNo); });
+  // robustness: also list POs already on this customer's detail lines (works even before the registry syncs)
+  const custWorks={}; DB.works().forEach(x=>{ if((x.custName||'')===cust) custWorks[x.workNo]=1; });
+  DB.details().forEach(x=>{ const po=(x.poNo||'').trim(); if(po && custWorks[x.workNo]) set.add(po); });
+  if(cur) set.add(cur);
+  const list=[...set].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+  let html=`<option value="">${en?'— none —':'— ไม่มี —'}</option>`;
+  list.forEach(po=>{ html+=`<option value="${escapeAttr(po)}"${po===cur?' selected':''}>${escapeHtml(po)}</option>`; });
+  html+=`<option value="__addpo__">${en?'➕ New PO…':'➕ เพิ่ม PO…'}</option>`;
+  return html;
+}
+function specPoSelect(id,sel){
+  const val=sel.value;
+  if(val==='__addpo__'){ const d=DB.details().find(x=>x.id===id); sel.value=specStagedVal(d||{},'poNo')||''; specAddPo(id); return; }
+  specStageSet(id,'poNo',val);
+}
+function specAddPo(id){
+  const en=LANG==='en';
+  const d=DB.details().find(x=>x.id===id)||{};
+  const w=DB.works().find(x=>x.workNo===d.workNo)||{};
+  customModal({icon:'🧾', title:(en?'Add new PO NO.':'เพิ่ม PO NO. ใหม่'),
+    desc:(en?`Customer: ${w.custName||'-'} · Work ${d.workNo||''} · ${w.workName||''}`:`ลูกค้า: ${w.custName||'-'} · งาน ${d.workNo||''} · ${w.workName||''}`),
+    bodyHtml:`<div class="field"><input type="text" id="specNewPo" placeholder="${en?'e.g. PO-2026-001':'เช่น PO-2026-001'}" onkeydown="if(event.key==='Enter'){event.preventDefault();specAddPoSave('${id}');}"></div>`,
+    footButtons:[{label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},{label:'➕ '+(en?'Add':'เพิ่ม'),cls:'primary',onClick:()=>specAddPoSave(id)}]});
+  setTimeout(()=>{ const el=document.getElementById('specNewPo'); if(el) el.focus(); },60);
+}
+function specAddPoSave(id){
+  const el=document.getElementById('specNewPo'); const po=el?el.value.trim():'';
+  if(!po){ if(el) el.style.borderColor='var(--red)'; return; }
+  const d=DB.details().find(x=>x.id===id)||{};
+  poRegUpsert(po, d.workNo);      // persist the new PO to the customer registry right away
+  closeModal();
+  specStageSet(id,'poNo',po);     // and stage it on this row (saved to the line on Update)
 }
 /* add-new value modal for module/group */
 function specAddValue(kind,cb){
@@ -7792,7 +7867,7 @@ function ckInit(){ ckFillScopeSelects(); ckInitAssign(); ckTypeChange(); }
 function ckUpdatePending(){
   const n=ckPendingIds().length;
   const btn=document.getElementById('ckUpdateBtn'); const badge=document.getElementById('ckPendingBadge');
-  if(btn) btn.classList.toggle('is-locked',n===0);
+  if(btn){ btn.classList.toggle('is-locked',n===0); btn.classList.toggle('nx-update-blink',n>0); }   /* blink green when the table has unsaved changes */
   if(badge){ badge.style.display=n?'inline-flex':'none'; badge.textContent=n; }
 }
 /* commit ONE staged detail into DB with the received→stock side-effects */
@@ -8223,7 +8298,13 @@ function openCustomerDetail(x){
        </div><span class="cw-go">➜</span>
      </div>`).join('') : `<div class="muted-line">${t('custNoWorks')}</div>`;
   const worksSec=`<div class="mod-section"><h5>🏢 ${t('worksWord')} — ${works.length}</h5><div class="cw-list">${rows}</div></div>`;
-  customModal({icon:'🏢',title:c.name,desc:t('custDetailDesc'),bodyHtml:contact+worksSec,footButtons:[
+  // Purchase Orders (PO) kept for this customer — PO NO. + Work No. + Work Name
+  const _en=LANG==='en';
+  try{ poRegEnsureFromDetails(); }catch(_){}
+  const pos=(typeof poRegForCustomer==='function')?poRegForCustomer(nm):[];
+  const poRows=pos.length?pos.map(p=>`<tr><td><b>${escapeHtml(p.poNo)}</b></td><td><span class="badge b-work">${escapeHtml(p.workNo||'-')}</span></td><td>${escapeHtml(p.workName||'-')}</td></tr>`).join(''):'';
+  const poSec=`<div class="mod-section"><h5>🧾 ${_en?'Purchase Orders (PO)':'ใบสั่งซื้อ (PO)'} — ${pos.length}</h5>`+(pos.length?`<div class="vmp-wrap"><table class="vmp-table"><thead><tr><th>PO NO.</th><th>${_en?'Work No.':'เลขงาน'}</th><th>${_en?'Work Name':'ชื่องาน'}</th></tr></thead><tbody>${poRows}</tbody></table></div>`:`<div class="muted-line">${_en?'No PO recorded for this customer yet.':'ยังไม่มี PO สำหรับลูกค้ารายนี้'}</div>`)+`</div>`;
+  customModal({icon:'🏢',title:c.name,desc:t('custDetailDesc'),bodyHtml:contact+worksSec+poSec,footButtons:[
     {label:'✎ '+t('edit'),cls:'ghost',onClick:()=>{ closeModal(); openCustomerForm(b64(c.name),true); }},
     {label:t('mClose'),cls:'primary',onClick:closeModal}
   ]});
@@ -11507,7 +11588,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-e';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-f';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -11887,6 +11968,7 @@ refreshWorkSelect();
    first visit via go()) now render lazily on first navigation. Re-rendering them here just
    rebuilt ~8k hidden DOM nodes a second time at boot, so that duplicate pass is removed. */
 computeAlerts();
+try{ poRegEnsureFromDetails(); }catch(_){}   /* seed the per-customer PO registry from existing detail lines */
 injectMenuIcons();
 /* unlock audio on the first user interaction so notification/scan sounds can play */
 document.addEventListener('pointerdown',function(){ try{ fpAudioPrime(); }catch(_){} },{passive:true});
