@@ -709,6 +709,16 @@ th.nx-sortable.nx-sorted{color:var(--cyan)}
 th.nx-sortable.nx-sorted::after{opacity:1;color:var(--cyan)}
 tr.nx-datelead td{background:color-mix(in srgb,var(--cyan) 16%,transparent)!important}
 tr.nx-datelead td:first-child{box-shadow:inset 3px 0 0 var(--cyan)}
+/* ---- table pagination ---- */
+.nx-pager{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;margin:16px 0 4px}
+.nx-pg-btn{padding:8px 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);font-weight:700;font-size:13px;cursor:pointer}
+.nx-pg-btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan)}
+.nx-pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.nx-pg-mid{display:flex;align-items:center;gap:7px}
+.nx-pg-input{width:62px;text-align:center;padding:8px;border-radius:9px;border:1.5px solid var(--cyan);background:var(--inset-bg);color:var(--txt);font-weight:800;font-size:14px}
+.nx-pg-of{font-weight:700;color:var(--txt-soft)}
+.nx-pg-info{font-size:12px;color:var(--muted)}
+@media(max-width:560px){.nx-pg-info{width:100%;text-align:center}}
 /* ---- Delivery Check best-rate / est cell ---- */
 .ck-best{white-space:nowrap;font-size:12px;line-height:1.35}
 .ck-best-u{color:#c79a00;font-weight:800}
@@ -2680,6 +2690,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <tbody id="specBody"></tbody>
         </table>
       </div>
+      <div class="nx-pager" id="specPager" style="display:none"></div>
       <div class="empty-state" id="specEmpty" style="display:none"><div class="e-ic">🗂</div><div data-i18n="noMatch">No records match your search.</div></div>
     </div>
   </section>
@@ -2723,6 +2734,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         <tbody id="statusBody"></tbody>
       </table>
     </div>
+    <div class="nx-pager" id="statusPager" style="display:none"></div>
     <div class="empty-state" id="statusEmpty" style="display:none"><div class="e-ic">📊</div><div data-i18n="noMatch">No records match your search.</div></div>
   </section>
 
@@ -2838,6 +2850,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <tbody id="ckBody"></tbody>
         </table>
       </div>
+      <div class="nx-pager" id="ckPager" style="display:none"></div>
       <div class="empty-state" id="ckEmpty" style="display:none"><div class="e-ic">✅</div><div data-i18n="ckNoData">No items match this filter.</div></div>
     </div>
   </section>
@@ -2996,6 +3009,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <tbody id="slBody"></tbody>
         </table>
       </div>
+      <div class="nx-pager" id="slPager" style="display:none"></div>
       <div class="empty-state" id="slEmpty" style="display:none"><div class="e-ic">📦</div><div data-i18n="noMatch">No records match your search.</div></div>
     </div>
   </section>
@@ -6842,6 +6856,7 @@ function detailFieldValue(d,type){
 }
 
 function onFilterTypeChange(){
+  nxPage.spec=1;
   const type=document.getElementById('filterType').value;
   const input=document.getElementById('filterInput');
   input.value='';
@@ -6856,6 +6871,7 @@ function onFilterTypeChange(){
   renderSpectator();
 }
 function onFilterInput(){
+  nxPage.spec=1;
   const type=document.getElementById('filterType').value;
   const q=document.getElementById('filterInput').value.trim().toLowerCase();
   document.getElementById('filterPick').value=''; // typing overrides pick
@@ -6888,6 +6904,7 @@ function onSuggestKey(e){
   items.forEach((it,i)=>it.classList.toggle('hi',i===suggestIndex));
 }
 function onFilterPick(){
+  nxPage.spec=1;
   const v=document.getElementById('filterPick').value;
   document.getElementById('filterInput').value='';
   hideSuggest();
@@ -6928,6 +6945,7 @@ function nxSortBy(tableKey,key,type){
   const s=nxSortState[tableKey];
   if(s && s.key===key) s.dir=-s.dir; else nxSortState[tableKey]={key,type,dir:1};
   nxSortJustChanged[tableKey]=true;
+  nxPage[tableKey]=1;   // start from the first page on a new sort (date sorts re-jump to nearest)
   ({spec:renderSpectator,check:renderCheck,status:renderStatus,stock:renderStockList}[tableKey]||function(){})();
 }
 function nxWireHeaders(theadTr, tableKey, cols){
@@ -6957,6 +6975,44 @@ const CHECK_SORT_COLS=[null,{k:'workNo',t:'text'},{k:'workName',t:'text'},{k:'it
 const STATUS_SORT_COLS=[{k:'workNo',t:'text'},{k:'workName',t:'text'},{k:'module',t:'text'},{k:'list',t:'text'},{k:'group',t:'text'},{k:'poNo',t:'text'},{k:'supplier',t:'text'},{k:'qty',t:'number'},{k:'shipDate',t:'date'},{k:'recvDate',t:'date'},{k:'status',t:'rank'}];
 const STOCK_SORT_COLS=[{k:'no',t:'text'},{k:'date',t:'date'},{k:'supplier',t:'text'},{k:'work',t:'text'},{k:'list',t:'text'},{k:'qty',t:'number'},{k:'unit',t:'text'},{k:'estUnit',t:'number'},{k:'actUnit',t:'number'},{k:'mgUnit',t:'number'},{k:'mgTot',t:'number'},{k:'value',t:'number'},{k:'shipDate',t:'date'},{k:'recvDate',t:'date'},{k:'by',t:'text'},{k:'prNo',t:'text'},{k:'payment',t:'number'},{k:'note',t:'text'},null];
 
+/* =================== TABLE PAGINATION (50 rows/page) =================== */
+const NX_PAGE_SIZE=50;
+const nxPage={spec:1,check:1,status:1,stock:1};
+const NX_PAGER_ID={spec:'specPager',check:'ckPager',status:'statusPager',stock:'slPager'};
+function nxPageCount(total){ return Math.max(1, Math.ceil(total/NX_PAGE_SIZE)); }
+/* clamp current page and return the slice of rows for that page */
+function nxPageSlice(rows, tableKey){
+  const pages=nxPageCount(rows.length);
+  if(nxPage[tableKey]>pages) nxPage[tableKey]=pages;
+  if(nxPage[tableKey]<1) nxPage[tableKey]=1;
+  const p=nxPage[tableKey];
+  return rows.slice((p-1)*NX_PAGE_SIZE, p*NX_PAGE_SIZE);
+}
+/* jump the page for a table to the one containing row index `idx` (used by lead-to-row) */
+function nxPageForIndex(tableKey, idx){ if(idx<0) return; nxPage[tableKey]=Math.floor(idx/NX_PAGE_SIZE)+1; }
+function nxRenderPager(tableKey, total){
+  const el=document.getElementById(NX_PAGER_ID[tableKey]); if(!el) return;
+  if(total<=NX_PAGE_SIZE){ el.innerHTML=''; el.style.display='none'; return; }
+  el.style.display='flex';
+  const pages=nxPageCount(total), p=nxPage[tableKey], en=LANG==='en';
+  const start=(p-1)*NX_PAGE_SIZE+1, end=Math.min(total,p*NX_PAGE_SIZE);
+  el.innerHTML=`
+    <button type="button" class="nx-pg-btn" ${p<=1?'disabled':''} onclick="nxGoPage('${tableKey}',${p-1})">◀ ${en?'Prev':'ก่อนหน้า'}</button>
+    <div class="nx-pg-mid">
+      <input type="number" min="1" max="${pages}" class="nx-pg-input" value="${p}" onchange="nxGoPage('${tableKey}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();nxGoPage('${tableKey}',this.value);}">
+      <span class="nx-pg-of">/ ${pages}</span>
+    </div>
+    <button type="button" class="nx-pg-btn" ${p>=pages?'disabled':''} onclick="nxGoPage('${tableKey}',${p+1})">${en?'Next':'ถัดไป'} ▶</button>
+    <span class="nx-pg-info">${en?'rows':'แถว'} ${start}–${end} ${en?'of':'จาก'} ${total}</span>`;
+}
+function nxGoPage(tableKey, val){
+  let n=parseInt(val,10); if(isNaN(n)) return;
+  nxPage[tableKey]=n; // nxPageSlice clamps
+  ({spec:renderSpectator,check:renderCheck,status:renderStatus,stock:renderStockList}[tableKey]||function(){})();
+}
+/* index of the row nearest to today (for date-sort lead across pages) */
+function nxNearestDateIndex(rows, tableKey, getVal){ const s=nxSortState[tableKey]; if(!s||s.type!=='date') return -1; let best=-1,bd=Infinity; rows.forEach((r,i)=>{ const d=nxDateDist(getVal(r,s.key)); if(d!=null&&d<bd){bd=d;best=i;} }); return best; }
+
 function renderSpectator(){
   const works=DB.works(), dets=DB.details();
   // stats
@@ -6981,13 +7037,18 @@ function renderSpectator(){
     case 'shipDate':return d.shipDate; case 'recvDate':return d.recvDate; } return ''; };
   rows=nxApplySort(rows,'spec',getSpec);
 
-  // keep selection only for rows still visible
+  // keep selection only for rows still visible (across all pages)
   const visIds=new Set(rows.map(r=>r.id));
   specSel.forEach(id=>{ if(!visIds.has(id)) specSel.delete(id); });
   specVisibleIds=rows.map(r=>r.id);
 
+  // pagination (50/page) — jump to the nearest-date row's page when a date sort was just picked
+  if(nxSortJustChanged.spec){ const ni=nxNearestDateIndex(rows,'spec',getSpec); if(ni>=0) nxPageForIndex('spec',ni); }
+  const specTotal=rows.length;
+  const pageRows=nxPageSlice(rows,'spec');
+
   const body=document.getElementById('specBody'); body.innerHTML='';
-  rows.forEach(d=>{
+  pageRows.forEach(d=>{
     const w=works.find(x=>x.workNo===d.workNo)||{};
     const noShip=!d.shipDate;
     const shipCell=noShip?`<span class="ship-fix">⚠ ${t('setShip')}</span>`:escapeHtml(d.shipDate);
@@ -7023,7 +7084,8 @@ function renderSpectator(){
   document.getElementById('specTable').style.display = rows.length? 'table':'none';
   specUpdateBulkBar();
   nxWireHeaders(document.querySelector('#specTable thead tr'),'spec',SPEC_SORT_COLS);
-  nxDateLead('spec',body,rows,getSpec);
+  nxRenderPager('spec',specTotal);
+  nxDateLead('spec',body,pageRows,getSpec);
   if(typeof dmSyncBars==='function') dmSyncBars();
 }
 /* ---- Spectator inline edit: module/group stores, per-row + bulk ---- */
@@ -7307,18 +7369,21 @@ let ckHighlightAlerts=false;
 let ckScope={work:'',group:'',module:''};   /* cascading scope selectors */
 let ckStage={};      /* id -> {supplier,shipDate,recvDate} staged edits, saved only on Update */
 let ckSel=new Set(); /* checked row ids for batch assign */
+let ckVisibleIds=[]; /* all filtered row ids (across pages) — for select-all */
 function alertsToCheck(){ ckHighlightAlerts=true; ckStatus='all'; setCkPills('all'); go('check'); setTimeout(()=>{ const el=document.querySelector('#ckBody tr.ck-alert-hl'); if(el) leadTo(el); },420); }
 
 function openCheck(id){ ckBlinkTarget=id; ckLeadId=id; ckStatus='all'; ckScope={work:'',group:'',module:''}; setCkPills('all'); go('check'); }
 function setCkPills(s){ document.querySelectorAll('#ckPills .pill').forEach(p=>p.classList.toggle('active',p.getAttribute('data-st')===s)); }
-function ckSetStatus(s){ ckStatus=s; setCkPills(s); renderCheck(); }
+function ckSetStatus(s){ ckStatus=s; nxPage.check=1; setCkPills(s); renderCheck(); }
 function ckTypeChange(){
+  nxPage.check=1;
   const i=document.getElementById('ckInput'); const type=document.getElementById('ckType').value;
   if(i){ i.value=''; i.type=(type==='shipDate')?'date':'text'; i.placeholder=(type==='shipDate')?'':(LANG==='en'?'Type to search…':'พิมพ์เพื่อค้นหา…'); }
   hideCkSuggest(); renderCheck();
 }
 
 function ckInputHandler(){
+  nxPage.check=1;
   const type=document.getElementById('ckType').value;
   const q=document.getElementById('ckInput').value.trim().toLowerCase();
   if(type==='shipDate'){ hideCkSuggest(); renderCheck(); return; }
@@ -7396,11 +7461,17 @@ function renderCheck(){
     case 'best':{ const b=priceBest(d.module,ckStagedVal(d,'supplier')); return b==null?Infinity:b; }
     case 'status':return order[r.st.level]!=null?order[r.st.level]:9; } return ''; };
   rows=nxApplySort(rows,'check',getCheck);
-  // drop selection/stage-focus for rows no longer visible-safe: keep stage (persist edits) but prune selection
+  // keep selection across pages, prune only truly-gone rows
   const visIds=new Set(rows.map(r=>r.d.id));
   ckSel.forEach(id=>{ if(!visIds.has(id)) ckSel.delete(id); });
+  // pagination — jump to the led-to row's page, or the nearest-date row's page
+  if(ckBlinkTarget){ const bi=rows.findIndex(r=>r.d.id===ckBlinkTarget); if(bi>=0) nxPageForIndex('check',bi); }
+  else if(ckLeadId){ const li=rows.findIndex(r=>r.d.id===ckLeadId); if(li>=0) nxPageForIndex('check',li); }
+  else if(nxSortJustChanged.check){ const ni=nxNearestDateIndex(rows,'check',getCheck); if(ni>=0) nxPageForIndex('check',ni); }
+  const ckTotal=rows.length;
+  const pageRows=nxPageSlice(rows,'check');
   body.innerHTML='';
-  rows.forEach(({d,st,w})=>{
+  pageRows.forEach(({d,st,w})=>{
     let sb='st-ok',stx=t('stOkTxt');
     if(st.level==='lost'){ sb='st-lost'; stx=t('stLost'); }
     else if(st.level==='urgent'){ sb='st-urgent'; stx=t('stUrgent'); }
@@ -7448,6 +7519,7 @@ function renderCheck(){
       <td><button class="btn-mini" onclick="openFollowUp('${d.id}')">📇 ${t('followBtn')}</button><div class="fu-last ${needFollow?'redtext':''}">${needFollow?'⚠ ':''}${lastTxt}</div></td>`;
     body.appendChild(tr);
   });
+  ckVisibleIds=rows.map(r=>r.d.id);
   document.getElementById('ckCount').textContent=rows.length;
   const ctv=document.getElementById('ckTotalVal'); if(ctv) ctv.textContent=fmtTHB(rows.reduce((a,r)=>a+(parseFloat(r.d.total)||0),0));
   const sc=document.getElementById('ckSelCount'); if(sc) sc.textContent=ckSel.size;
@@ -7455,7 +7527,8 @@ function renderCheck(){
   document.getElementById('ckEmpty').style.display = rows.length? 'none':'block';
   ckUpdatePending();
   nxWireHeaders(document.querySelector('#view-check table thead tr'),'check',CHECK_SORT_COLS);
-  nxDateLead('check',body,rows,getCheck);
+  nxRenderPager('check',ckTotal);
+  nxDateLead('check',body,pageRows,getCheck);
   if(ckBlinkTarget){
     const id=ckBlinkTarget; ckBlinkTarget=null;
     // Re-query the row FRESH at scroll time — an earlier render may have replaced the tbody,
@@ -7530,7 +7603,7 @@ function ckRowSupplier(id,sel){
   ckStageSet(id,'supplier',val);
 }
 function ckToggle(id,on){ if(on) ckSel.add(id); else ckSel.delete(id); const c=document.getElementById('ckSelCount'); if(c) c.textContent=ckSel.size; const tr=document.getElementById('ck-'+id); if(tr) tr.classList.toggle('spec-selrow',on); const all=document.getElementById('ckAll'); if(all){ const rows=document.querySelectorAll('#ckBody tr').length; all.checked=ckSel.size>0&&ckSel.size===rows; } }
-function ckToggleAll(on){ const ids=[...document.querySelectorAll('#ckBody tr')].map(tr=>tr.id.replace('ck-','')); ckSel = on ? new Set(ids) : new Set(); renderCheck(); }
+function ckToggleAll(on){ ckSel = on ? new Set(ckVisibleIds) : new Set(); renderCheck(); }
 /* choosing "Add vendor…" in the batch Supplier select → open the form, then keep the new name selected */
 function ckAsgSupplierChange(sel){
   if(sel.value==='__add__'){ sel.value=''; vendorSaveCallback=(name)=>{ ckInitAssign(); const s=document.getElementById('ckAsgSupplier'); if(s) s.value=name; }; openVendorForm(); }
@@ -7559,12 +7632,13 @@ function ckAssignApply(field){
 }
 /* ② scope cascading dropdowns */
 function ckScopeChange(which){
+  nxPage.check=1;
   if(which==='work'){ ckScope.work=document.getElementById('ckScopeWork').value; ckScope.group=''; ckScope.module=''; }
   else if(which==='group'){ ckScope.group=document.getElementById('ckScopeGroup').value; ckScope.module=''; }
   else if(which==='module'){ ckScope.module=document.getElementById('ckScopeModule').value; }
   ckFillScopeSelects(); renderCheck();
 }
-function ckScopeReset(){ ckScope={work:'',group:'',module:''}; ckFillScopeSelects(); renderCheck(); }
+function ckScopeReset(){ ckScope={work:'',group:'',module:''}; nxPage.check=1; ckFillScopeSelects(); renderCheck(); }
 function ckFillScopeSelects(){
   const en=LANG==='en'; const dets=DB.details(), works=DB.works();
   // work options (with name)
@@ -7744,7 +7818,7 @@ function stFill(id, values){
   sel.innerHTML='<option value="">'+all+'</option>'+uniq.map(v=>'<option value="'+escapeAttr(v)+'">'+escapeHtml(v)+'</option>').join('');
   sel.value=(cur && uniq.indexOf(cur)>=0)?cur:'';
 }
-function stResetFilters(){ ['st_work','st_po','st_module','st_group','st_ship','st_recv'].forEach(id=>{const s=document.getElementById(id); if(s) s.value='';}); renderStatus(); }
+function stResetFilters(){ ['st_work','st_po','st_module','st_group','st_ship','st_recv'].forEach(id=>{const s=document.getElementById(id); if(s) s.value='';}); nxPage.status=1; renderStatus(); }
 function renderStatus(){
   if(!document.getElementById('statusBody')) return;
   const dets=DB.details(), works=DB.works();
@@ -7765,8 +7839,11 @@ function renderStatus(){
     case 'workNo':return d.workNo; case 'workName':return wName(d.workNo); case 'module':return d.module; case 'list':return d.list||d.module; case 'group':return d.group; case 'poNo':return d.poNo; case 'supplier':return d.supplier; case 'qty':return d.qty;
     case 'shipDate':return d.shipDate; case 'recvDate':return d.recvDate; case 'status':{ const cls=stStatusOf(d).cls; return _stoRank[cls]!=null?_stoRank[cls]:9; } } return ''; };
   rows=nxApplySort(rows,'status',getStatus);
+  if(nxSortJustChanged.status){ const ni=nxNearestDateIndex(rows,'status',getStatus); if(ni>=0) nxPageForIndex('status',ni); }
+  const statusTotal=rows.length;
+  const pageRows=nxPageSlice(rows,'status');
   const body=document.getElementById('statusBody');
-  body.innerHTML=rows.map(d=>{ const s=stStatusOf(d);
+  body.innerHTML=pageRows.map(d=>{ const s=stStatusOf(d);
     const goTitle=(LANG==='th')?'เปิดในหน้าตรวจสอบการส่งมอบ':'Open in Delivery Check';
     return '<tr class="st-row" onclick="openCheck(\''+escapeAttr(d.id)+'\')" title="'+goTitle+'"><td><b>'+escapeHtml(d.workNo||'-')+'</b></td><td>'+escapeHtml(wName(d.workNo))+'</td><td>'+escapeHtml(d.module||'-')+'</td><td>'+escapeHtml(d.list||d.module||'-')+'</td><td>'+escapeHtml(d.group||'-')+'</td><td>'+escapeHtml(d.poNo||'-')+'</td><td>'+escapeHtml(d.supplier||'-')+'</td><td>'+escapeHtml(d.qty||'-')+'</td><td>'+(d.shipDate?escapeHtml(nxDateText(d.shipDate)):'—')+'</td><td>'+(d.recvDate?escapeHtml(nxDateText(d.recvDate)):'—')+'</td><td><span class="st-badge '+s.cls+'">'+s.ic+' '+escapeHtml(s.txt)+'</span> <span class="st-go">›</span></td></tr>';
   }).join('');
@@ -7774,7 +7851,8 @@ function renderStatus(){
   const emp=document.getElementById('statusEmpty'); if(emp) emp.style.display=rows.length?'none':'';
   const tw=document.querySelector('#view-status .table-wrap'); if(tw) tw.style.display=rows.length?'':'none';
   nxWireHeaders(document.querySelector('#statusTable thead tr'),'status',STATUS_SORT_COLS);
-  nxDateLead('status',body,rows,getStatus);
+  nxRenderPager('status',statusTotal);
+  nxDateLead('status',body,pageRows,getStatus);
 }
 function renderVendors(){
   const body=document.getElementById('vendorBody'); if(!body) return;
@@ -8132,6 +8210,7 @@ function stockFieldValue(s,type){ return s[type]||''; }
 let slSuggestItems=[], slSuggestIndex=-1;
 let slHighlight=null;
 function slTypeChange(){
+  nxPage.stock=1;
   const type=document.getElementById('slType').value; const input=document.getElementById('slInput');
   input.value=''; input.type=(type==='shipDate')?'date':'text'; input.placeholder=(type==='shipDate')?'':(LANG==='en'?'Start typing…':'เริ่มพิมพ์…');
   hideSlSuggest();
@@ -8140,6 +8219,7 @@ function slTypeChange(){
   renderStockList();
 }
 function slInputHandler(){
+  nxPage.stock=1;
   const type=document.getElementById('slType').value; const q=document.getElementById('slInput').value.trim().toLowerCase();
   document.getElementById('slPick').value='';
   if(type==='shipDate'){ hideSlSuggest(); renderStockList(); return; }
@@ -8151,7 +8231,7 @@ function renderSlSuggest(q){ const box=document.getElementById('slSuggest'); slS
 function slPickSuggest(i){ document.getElementById('slInput').value=slSuggestItems[i]; hideSlSuggest(); renderStockList(); }
 function hideSlSuggest(){ const b=document.getElementById('slSuggest'); if(b) b.classList.remove('show'); }
 function slKey(e){ const box=document.getElementById('slSuggest'); const items=[...box.querySelectorAll('.s-item')]; if(e.key==='ArrowDown'){e.preventDefault();slSuggestIndex=Math.min(slSuggestIndex+1,items.length-1);}else if(e.key==='ArrowUp'){e.preventDefault();slSuggestIndex=Math.max(slSuggestIndex-1,0);}else if(e.key==='Enter'){if(slSuggestIndex>=0){e.preventDefault();slPickSuggest(slSuggestIndex);}return;}else if(e.key==='Escape'){hideSlSuggest();return;}else return; items.forEach((it,i)=>it.classList.toggle('hi',i===slSuggestIndex)); }
-function slPickChange(){ document.getElementById('slInput').value=''; hideSlSuggest(); renderStockList(); }
+function slPickChange(){ nxPage.stock=1; document.getElementById('slInput').value=''; hideSlSuggest(); renderStockList(); }
 function renderStockList(){
   const body=document.getElementById('slBody'); if(!body) return;
   const stock=DB.stock();
@@ -8171,9 +8251,14 @@ function renderStockList(){
     case 'estUnit':return matEstUnit(s); case 'actUnit':return s.unitPrice; case 'mgUnit':return mgUnit(s); case 'mgTot':return mgTot(s); case 'value':return stockLineValue(s);
     case 'shipDate':return s.shipDate; case 'recvDate':return s.recvDate; case 'by':return s.submittedBy; case 'prNo':return s.prNo; case 'payment':return s.payment; case 'note':return s.note; } return ''; };
   rows=nxApplySort(rows,'stock',getStock);
+  const hl=slHighlight;
+  if(hl){ const hi=rows.findIndex(s=>(''+(s.list||'')).toLowerCase().trim()===hl); if(hi>=0) nxPageForIndex('stock',hi); }
+  else if(nxSortJustChanged.stock){ const ni=nxNearestDateIndex(rows,'stock',getStock); if(ni>=0) nxPageForIndex('stock',ni); }
+  const stockTotal=rows.length;
+  const pageRows=nxPageSlice(rows,'stock');
   body.innerHTML='';
-  const hl=slHighlight; let firstHit=null;
-  rows.forEach(s=>{
+  let firstHit=null;
+  pageRows.forEach(s=>{
     const q=parseFloat(s.qty)||0; const qtyCell=q<=0?`<span class="redtext" style="font-weight:800">${t('outOfStock')}</span>`:`<b class="${q<=3?'redtext':''}">${q.toLocaleString()}</b>`;
     const lineVal=stockLineValue(s); const waiting=!s.recvDate;
     const recvCell = waiting ? `<span style="color:${C_AMBER};font-weight:700">⏳ ${t('waiting')}</span>` : escapeHtml(s.recvDate);
@@ -8189,7 +8274,8 @@ function renderStockList(){
   st('slEmpty').style.display=rows.length?'none':'block';
   if(hl && firstHit){ setTimeout(()=>{ leadTo(firstHit); },120); slHighlight=null; }
   nxWireHeaders(document.getElementById('slBody').closest('table').querySelector('thead tr'),'stock',STOCK_SORT_COLS);
-  nxDateLead('stock',body,rows,getStock);
+  nxRenderPager('stock',stockTotal);
+  nxDateLead('stock',body,pageRows,getStock);
   if(typeof dmSyncBars==='function') dmSyncBars();
 }
 function delStock(id){ DB.saveStock(DB.stock().filter(s=>s.id!==id)); renderStockList(); showToast(t('stockDeleted')); }
@@ -11196,7 +11282,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-z7';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-z8';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
