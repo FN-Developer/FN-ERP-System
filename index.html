@@ -1927,6 +1927,12 @@ tr.dl-row:hover{background:var(--hover)}
 #companyCal.cwp-picking .cal-day{cursor:pointer}
 #companyCal.cwp-picking .cal-day:hover{outline:2px solid color-mix(in srgb,var(--cyan) 55%,transparent);outline-offset:-2px}
 #companyCal .cal-day.cwp-weeksel{background:color-mix(in srgb,#16a34a 22%,var(--inset-bg))!important;box-shadow:inset 0 0 0 2px #16a34a;color:var(--txt)!important}
+/* two alternating Saturday groups blink out of phase so the swap is obvious */
+@keyframes cwpSatA{0%,49.9%{box-shadow:inset 0 0 0 2px #16a34a;background:color-mix(in srgb,#16a34a 26%,var(--inset-bg));color:var(--txt)}50%,100%{box-shadow:inset 0 0 0 1px color-mix(in srgb,#16a34a 22%,transparent);background:transparent}}
+@keyframes cwpSatB{0%,49.9%{box-shadow:inset 0 0 0 1px color-mix(in srgb,#16a34a 22%,transparent);background:transparent}50%,100%{box-shadow:inset 0 0 0 2px #16a34a;background:color-mix(in srgb,#16a34a 26%,var(--inset-bg));color:var(--txt)}}
+#companyCal.cwp-picking .cal-day.cwp-sat-a{animation:cwpSatA 1.5s ease-in-out infinite}
+#companyCal.cwp-picking .cal-day.cwp-sat-b{animation:cwpSatB 1.5s ease-in-out infinite}
+#companyCal.cwp-picking .cal-day.cwp-weeksel{animation:none!important}   /* the chosen week stays solid, not blinking */
 .cal-legend{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap}
 .cl-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
 .cl-dot{width:14px;height:14px;border-radius:5px;display:inline-block}
@@ -10409,7 +10415,7 @@ function renderCalPattern(){
   const st=document.getElementById('cwpStatus');
   if(st){
     let txt=(en?'Current pattern: ':'รูปแบบปัจจุบัน: ')+'<b>'+cwpModeLabel(wp.mode)+'</b>';
-    if(wp.mode==='alt'){ const mon=mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00')); const sat=new Date(mon); sat.setDate(sat.getDate()+5); txt+=' · '+(en?'Saturday works on the week of ':'ทำงานวันเสาร์ในสัปดาห์ของ ')+'<b>'+nxFmtD(isoOf(mon))+'</b>'+(en?' (then alternates)':' (แล้วสลับ)'); }
+    if(wp.mode==='alt'){ const mon=mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00')); const sat=new Date(mon); sat.setDate(sat.getDate()+5); txt+=' · '+(en?'Saturday works: ':'ทำงานวันเสาร์: ')+'<b>'+nxFmtD(isoOf(sat))+'</b>'+(en?' (then alternates every week)':' (แล้วสลับทุกสัปดาห์)'); }
     st.innerHTML=txt;
   }
 }
@@ -10435,17 +10441,20 @@ function cwpSelect(mode){
   cwpAfterChange();
   showToast((LANG==='en'?'Work week set to ':'ตั้งสัปดาห์ทำงานเป็น ')+cwpModeLabel(mode));
 }
-/* clicking a calendar day while in pick mode → select that whole week as the Saturday-working anchor */
+/* the Sunday that starts a date's visual (Sun→Sat) calendar row */
+function rowSunIso(ds){ const d=new Date(ds+'T00:00:00'); d.setDate(d.getDate()-d.getDay()); return isoOf(d); }
+/* clicking a calendar day while in pick mode → select that whole Sun→Sat week as the Saturday-working anchor */
 function cwpPickWeek(ds){
   const en=LANG==='en';
-  const monday=isoOf(mondayOf(new Date(ds+'T00:00:00')));
-  cwpPendingAnchor=monday;
+  const rowSun=new Date(ds+'T00:00:00'); rowSun.setDate(rowSun.getDate()-rowSun.getDay());   // Sunday of the visual row
+  const rowMon=new Date(rowSun); rowMon.setDate(rowMon.getDate()+1);                          // Monday (start of the work week)
+  const rowSat=new Date(rowSun); rowSat.setDate(rowSat.getDate()+6);                          // Saturday (the day that will work)
+  cwpPendingAnchor=isoOf(rowMon);
   cwpHighlightWeek();
-  const sat=new Date(monday+'T00:00:00'); sat.setDate(sat.getDate()+5);
-  const lbl=document.getElementById('cwpPendingLbl'); if(lbl){ lbl.classList.add('has-week'); lbl.innerHTML=(en?'Selected week: ':'สัปดาห์ที่เลือก: ')+'<b>'+nxFmtD(monday)+'</b> → '+(en?'works Sat ':'ทำงานเสาร์ ')+'<b>'+nxFmtD(isoOf(sat))+'</b>'; }
+  const lbl=document.getElementById('cwpPendingLbl'); if(lbl){ lbl.classList.add('has-week'); lbl.innerHTML=(en?'Selected week: ':'สัปดาห์ที่เลือก: ')+'<b>'+nxFmtD(isoOf(rowSun))+' – '+nxFmtD(isoOf(rowSat))+'</b> → '+(en?'works Sat ':'ทำงานเสาร์ ')+'<b>'+nxFmtD(isoOf(rowSat))+'</b>'; }
   const btn=document.getElementById('cwpConfirmBtn'); if(btn) btn.classList.remove('is-locked');
 }
-function cwpHighlightWeek(){ document.querySelectorAll('#companyCal .cal-day').forEach(function(el){ const ds=el.getAttribute('data-d'); if(!ds){ el.classList.remove('cwp-weeksel'); return; } const mon=isoOf(mondayOf(new Date(ds+'T00:00:00'))); el.classList.toggle('cwp-weeksel', !!cwpPendingAnchor && mon===cwpPendingAnchor); }); }
+function cwpHighlightWeek(){ const aSun=cwpPendingAnchor?rowSunIso(cwpPendingAnchor):null; document.querySelectorAll('#companyCal .cal-day').forEach(function(el){ const ds=el.getAttribute('data-d'); if(!ds){ el.classList.remove('cwp-weeksel'); return; } el.classList.toggle('cwp-weeksel', !!aSun && rowSunIso(ds)===aSun); }); }
 function cwpConfirmAlt(){
   if(!calCanEdit()) return;
   if(!cwpPendingAnchor){ showToast(LANG==='en'?'Click a day in the calendar to pick the Saturday-working week first.':'คลิกวันในปฏิทินเพื่อเลือกสัปดาห์ก่อน'); return; }
@@ -10459,13 +10468,17 @@ function cwpCancelPick(){ cwpPickMode=false; cwpPendingAnchor=null; const wrap=d
 function cwpAfterChange(){ renderCompanyCal(); renderCalPattern(); renderCalList(); try{ renderAttendance(); }catch(_){} try{ renderBenefit(); }catch(_){} }
 function renderCompanyCal(){
   const cal=document.getElementById('companyCal'); if(!cal||!calMonth) return;
-  const y=calMonth.getFullYear(),mo=calMonth.getMonth(); const first=new Date(y,mo,1); const startDow=(first.getDay()+6)%7; const dim=new Date(y,mo+1,0).getDate();
+  const y=calMonth.getFullYear(),mo=calMonth.getMonth(); const first=new Date(y,mo,1); const startDow=first.getDay(); const dim=new Date(y,mo+1,0).getDate();   /* week starts on SUNDAY (Sun→Sat) */
   const loc=LANG==='th'?'th-TH':'en-US'; const label=first.toLocaleDateString(loc,{month:'long',year:'numeric'});
   let h=`<div class="cal-head"><button type="button" class="btn-mini" onclick="companyCalNav(-1)">‹</button><b>${label}</b><button type="button" class="btn-mini" onclick="companyCalNav(1)">›</button></div><div class="cal-grid">`;
-  h+=['Mo','Tu','We','Th','Fr','Sa','Su'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  h+=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
   for(let i=0;i<startDow;i++) h+='<div></div>';
   const editable=calCanEdit(); cal.classList.toggle('cal-readonly',!editable);
-  for(let d=1;d<=dim;d++){ const ds=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const ty=calDayType(ds); const work=isWorkday(ds); const sw=DB.workSwitches()[ds]; let cls='cal-day'; if(!work) cls+=' d-off'; if(ty==='special') cls+=' d-special'; if(ty==='holiday') cls+=' d-holiday'; if(sw) cls+=(sw.mode==='work'?' d-sw-work':' d-sw-off'); const ttl=sw?escapeAttr((sw.mode==='work'?t('calSwWorkTip'):t('calSwOffTip'))+' — '+(sw.reason||'')):''; const hnd=editable?`onmousedown="calDown('${ds}')" onmouseenter="calEnter('${ds}')"`:''; h+=`<div class="${cls}" data-d="${ds}" title="${ttl}" ${hnd}>${d}</div>`; }
+  const anchorMon=mondayOf(new Date(WORK_ANCHOR+'T00:00:00'));   // fixed reference for the two alternating Saturday groups
+  for(let d=1;d<=dim;d++){ const ds=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const dt=new Date(ds+'T00:00:00'); const ty=calDayType(ds); const work=isWorkday(ds); const sw=DB.workSwitches()[ds]; let cls='cal-day'; if(!work) cls+=' d-off'; if(ty==='special') cls+=' d-special'; if(ty==='holiday') cls+=' d-holiday'; if(sw) cls+=(sw.mode==='work'?' d-sw-work':' d-sw-off');
+    /* pick mode: every Saturday blinks, split into the two alternating groups (e.g. 1,15,29 vs 8,22) */
+    if(cwpPickMode && dt.getDay()===6){ const weeks=Math.round((mondayOf(dt)-anchorMon)/(7*86400000)); cls += (((weeks%2)+2)%2===0)?' cwp-sat-a':' cwp-sat-b'; }
+    const ttl=sw?escapeAttr((sw.mode==='work'?t('calSwWorkTip'):t('calSwOffTip'))+' — '+(sw.reason||'')):''; const hnd=editable?`onmousedown="calDown('${ds}')" onmouseenter="calEnter('${ds}')"`:''; h+=`<div class="${cls}" data-d="${ds}" title="${ttl}" ${hnd}>${d}</div>`; }
   cal.innerHTML=h+'</div>';
   cal.classList.toggle('cwp-picking', !!cwpPickMode);
   if(cwpPickMode && cwpPendingAnchor) cwpHighlightWeek();
@@ -11757,7 +11770,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-j';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-k';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
