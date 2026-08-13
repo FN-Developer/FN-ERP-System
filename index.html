@@ -661,6 +661,14 @@ select option{background:var(--panel-solid);color:var(--txt)}
 select.spec-inline{padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px;min-width:92px;max-width:150px}
 select.spec-inline:hover{border-color:var(--cyan)}
 select.spec-inline-grp{min-width:80px}
+/* inline editable text/number cells (PO NO. + EST. Unit) — match the select styling */
+input.spec-inline{padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px}
+input.spec-inline:hover{border-color:var(--cyan)}
+input.spec-inline:focus{border-color:var(--cyan);outline:none}
+input.spec-inline-txt{width:96px}
+input.spec-inline-num{width:88px;text-align:right}
+/* Actual Unit Price is auto-derived from Delivery Check — show a faint hint when unset */
+.spec-auto-hint{font-size:10.5px;color:var(--muted);font-style:italic}
 .ship-fix-btn{cursor:pointer}
 .spec-bulk{background:linear-gradient(135deg,color-mix(in srgb,var(--cyan) 12%,var(--inset-bg)),var(--inset-bg));border:1.5px solid color-mix(in srgb,var(--cyan) 40%,var(--line));border-radius:14px;padding:14px 16px;margin:6px 0 14px}
 .spec-bulk-head{font-size:13.5px;font-weight:600;margin-bottom:10px}
@@ -7095,9 +7103,9 @@ function renderSpectator(){
       <td>${escapeHtml(d.qty||'')}</td>
       <td>${escapeHtml(d.brand||'')}</td>
       <td>${escapeHtml(d.supplier||'')}</td>
-      <td>${escapeHtml(d.poNo||'')}</td>
-      <td class="money">${matEstUnit(d)?fmtTHB(matEstUnit(d)):'—'}</td>
-      <td class="money">${d.unitPrice?fmtTHB(d.unitPrice):''}</td>
+      <td><input type="text" class="spec-inline spec-inline-txt" value="${escapeAttr(d.poNo||'')}" placeholder="PO NO." onchange="specRowInput('${d.id}','poNo',this)" onclick="event.stopPropagation()"></td>
+      <td class="money"><input type="number" step="any" min="0" class="spec-inline spec-inline-num" value="${d.estUnitPrice?escapeAttr(d.estUnitPrice):''}" placeholder="0.00" onchange="specRowInput('${d.id}','estUnitPrice',this)" onclick="event.stopPropagation()"></td>
+      <td class="money" title="${escapeAttr(LANG==='en'?"Auto — set from Delivery Check: value(THB) ÷ Q'ty":'อัตโนมัติ — มาจาก Delivery Check: value(THB) ÷ จำนวน')}">${d.unitPrice?fmtTHB(d.unitPrice):'<span class="spec-auto-hint">'+(LANG==='en'?'auto':'อัตโนมัติ')+'</span>'}</td>
       ${marginCell(mgUnit(d))}
       ${marginCell(mgTot(d))}
       <td class="money">${d.total?fmtTHB(d.total):''}</td>
@@ -7158,6 +7166,14 @@ function specBulkOnPick(field,sel){
 function specRowSet(id,field,sel){
   const val=sel.value;
   if(val==='__add__'){ const d=DB.details().find(x=>x.id===id); sel.value=(d&&d[field])||''; specAddValue(field,(nv)=>{ specApplyRow(id,field,nv); }); return; }
+  specApplyRow(id,field,val);
+}
+/* inline text/number edits from the Spectator table (PO NO. + EST. Unit Price).
+   Actual Unit Price is intentionally NOT editable here — it is auto-derived on the
+   Delivery Check page from value(THB) ÷ Q'ty. */
+function specRowInput(id,field,el){
+  let val=(el.value||'').trim();
+  if(field==='estUnitPrice'){ val = (val==='') ? '' : String(parseFloat(val)||0); }
   specApplyRow(id,field,val);
 }
 function specApplyRow(id,field,val){
@@ -11411,7 +11427,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-b';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-c';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
