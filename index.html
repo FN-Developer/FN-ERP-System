@@ -778,8 +778,15 @@ tr.nx-datelead td:first-child{box-shadow:inset 3px 0 0 var(--cyan)}
 .reco-anim{color:#b8860b;font-weight:700;font-size:14px;background:color-mix(in srgb,var(--amber) 14%,transparent);border:1px solid color-mix(in srgb,var(--amber) 38%,transparent);border-radius:12px;padding:13px 15px;animation:recoPulse 1.6s ease-in-out infinite;margin-bottom:16px;line-height:1.45}
 @keyframes recoBlink{0%,49%{opacity:1}50%,100%{opacity:.2}}
 .reco-blink{font-size:21px;font-weight:900;color:var(--red);text-align:center;animation:recoBlink 1s step-start infinite;margin:4px 0 8px}
-.reco-vname{text-align:center;font-weight:800;margin-bottom:12px;color:var(--txt-soft);font-size:14px}
+.reco-vname{text-align:center;font-weight:800;margin-bottom:8px;color:var(--txt-soft);font-size:14px}
 .reco-vname small{color:var(--muted);font-weight:600}
+/* prominent BLINKING cheapest value/unit for the recommended vendor */
+@keyframes recoBestGlow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,#16a34a 60%,transparent);background:color-mix(in srgb,#16a34a 10%,transparent)}50%{box-shadow:0 0 0 8px color-mix(in srgb,#16a34a 0%,transparent);background:color-mix(in srgb,#16a34a 28%,transparent)}}
+.reco-bestprice{display:flex;flex-direction:column;align-items:center;gap:2px;margin:2px auto 16px;max-width:280px;padding:11px 16px;border-radius:13px;border:1.5px solid color-mix(in srgb,#16a34a 50%,var(--line));animation:recoBestGlow 1s ease-in-out infinite}
+.reco-bestprice .rbp-lbl{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#16a34a}
+.reco-bestprice .rbp-val{font-size:23px;font-weight:900;color:#16a34a;font-family:'Orbitron',system-ui;line-height:1.1}
+.reco-bestprice .rbp-val small{font-size:12px;font-weight:700;color:#16a34a;opacity:.85}
+.reco-bestprice .rbp-tot{font-size:12.5px;font-weight:700;color:var(--txt-soft)}
 .reco-contact{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-bottom:18px}
 .reco-cbtn{display:inline-flex;align-items:center;gap:6px;padding:10px 15px;border-radius:11px;font-weight:800;font-size:13.5px;text-decoration:none;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt)}
 .reco-cbtn.call{border-color:#16a34a;color:#16a34a}
@@ -7820,7 +7827,12 @@ function ckRecoOpen(id,b,price){
   const body=`<div class="reco-pop">
     <div class="reco-anim">⚠ <span>${escapeHtml(notice)}</span></div>
     <div class="reco-blink">📞 ${en?'Contact to Supplier':'ช่องทางติดต่อ Supplier'}</div>
-    <div class="reco-vname">${escapeHtml(vendor)} · ${en?'best':'ถูกสุด'} ${fmtTHB(price)}<small>/unit</small></div>
+    <div class="reco-vname">${escapeHtml(vendor)}</div>
+    <div class="reco-bestprice">
+      <span class="rbp-lbl">${en?'Cheapest value / unit':'ราคาถูกสุด / หน่วย'}</span>
+      <span class="rbp-val">${fmtTHB(price)}<small>/unit</small></span>
+      ${qty?`<span class="rbp-tot">≈ ${fmtTHB((parseFloat(price)||0)*qty)} <small>× ${qty}</small></span>`:''}
+    </div>
     <div class="reco-contact">${cbtns.join('')}</div>
     <div class="field reco-valwrap"><label>${en?'Update the value (THB)':'ราคารวม (บาท)'} <span class="req">*</span></label>
       <input type="number" step="any" min="0" id="recoVal" value="" placeholder="${escapeAttr(en?'fill the value first before submit':'กรอกราคาก่อนกดยืนยัน')}" oninput="ckRecoValCheck()"></div>
@@ -11625,7 +11637,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-g';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-h';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
