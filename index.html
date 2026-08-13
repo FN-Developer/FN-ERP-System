@@ -11369,12 +11369,36 @@ function dbClearConfirm(){
   (async ()=>{
     await dbBackupNow(true);
     const arr=(typeof NX_ARRAY_KEYS!=='undefined')?NX_ARRAY_KEYS:[];
-    NX_CLOUD_KEYS.forEach(k=>{ localStorage.setItem(k, arr.indexOf(k)>=0?'[]':'{}'); });
-    _dbClearDownloaded=false; closeModal(); nxRerenderAll(); showToast('🗑 Running data cleared (CSV + cloud backup kept)'); try{ go('devdb'); }catch(_){}
+    const emptyOf=k=>(arr.indexOf(k)>=0?'[]':'{}');
+    const cloudReady=(typeof NX_CLOUD!=='undefined' && NX_CLOUD && NX_CLOUD.ready);
+    const now=Date.now();
+    /* AUTHORITATIVE clear: overwrite each cloud document to empty directly (never a merge).
+       A plain merge only deletes rows the device already had in its synced base, so a large
+       table (Work Details) that never fully synced would keep the cloud copy and stream it
+       back. Here we (1) set local empty, (2) drop any pending-merge state, (3) stamp a fresh
+       local timestamp so older cloud copies echoing back are rejected, and (4) force-write the
+       empty value up. */
+    NX_CLOUD_KEYS.forEach(k=>{
+      const empty=emptyOf(k);
+      try{ _nxOrigSetItem(k, empty); }catch(_){ try{ localStorage.setItem(k, empty); }catch(e){} }
+      try{ if(NX_CLOUD && NX_CLOUD._pendBefore) delete NX_CLOUD._pendBefore[k]; }catch(_){}
+      try{ nxDirtyClear(k); }catch(_){}
+      try{ _nxLastLocalTs[k]=now; }catch(_){}
+      try{ if(cloudReady) NX_CLOUD._write(k, empty); }catch(_){}
+    });
+    try{ _priceIdx=null; _specModList=null; _specGrpList=null; }catch(_){}
+    _dbClearDownloaded=false; closeModal(); nxRerenderAll();
+    showToast('🗑 Running data cleared (backup kept)'); try{ go('devdb'); }catch(_){}
+    /* Re-assert twice to beat any late echo from the cloud or another open tab. */
+    [1500,4000].forEach(ms=>setTimeout(()=>{ try{
+      if(!(typeof NX_CLOUD!=='undefined' && NX_CLOUD && NX_CLOUD.ready)) return;
+      NX_CLOUD_KEYS.forEach(k=>{ const empty=emptyOf(k); if(localStorage.getItem(k)!==empty){ try{ _nxOrigSetItem(k, empty); }catch(_){} } _nxLastLocalTs[k]=Date.now(); try{ NX_CLOUD._write(k, empty); }catch(_){} });
+      try{ nxRerenderAll(); }catch(_){}
+    }catch(_){} }, ms));
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.12-c';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.12-d';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
