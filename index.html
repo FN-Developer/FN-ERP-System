@@ -4282,7 +4282,7 @@ function nxApplyViewOnlyUI(){
 
 function nxCurrentView(){ try{ const el=document.querySelector('.view.active'); return el ? el.id.replace('view-','') : 'home'; }catch(_){ return 'home'; } }
 function nxRerenderAll(){
-  try{ _priceIdx=null; }catch(_){}   /* remote data may have changed → rebuild price index lazily */
+  try{ _priceIdx=null; _specModList=null; _specGrpList=null; }catch(_){}   /* remote data may have changed → rebuild caches lazily */
   try{ if(typeof checkSession==='function') checkSession(); }catch(_){}
   try{ if(typeof computeAlerts==='function') computeAlerts(); }catch(_){}
   /* Never yank the Work-Detail-Input form out from under someone who is entering data:
@@ -4564,7 +4564,7 @@ const DB = {
   returns(){ return JSON.parse(localStorage.getItem('nx_returns')||'[]'); },
   leaves(){ return JSON.parse(localStorage.getItem('nx_leaves')||'[]'); },
   saveWorks(w){ localStorage.setItem('nx_works',JSON.stringify(w)); },
-  saveDetails(d){ localStorage.setItem('nx_details',JSON.stringify(d)); try{ _priceIdx=null; }catch(_){} },
+  saveDetails(d){ localStorage.setItem('nx_details',JSON.stringify(d)); try{ _priceIdx=null; _specModList=null; _specGrpList=null; }catch(_){} },
   saveVendors(v){ localStorage.setItem('nx_vendors',JSON.stringify(v)); },
   saveCustomers(c){ localStorage.setItem('nx_customers',JSON.stringify(c)); },
   saveStock(s){ localStorage.setItem('nx_stock',JSON.stringify(s)); },
@@ -6449,6 +6449,7 @@ function diGroups(){
 function diSaveGroups(list){
   const uniq=[...new Set(list.map(s=>String(s).trim()).filter(Boolean))];
   localStorage.setItem('nx_groups', JSON.stringify(uniq));
+  try{ _specGrpList=null; }catch(_){}
   if(typeof cloudPush==='function'){ try{ cloudPush('nx_groups'); }catch(_){} }
   return uniq;
 }
@@ -7107,9 +7108,12 @@ function renderSpectator(){
 /* ---- Spectator inline edit: module/group stores, per-row + bulk ---- */
 let specSel=new Set(); let specVisibleIds=[];
 function diModules(){ try{ const raw=localStorage.getItem('nx_modules'); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)) return a; } }catch(_){} return []; }
-function diSaveModule(name){ name=(name||'').trim(); if(!name) return; const l=diModules(); if(!l.some(m=>m.toLowerCase()===name.toLowerCase())){ l.push(name); localStorage.setItem('nx_modules', JSON.stringify(l)); } }
-function specModuleList(){ const set=new Set(); DB.details().forEach(d=>{ if(d.module) set.add(d.module); }); diModules().forEach(m=>set.add(m)); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
-function specGroupList(){ const set=new Set(diGroups()); DB.details().forEach(d=>{ if(d.group) set.add(d.group); }); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
+function diSaveModule(name){ name=(name||'').trim(); if(!name) return; const l=diModules(); if(!l.some(m=>m.toLowerCase()===name.toLowerCase())){ l.push(name); localStorage.setItem('nx_modules', JSON.stringify(l)); try{ _specModList=null; }catch(_){} } }
+/* cached distinct module/group lists — rebuilt only when data changes, not per row */
+var _specModList=null,_specGrpList=null;
+function specListsClear(){ _specModList=null; _specGrpList=null; }
+function specModuleList(){ if(_specModList) return _specModList; const set=new Set(); DB.details().forEach(d=>{ if(d.module) set.add(d.module); }); diModules().forEach(m=>set.add(m)); _specModList=[...set].sort((a,b)=>String(a).localeCompare(String(b))); return _specModList; }
+function specGroupList(){ if(_specGrpList) return _specGrpList; const set=new Set(diGroups()); DB.details().forEach(d=>{ if(d.group) set.add(d.group); }); _specGrpList=[...set].sort((a,b)=>String(a).localeCompare(String(b))); return _specGrpList; }
 function specOptsFrom(list,sel,addLabel){
   const en=LANG==='en';
   let html=`<option value="">${en?'—':'—'}</option>`;
@@ -11370,7 +11374,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.12-b';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.12-c';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
