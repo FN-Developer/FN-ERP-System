@@ -1649,6 +1649,7 @@ tr.lc-row:hover>td{background:var(--hover)}
 .db-restore{background:linear-gradient(135deg,#16a34a,#15803d)}
 .db-download{background:linear-gradient(135deg,#6d28d9,#c026d3)}
 .db-upload{background:linear-gradient(135deg,#f59e0b,#e8590c)}
+.db-add{background:linear-gradient(135deg,#0891b2,#0e7490)}
 .db-clear{background:linear-gradient(135deg,#ff5470,#c01843)}
 .db-drop{margin-top:6px;border:2px dashed var(--line2);border-radius:12px;padding:16px;text-align:center;color:var(--muted);font-weight:600;font-size:13px;transition:.15s}
 .db-drop.drag{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary)}
@@ -3629,7 +3630,8 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         <button type="button" class="db-btn db-backup" onclick="dbBackupNow(true)"><span class="db-ic">💾</span><span class="db-l"><b>Backup now</b><small>Snapshot → cloud</small></span></button>
         <button type="button" class="db-btn db-restore" onclick="dbRestoreOpen()"><span class="db-ic">♻️</span><span class="db-l"><b>Restore</b><small>Pick date &amp; time</small></span></button>
         <button type="button" class="db-btn db-download" onclick="dbDownloadPick()"><span class="db-ic">⬇️</span><span class="db-l"><b>Download</b><small>CSV or SQL</small></span></button>
-        <label class="db-btn db-upload" id="dbUploadBtn"><span class="db-ic">⬆️</span><span class="db-l"><b>Upload CSV / SQL</b><small>Drag &amp; drop / click</small></span><input type="file" accept=".csv,.sql" id="dbUploadInput" style="display:none" onchange="dbUploadFile(this.files&&this.files[0])"></label>
+        <label class="db-btn db-upload" id="dbUploadBtn"><span class="db-ic">⬆️</span><span class="db-l"><b>Upload CSV / SQL</b><small>Replace tables</small></span><input type="file" accept=".csv,.sql" id="dbUploadInput" style="display:none" onchange="dbUploadFile(this.files&&this.files[0])"></label>
+        <label class="db-btn db-add" id="dbAddBtn"><span class="db-ic">➕</span><span class="db-l"><b>Add more database</b><small>Merge / append — no replace</small></span><input type="file" accept=".csv,.sql" id="dbAddInput" style="display:none" onchange="dbAddFile(this.files&&this.files[0])"></label>
         <button type="button" class="db-btn db-clear" onclick="dbClearOpen()"><span class="db-ic">🗑</span><span class="db-l"><b>Clear running data</b><small>Backups kept safe</small></span></button>
       </div>
       <div class="db-drop" id="dbDrop"><span>⬆️ Drop a CSV or SQL file here — it loads straight into every page, ready for calculation</span></div>
@@ -11252,6 +11254,52 @@ function dbApplyFile(text, fname){
     await dbBackupNow(true); found.forEach(([k,val])=>localStorage.setItem(k, val)); closeModal(); nxRerenderAll(); showToast('⬆️ Uploaded '+found.length+' databases from '+fmt); try{ go('devdb'); }catch(_){}
   });
 }
+/* ---- ADD MORE (merge/append — never replaces) ---- */
+function dbMergeValue(k, existingStr, incomingStr){
+  const cfg=NX_MERGE[k];
+  let inc; try{ inc=JSON.parse(incomingStr); }catch(_){ return existingStr!=null?existingStr:incomingStr; }
+  let ex; try{ ex=JSON.parse(existingStr||'null'); }catch(_){ ex=null; }
+  const type = cfg?cfg.type:(Array.isArray(inc)?'arr':(inc&&typeof inc==='object'?'obj':'scalar'));
+  const idf = (cfg&&cfg.id)?cfg.id:'id';
+  if(type==='arr'){
+    const base=Array.isArray(ex)?ex:[];
+    const map=new Map(base.map(r=>[String(r&&r[idf]), r]));
+    (Array.isArray(inc)?inc:[]).forEach(r=>{ map.set(String(r&&r[idf]), r); });   // add new / update matching id
+    return JSON.stringify([...map.values()]);
+  }
+  if(type==='strarr'){
+    const set=new Set((Array.isArray(ex)?ex:[]).map(String));
+    (Array.isArray(inc)?inc:[]).forEach(x=>set.add(String(x)));
+    return JSON.stringify([...set]);
+  }
+  if(type==='obj'){
+    return JSON.stringify(Object.assign({}, (ex&&typeof ex==='object')?ex:{}, (inc&&typeof inc==='object')?inc:{}));
+  }
+  return existingStr!=null?existingStr:incomingStr;   // scalar: keep existing on merge
+}
+function dbAddFile(f){
+  if(!f) return;
+  const isSql=/\.sql$/i.test(f.name), isCsv=/\.csv$/i.test(f.name)||f.type==='text/csv';
+  if(!isSql&&!isCsv){ showToast('⚠ Please choose a .csv or .sql file'); return; }
+  const r=new FileReader(); r.onload=()=>dbApplyMergeFile(''+r.result, f.name); r.readAsText(f);
+}
+function dbApplyMergeFile(text, fname){
+  const isSql = /\.sql$/i.test(fname||'') || (!/\.csv$/i.test(fname||'') && /INSERT\s+INTO/i.test(text.slice(0,5000)));
+  const fmt = isSql?'SQL':'CSV';
+  let parsed; try{ parsed = isSql ? dbParseSql(text) : dbParseCsv(text); }catch(_){ parsed=[]; }
+  const found = (parsed||[]).filter(([k,val])=>{ if(NX_CLOUD_KEYS.indexOf(k)<0) return false; try{ JSON.parse(val); return true; }catch(_){ return false; } });
+  if(!found.length){ showToast('⚠ No valid database rows found in the '+fmt+' file'); return; }
+  const rows=found.map(([k,val])=>{ const before=nxJsonCount(localStorage.getItem(k))||0; const merged=dbMergeValue(k, localStorage.getItem(k), val); const after=nxJsonCount(merged)||0; return {k, merged, added:after-before, after}; });
+  confirmModal('Add more database (merge)','This ADDS '+found.length+' table(s) from the '+fmt+' file into your existing data — nothing is replaced. New records are added and any record with a matching id is updated. A safety backup is taken first.', rows.map(r=>({k:nxDbName(r.k), v:'+'+r.added+' → '+r.after+' records'})), async ()=>{
+    await dbBackupNow(true);
+    let quotaErr=false;
+    rows.forEach(r=>{ try{ localStorage.setItem(r.k, r.merged); }catch(e){ quotaErr=true; } });
+    closeModal(); nxRerenderAll();
+    if(quotaErr) showToast('⚠ Storage limit reached — part of the data could not be saved (browser ~5MB cap).');
+    else showToast('➕ Added '+found.length+' database(s) from '+fmt);
+    try{ go('devdb'); }catch(_){}
+  });
+}
 function dbWireDrop(){
   const drop=document.getElementById('dbDrop'); if(!drop||drop.dataset.w) return; drop.dataset.w='1';
   const stop=e=>{ e.preventDefault(); e.stopPropagation(); };
@@ -11292,7 +11340,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-z9';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-z10';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
