@@ -1918,8 +1918,15 @@ tr.dl-row:hover{background:var(--hover)}
 .cwp-alt label{display:block;font-size:12.5px;font-weight:700;color:var(--txt-soft);margin-bottom:8px}
 .cwp-alt-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .cwp-alt-row input[type=date]{padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px}
+.cwp-pending{font-size:12.5px;font-weight:700;color:var(--muted)}
+.cwp-pending.has-week{color:var(--txt)}
+.cwp-pending b{color:#16a34a}
 .cwp-status{margin-top:12px;font-size:13px;font-weight:700;color:var(--txt-soft)}
 .cwp-status b{color:#16a34a}
+/* pick-mode: calendar becomes a week picker */
+#companyCal.cwp-picking .cal-day{cursor:pointer}
+#companyCal.cwp-picking .cal-day:hover{outline:2px solid color-mix(in srgb,var(--cyan) 55%,transparent);outline-offset:-2px}
+#companyCal .cal-day.cwp-weeksel{background:color-mix(in srgb,#16a34a 22%,var(--inset-bg))!important;box-shadow:inset 0 0 0 2px #16a34a;color:var(--txt)!important}
 .cal-legend{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap}
 .cl-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
 .cl-dot{width:14px;height:14px;border-radius:5px;display:inline-block}
@@ -3483,8 +3490,12 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <div class="cwp-t">Mon–Fri</div><div class="cwp-d" data-i18n="calPatMonFri">5-day week · Saturday never works</div><div class="cwp-check">✓</div></button>
       </div>
       <div class="cwp-alt" id="cwpAltWrap" style="display:none">
-        <label data-i18n="calPatPick">Select any date in the week that works on Saturday — the pattern alternates from there:</label>
-        <div class="cwp-alt-row"><input type="date" id="cwpAltDate"><button type="button" class="btn primary sm" onclick="cwpConfirmAlt()">✓ <span data-i18n="calPatConfirm">Confirm &amp; auto-switch</span></button></div>
+        <label data-i18n="calPatClick">👉 Click any day in the calendar below — in the week that should work Saturday — then press Confirm.</label>
+        <div class="cwp-alt-row">
+          <span class="cwp-pending" id="cwpPendingLbl" data-i18n="calPatNoWeek">No week selected yet — click a day below.</span>
+          <button type="button" class="btn primary sm is-locked" id="cwpConfirmBtn" onclick="cwpConfirmAlt()">✓ <span data-i18n="calPatConfirm">Confirm &amp; auto-switch</span></button>
+          <button type="button" class="btn ghost sm" onclick="cwpCancelPick()" data-i18n="calPatCancel">Cancel</button>
+        </div>
       </div>
       <div class="cwp-status" id="cwpStatus"></div>
     </div>
@@ -5683,6 +5694,9 @@ const I18N = {
   calPatAlt:{en:"Alternating weeks — pick which week works Saturday, then it auto-switches every week",th:"สลับสัปดาห์ — เลือกสัปดาห์ที่ทำงานวันเสาร์ แล้วระบบจะสลับให้อัตโนมัติทุกสัปดาห์"},
   calPatMonFri:{en:"5-day week · Saturday never works",th:"สัปดาห์ 5 วัน · ไม่ทำงานวันเสาร์"},
   calPatPick:{en:"Select any date in the week that works on Saturday — the pattern alternates from there:",th:"เลือกวันที่ในสัปดาห์ที่ทำงานวันเสาร์ — รูปแบบจะสลับจากจุดนั้น:"},
+  calPatClick:{en:"👉 Click any day in the calendar below — in the week that should work Saturday — then press Confirm.",th:"👉 คลิกวันในปฏิทินด้านล่าง — ในสัปดาห์ที่ต้องทำงานวันเสาร์ — แล้วกดยืนยัน"},
+  calPatNoWeek:{en:"No week selected yet — click a day below.",th:"ยังไม่ได้เลือก — คลิกวันด้านล่าง"},
+  calPatCancel:{en:"Cancel",th:"ยกเลิก"},
   calPatConfirm:{en:"Confirm & auto-switch",th:"ยืนยันและสลับอัตโนมัติ"},
   calTypeCol:{en:"Type",th:"ประเภท"},
   calNoDays:{en:"No special days marked yet.",th:"ยังไม่มีการกำหนดวันพิเศษ"},
@@ -10398,31 +10412,50 @@ function renderCalPattern(){
     if(wp.mode==='alt'){ const mon=mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00')); const sat=new Date(mon); sat.setDate(sat.getDate()+5); txt+=' · '+(en?'Saturday works on the week of ':'ทำงานวันเสาร์ในสัปดาห์ของ ')+'<b>'+nxFmtD(isoOf(mon))+'</b>'+(en?' (then alternates)':' (แล้วสลับ)'); }
     st.innerHTML=txt;
   }
-  // prefill the alt date with the current anchor's Monday
-  const ad=document.getElementById('cwpAltDate'); if(ad && !ad.value){ ad.value=isoOf(mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00'))); }
 }
+/* alternating-pattern anchor is chosen by CLICKING a day in the calendar below */
+let cwpPickMode=false, cwpPendingAnchor=null;
 function cwpSelect(mode){
   if(!calCanEdit()){ showToast(LANG==='en'?'View only — CEO/Developer can change this.':'ดูอย่างเดียว — เฉพาะ CEO/Developer'); return; }
   const wrap=document.getElementById('cwpAltWrap');
-  if(mode==='alt'){ if(wrap) wrap.style.display='block'; const wp=workPattern(); const ad=document.getElementById('cwpAltDate'); if(ad) ad.value=isoOf(mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00')));
-    // highlight the alt option as chosen-but-pending until confirmed
+  if(mode==='alt'){
+    cwpPickMode=true; cwpPendingAnchor=null;
+    if(wrap) wrap.style.display='block';
+    const lbl=document.getElementById('cwpPendingLbl'); if(lbl){ lbl.textContent=(LANG==='en'?'No week selected yet — click a day below.':'ยังไม่ได้เลือก — คลิกวันด้านล่าง'); lbl.classList.remove('has-week'); }
+    const btn=document.getElementById('cwpConfirmBtn'); if(btn) btn.classList.add('is-locked');
     const opts=document.getElementById('cwpOpts'); if(opts) [...opts.querySelectorAll('.cwp-opt')].forEach(o=>o.classList.toggle('active',o.getAttribute('data-mode')==='alt'));
-    return; }
+    renderCompanyCal();   // enable pick-mode visuals (clickable week highlight)
+    const c=document.getElementById('companyCal'); if(c){ try{ c.scrollIntoView({behavior:'smooth',block:'center'}); }catch(_){} }
+    showToast(LANG==='en'?'Now click the week in the calendar that works Saturday.':'คลิกสัปดาห์ในปฏิทินที่ทำงานวันเสาร์');
+    return;
+  }
+  cwpPickMode=false; cwpPendingAnchor=null;
   if(wrap) wrap.style.display='none';
   saveWorkPattern(mode);
   cwpAfterChange();
   showToast((LANG==='en'?'Work week set to ':'ตั้งสัปดาห์ทำงานเป็น ')+cwpModeLabel(mode));
 }
+/* clicking a calendar day while in pick mode → select that whole week as the Saturday-working anchor */
+function cwpPickWeek(ds){
+  const en=LANG==='en';
+  const monday=isoOf(mondayOf(new Date(ds+'T00:00:00')));
+  cwpPendingAnchor=monday;
+  cwpHighlightWeek();
+  const sat=new Date(monday+'T00:00:00'); sat.setDate(sat.getDate()+5);
+  const lbl=document.getElementById('cwpPendingLbl'); if(lbl){ lbl.classList.add('has-week'); lbl.innerHTML=(en?'Selected week: ':'สัปดาห์ที่เลือก: ')+'<b>'+nxFmtD(monday)+'</b> → '+(en?'works Sat ':'ทำงานเสาร์ ')+'<b>'+nxFmtD(isoOf(sat))+'</b>'; }
+  const btn=document.getElementById('cwpConfirmBtn'); if(btn) btn.classList.remove('is-locked');
+}
+function cwpHighlightWeek(){ document.querySelectorAll('#companyCal .cal-day').forEach(function(el){ const ds=el.getAttribute('data-d'); if(!ds){ el.classList.remove('cwp-weeksel'); return; } const mon=isoOf(mondayOf(new Date(ds+'T00:00:00'))); el.classList.toggle('cwp-weeksel', !!cwpPendingAnchor && mon===cwpPendingAnchor); }); }
 function cwpConfirmAlt(){
   if(!calCanEdit()) return;
-  const ad=document.getElementById('cwpAltDate'); const ds=ad?ad.value:'';
-  if(!ds){ showToast(LANG==='en'?'Pick the Saturday-working week first.':'เลือกสัปดาห์ที่ทำงานวันเสาร์ก่อน'); return; }
-  const monday=isoOf(mondayOf(new Date(ds+'T00:00:00')));
-  saveWorkPattern('alt', monday);
+  if(!cwpPendingAnchor){ showToast(LANG==='en'?'Click a day in the calendar to pick the Saturday-working week first.':'คลิกวันในปฏิทินเพื่อเลือกสัปดาห์ก่อน'); return; }
+  saveWorkPattern('alt', cwpPendingAnchor);
+  cwpPickMode=false; cwpPendingAnchor=null;
   const wrap=document.getElementById('cwpAltWrap'); if(wrap) wrap.style.display='none';
   cwpAfterChange();
   showToast(LANG==='en'?'Alternating pattern confirmed — weeks auto-switch from the chosen week.':'ยืนยันรูปแบบสลับแล้ว — สัปดาห์จะสลับอัตโนมัติ');
 }
+function cwpCancelPick(){ cwpPickMode=false; cwpPendingAnchor=null; const wrap=document.getElementById('cwpAltWrap'); if(wrap) wrap.style.display='none'; renderCompanyCal(); renderCalPattern(); }
 function cwpAfterChange(){ renderCompanyCal(); renderCalPattern(); renderCalList(); try{ renderAttendance(); }catch(_){} try{ renderBenefit(); }catch(_){} }
 function renderCompanyCal(){
   const cal=document.getElementById('companyCal'); if(!cal||!calMonth) return;
@@ -10434,8 +10467,10 @@ function renderCompanyCal(){
   const editable=calCanEdit(); cal.classList.toggle('cal-readonly',!editable);
   for(let d=1;d<=dim;d++){ const ds=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const ty=calDayType(ds); const work=isWorkday(ds); const sw=DB.workSwitches()[ds]; let cls='cal-day'; if(!work) cls+=' d-off'; if(ty==='special') cls+=' d-special'; if(ty==='holiday') cls+=' d-holiday'; if(sw) cls+=(sw.mode==='work'?' d-sw-work':' d-sw-off'); const ttl=sw?escapeAttr((sw.mode==='work'?t('calSwWorkTip'):t('calSwOffTip'))+' — '+(sw.reason||'')):''; const hnd=editable?`onmousedown="calDown('${ds}')" onmouseenter="calEnter('${ds}')"`:''; h+=`<div class="${cls}" data-d="${ds}" title="${ttl}" ${hnd}>${d}</div>`; }
   cal.innerHTML=h+'</div>';
+  cal.classList.toggle('cwp-picking', !!cwpPickMode);
+  if(cwpPickMode && cwpPendingAnchor) cwpHighlightWeek();
 }
-function calDown(ds){ if(!calCanEdit()) return; calDragging=true; calDragStart=ds; calDragEnd=ds; highlightCalRange(); }
+function calDown(ds){ if(cwpPickMode){ if(calCanEdit()) cwpPickWeek(ds); return; } if(!calCanEdit()) return; calDragging=true; calDragStart=ds; calDragEnd=ds; highlightCalRange(); }
 function calEnter(ds){ if(!calCanEdit()) return; if(calDragging){ calDragEnd=ds; highlightCalRange(); } }
 function orderDates(a,b){ if(!a||!b) return [a,b]; return a<=b?[a,b]:[b,a]; }
 function eachDate(a,b,fn){ let d=new Date(a+'T00:00:00'),e=new Date(b+'T00:00:00'); for(;d<=e;d.setDate(d.getDate()+1)){ fn(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); } }
@@ -11722,7 +11757,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-i';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-j';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
