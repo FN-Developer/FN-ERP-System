@@ -694,7 +694,8 @@ tr.spec-dirty>td:first-child{box-shadow:inset 4px 0 0 var(--green)}
 .spec-bulk-cell{display:flex;flex-direction:column;gap:5px}
 .spec-bulk-cell label{font-size:11.5px;font-weight:700;color:var(--txt-soft);text-transform:uppercase;letter-spacing:.5px}
 .spec-bulk-ctrl{display:flex;gap:7px;align-items:center}
-.spec-bulk-ctrl select{padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px;min-width:150px}
+.spec-bulk-ctrl select,.spec-bulk-ctrl input{padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px;min-width:150px}
+.spec-bulk-ctrl input:focus{border-color:var(--cyan);outline:none}
 /* ---- Delivery Check: scope + assign + update ---- */
 .ck-scope,.ck-find,.ck-assign{margin:0 0 14px}
 .ck-scope .cf-label,.ck-find .cf-label{display:block;margin-bottom:8px}
@@ -2712,6 +2713,9 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           </div>
           <div class="spec-bulk-cell"><label data-i18n="specSetGroup">Set Group</label>
             <div class="spec-bulk-ctrl"><select id="specBulkGroup" onchange="specBulkOnPick('group',this)"></select><button type="button" class="btn primary sm" onclick="specBulkApply('group')" data-i18n="specApply">Apply</button></div>
+          </div>
+          <div class="spec-bulk-cell"><label data-i18n="specSetPo">Set PO NO.</label>
+            <div class="spec-bulk-ctrl"><input type="text" id="specBulkPo" placeholder="PO NO." onkeydown="if(event.key==='Enter'){event.preventDefault();specBulkApply('poNo');}"><button type="button" class="btn primary sm" onclick="specBulkApply('poNo')" data-i18n="specApply">Apply</button></div>
           </div>
           <button type="button" class="btn ghost sm" onclick="specClearSel()" data-i18n="specClearSel">Clear selection</button>
         </div>
@@ -6054,6 +6058,7 @@ const I18N = {
   ckUpdate:{en:"Update",th:"อัปเดต"},
   specSelLbl:{en:"selected — set the same value for all of them:",th:"ที่เลือก — กำหนดค่าเดียวกันให้ทั้งหมด:"},
   specSetModule:{en:"Set Module",th:"กำหนด Module"},
+  specSetPo:{en:"Set PO NO.",th:"กำหนด PO NO."},
   specSetGroup:{en:"Set Group",th:"กำหนดหมวดหมู่"},
   specApply:{en:"Apply",th:"ใช้"},
   specClearSel:{en:"Clear selection",th:"ล้างการเลือก"},
@@ -7258,18 +7263,20 @@ function specUpdateCommit(){
   renderSpectator(); if(typeof renderStatus==='function') renderStatus(); computeAlerts();
   showToast((en?`Saved ${n} item(s)`:`บันทึก ${n} รายการแล้ว`));
 }
-/* bulk apply to every checked row — also STAGES (preview until Update) */
+/* bulk apply to every checked row — also STAGES (preview until Update).
+   Works for the Module/Group selects AND the free-text PO NO. field. */
 function specBulkApply(field){
   const en=LANG==='en';
-  const sel=document.getElementById(field==='module'?'specBulkModule':'specBulkGroup');
-  const val=sel?sel.value:'';
-  if(val==='__add__'){ specBulkOnPick(field,sel); return; }
+  let val;
+  if(field==='poNo'){ const inp=document.getElementById('specBulkPo'); val=inp?inp.value.trim():''; }
+  else { const sel=document.getElementById(field==='module'?'specBulkModule':'specBulkGroup'); val=sel?sel.value:''; if(val==='__add__'){ specBulkOnPick(field,sel); return; } }
   if(!specSel.size){ showToast(en?'Select rows first.':'เลือกแถวก่อน'); return; }
   const dets=DB.details(); let n=0;
   dets.forEach(d=>{ if(specSel.has(d.id)){ if(!specStage[d.id]) specStage[d.id]={}; specStage[d.id][field]=val; n++; } });
   [...specSel].forEach(specStageDropIfClean);
   renderSpectator();
-  showToast((en?`Staged ${n} row(s) · press Update to save`:`เตรียม ${n} แถว · กด Update เพื่อบันทึก`));
+  const lbl = field==='module'?'Module':(field==='group'?'Group':'PO NO.');
+  showToast((en?`Staged ${lbl} on ${n} row(s) · press Update to save`:`เตรียม ${lbl} ${n} แถว · กด Update เพื่อบันทึก`));
 }
 /* add-new value modal for module/group */
 function specAddValue(kind,cb){
@@ -11500,7 +11507,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-d';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-e';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
