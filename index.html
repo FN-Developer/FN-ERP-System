@@ -667,6 +667,24 @@ input.spec-inline:hover{border-color:var(--cyan)}
 input.spec-inline:focus{border-color:var(--cyan);outline:none}
 input.spec-inline-txt{width:96px}
 input.spec-inline-num{width:88px;text-align:right}
+/* HIGHLIGHT every editable control so it's obvious what can be changed (amber tint + ✎-style border) */
+.spec-editable{background:color-mix(in srgb,#ffca3a 26%,var(--inset-bg))!important;border:1.5px solid color-mix(in srgb,#f4a417 60%,var(--line))!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,#f4a417 16%,transparent)}
+.spec-editable:hover{border-color:#f4a417!important}
+.spec-editable:focus{border-color:#e08e00!important;background:color-mix(in srgb,#ffca3a 34%,var(--inset-bg))!important;outline:none}
+/* a cell whose value was just STAGED (edited, not yet saved) turns green so the preview stands out */
+.spec-editable.spec-staged{background:color-mix(in srgb,var(--green) 24%,var(--inset-bg))!important;border-color:color-mix(in srgb,var(--green) 65%,var(--line))!important}
+tr.spec-dirty>td{background:color-mix(in srgb,var(--green) 9%,transparent)}
+tr.spec-dirty>td:first-child{box-shadow:inset 4px 0 0 var(--green)}
+.spec-dirty-dot{color:var(--green);font-size:15px;margin-left:4px;animation:specDotPulse 1s ease-in-out infinite}
+@keyframes specDotPulse{0%,100%{opacity:1}50%{opacity:.35}}
+/* Spectator action bar + BLINKING GREEN Update button (only when there are unsaved changes) */
+.spec-actionbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:4px 0 12px;padding:10px 14px;border-radius:13px;border:1.5px dashed color-mix(in srgb,var(--green) 40%,var(--line));background:color-mix(in srgb,var(--green) 6%,var(--inset-bg))}
+.spec-actionbar.is-clean{border-style:solid;border-color:var(--line);background:var(--inset-bg);opacity:.75}
+.spec-pending-note{font-size:13px;font-weight:700;color:var(--green)}
+.spec-update-btn .ck-pending{margin-left:6px;background:rgba(255,255,255,.28);border-radius:999px;padding:1px 8px;font-weight:800}
+.spec-update-btn.is-locked{opacity:.5;filter:grayscale(.4);cursor:not-allowed}
+.spec-update-btn.spec-update-blink{background:var(--green)!important;border-color:var(--green)!important;color:#fff!important;animation:specUpdPulse 1.05s ease-in-out infinite;opacity:1;filter:none}
+@keyframes specUpdPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 65%,transparent);transform:translateY(0)}50%{box-shadow:0 0 0 9px color-mix(in srgb,var(--green) 0%,transparent);transform:translateY(-1px)}}
 /* Actual Unit Price is auto-derived from Delivery Check — show a faint hint when unset */
 .spec-auto-hint{font-size:10.5px;color:var(--muted);font-style:italic}
 .ship-fix-btn{cursor:pointer}
@@ -2680,6 +2698,12 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
         </div>
       </div>
       <div class="result-count"><span data-i18n="showing">Showing</span> <b id="rc">0</b> <span data-i18n="records">records</span></div>
+      <div class="spec-actionbar is-clean" id="specActionBar">
+        <span class="spec-pending-note" id="specPendingNote" style="display:none">✎ <b id="specPendingCount">0</b> <span data-i18n="specUnsaved">unsaved change(s) — shown as a preview in the table below</span></span>
+        <span class="spec-pending-note" id="specCleanNote" style="color:var(--muted);font-weight:600">✎ <span data-i18n="specEditHint">Edit the highlighted fields, then press Update to save.</span></span>
+        <button type="button" class="btn primary spec-update-btn is-locked" id="specUpdateBtn" onclick="specUpdateCommit()">⬆ <span data-i18n="ckUpdate">Update</span> <span class="ck-pending" id="specPendingBadge" style="display:none">0</span></button>
+        <button type="button" class="btn ghost sm" id="specDiscardBtn" style="display:none" onclick="specDiscardChanges()">✕ <span data-i18n="specDiscard">Discard</span></button>
+      </div>
       <div class="spec-bulk" id="specBulk" style="display:none">
         <div class="spec-bulk-head">✎ <b id="specSelCount">0</b> <span data-i18n="specSelLbl">selected — set the same value for all of them:</span></div>
         <div class="spec-bulk-row">
@@ -6033,6 +6057,9 @@ const I18N = {
   specSetGroup:{en:"Set Group",th:"กำหนดหมวดหมู่"},
   specApply:{en:"Apply",th:"ใช้"},
   specClearSel:{en:"Clear selection",th:"ล้างการเลือก"},
+  specUnsaved:{en:"unsaved change(s) — shown as a preview in the table below",th:"การเปลี่ยนแปลงที่ยังไม่บันทึก — แสดงเป็นตัวอย่างในตารางด้านล่าง"},
+  specEditHint:{en:"Edit the highlighted fields, then press Update to save.",th:"แก้ไขช่องที่ไฮไลต์ไว้ แล้วกด Update เพื่อบันทึก"},
+  specDiscard:{en:"Discard",th:"ยกเลิก"},
   diOneT:{en:"Add one detail",th:"เพิ่มทีละรายการ"},
   diOneS:{en:"Fill a single line manually",th:"กรอกทีละบรรทัดด้วยตนเอง"},
   diCsvT:{en:"Add by Group",th:"เพิ่มเป็นชุด (กลุ่ม)"},
@@ -7088,28 +7115,34 @@ function renderSpectator(){
     const w=works.find(x=>x.workNo===d.workNo)||{};
     const noShip=!d.shipDate;
     const shipCell=noShip?`<span class="ship-fix">⚠ ${t('setShip')}</span>`:escapeHtml(d.shipDate);
+    // staged-edit preview: dv = original merged with any unsaved (staged) field values
+    const s=specStage[d.id];
+    const dv=s?Object.assign({},d,s):d;
+    const stg=f=>(s && (f in s) && String(s[f]||'')!==String(d[f]||''))?' spec-staged':'';
+    const dirty=specIsDirty(d);
     const tr=document.createElement('tr');
     if(noShip){ tr.className='row-noship'; tr.title=t('shipFixHint'); }
     if(specSel.has(d.id)) tr.classList.add('spec-selrow');
+    if(dirty) tr.classList.add('spec-dirty');
     tr.innerHTML=`
       <td class="spec-ck"><input type="checkbox" ${specSel.has(d.id)?'checked':''} onclick="event.stopPropagation();specToggle('${d.id}',this.checked)"></td>
-      <td>${noShip?`<span class="ship-fix-btn" onclick="event.stopPropagation();openShipFix('${d.id}')" title="${escapeAttr(t('shipFixHint'))}">`:''}<span class="badge b-work">${escapeHtml(d.workNo)}</span>${noShip?'</span>':''}</td>
+      <td>${noShip?`<span class="ship-fix-btn" onclick="event.stopPropagation();openShipFix('${d.id}')" title="${escapeAttr(t('shipFixHint'))}">`:''}<span class="badge b-work">${escapeHtml(d.workNo)}</span>${noShip?'</span>':''}${dirty?'<span class="spec-dirty-dot" title="'+escapeAttr(LANG==='en'?'Unsaved — press Update':'ยังไม่บันทึก — กด Update')+'">●</span>':''}</td>
       <td>${escapeHtml(w.workName||'')}</td>
       <td>${escapeHtml(w.custName||'')}</td>
       <td>${w.custCode?'<span class="badge b-grp">'+escapeHtml(w.custCode)+'</span>':''}</td>
       <td>${escapeHtml(d.rev||'')}</td>
-      <td><select class="spec-inline" onchange="specRowSet('${d.id}','module',this)">${specModuleOptions(d.module||'')}</select></td>
+      <td><select class="spec-inline spec-editable${stg('module')}" onchange="specRowSet('${d.id}','module',this)">${specModuleOptions(dv.module||'')}</select></td>
       <td>${escapeHtml(d.list||'')}</td>
       <td>${escapeHtml(d.qty||'')}</td>
       <td>${escapeHtml(d.brand||'')}</td>
       <td>${escapeHtml(d.supplier||'')}</td>
-      <td><input type="text" class="spec-inline spec-inline-txt" value="${escapeAttr(d.poNo||'')}" placeholder="PO NO." onchange="specRowInput('${d.id}','poNo',this)" onclick="event.stopPropagation()"></td>
-      <td class="money"><input type="number" step="any" min="0" class="spec-inline spec-inline-num" value="${d.estUnitPrice?escapeAttr(d.estUnitPrice):''}" placeholder="0.00" onchange="specRowInput('${d.id}','estUnitPrice',this)" onclick="event.stopPropagation()"></td>
-      <td class="money" title="${escapeAttr(LANG==='en'?"Auto — set from Delivery Check: value(THB) ÷ Q'ty":'อัตโนมัติ — มาจาก Delivery Check: value(THB) ÷ จำนวน')}">${d.unitPrice?fmtTHB(d.unitPrice):'<span class="spec-auto-hint">'+(LANG==='en'?'auto':'อัตโนมัติ')+'</span>'}</td>
-      ${marginCell(mgUnit(d))}
-      ${marginCell(mgTot(d))}
+      <td><input type="text" class="spec-inline spec-inline-txt spec-editable${stg('poNo')}" value="${escapeAttr(dv.poNo||'')}" placeholder="PO NO." onchange="specRowInput('${d.id}','poNo',this)" onclick="event.stopPropagation()"></td>
+      <td class="money"><input type="number" step="any" min="0" class="spec-inline spec-inline-num spec-editable${stg('estUnitPrice')}" value="${dv.estUnitPrice?escapeAttr(dv.estUnitPrice):''}" placeholder="0.00" onchange="specRowInput('${d.id}','estUnitPrice',this)" onclick="event.stopPropagation()"></td>
+      <td class="money" title="${escapeAttr(LANG==='en'?"Auto — set from Delivery Check: value(THB) ÷ Q'ty":'อัตโนมัติ — มาจาก Delivery Check: value(THB) ÷ จำนวน')}">${dv.unitPrice?fmtTHB(dv.unitPrice):'<span class="spec-auto-hint">'+(LANG==='en'?'auto':'อัตโนมัติ')+'</span>'}</td>
+      ${marginCell(mgUnit(dv))}
+      ${marginCell(mgTot(dv))}
       <td class="money">${d.total?fmtTHB(d.total):''}</td>
-      <td><select class="spec-inline spec-inline-grp" onchange="specRowSet('${d.id}','group',this)">${specGroupOptions(d.group||'')}</select></td>
+      <td><select class="spec-inline spec-inline-grp spec-editable${stg('group')}" onchange="specRowSet('${d.id}','group',this)">${specGroupOptions(dv.group||'')}</select></td>
       <td>${shipCell}</td>
       <td>${escapeHtml(d.recvDate||'—')}</td>
       <td><button class="btn danger" style="padding:6px 12px;font-size:13px" onclick="event.stopPropagation();delDetail('${d.id}')">✕</button></td>`;
@@ -7119,6 +7152,7 @@ function renderSpectator(){
   document.getElementById('specEmpty').style.display = rows.length? 'none':'block';
   document.getElementById('specTable').style.display = rows.length? 'table':'none';
   specUpdateBulkBar();
+  specUpdatePending();
   nxWireHeaders(document.querySelector('#specTable thead tr'),'spec',SPEC_SORT_COLS);
   nxRenderPager('spec',specTotal);
   nxDateLead('spec',body,pageRows,getSpec);
@@ -7162,41 +7196,80 @@ function specUpdateBulkBar(){
 function specBulkOnPick(field,sel){
   if(sel.value==='__add__'){ sel.value=''; specAddValue(field,(nv)=>{ if(field==='module'){ document.getElementById('specBulkModule').innerHTML=specModuleOptions(nv); } else { document.getElementById('specBulkGroup').innerHTML=specGroupOptions(nv); } }); }
 }
-/* per-row change */
+/* ===== Spectator STAGED edits: changes are previewed in the table and saved only on Update =====
+   Every editable field routes through specStageSet (no immediate DB write). specUpdateCommit
+   writes all staged changes at once; the Update button blinks green while anything is pending. */
+let specStage={};
+const SPEC_EDIT_FIELDS=['module','group','poNo','estUnitPrice'];
+function specStagedVal(d,field){ const s=specStage[d.id]; return (s && (field in s)) ? s[field] : (d[field]||''); }
+function specIsDirty(d){ const s=specStage[d.id]; if(!s) return false; return SPEC_EDIT_FIELDS.some(f=>(f in s) && String(s[f]||'')!==String(d[f]||'')); }
+function specPendingIds(){ return DB.details().filter(d=>specIsDirty(d)).map(d=>d.id); }
+function specStageDropIfClean(id){ const d=DB.details().find(x=>x.id===id); const s=specStage[id]; if(!d||!s) return; const clean=SPEC_EDIT_FIELDS.every(f=>!(f in s)||String(s[f]||'')===String(d[f]||'')); if(clean) delete specStage[id]; }
+function specStageSet(id,field,value){
+  const d=DB.details().find(x=>x.id===id); if(!d) return;
+  if(!specStage[id]) specStage[id]={};
+  specStage[id][field]=value;
+  specStageDropIfClean(id);
+  renderSpectator();   // live preview only — nothing saved yet
+}
+/* per-row change (module / group selects) — now STAGES */
 function specRowSet(id,field,sel){
   const val=sel.value;
-  if(val==='__add__'){ const d=DB.details().find(x=>x.id===id); sel.value=(d&&d[field])||''; specAddValue(field,(nv)=>{ specApplyRow(id,field,nv); }); return; }
-  specApplyRow(id,field,val);
+  if(val==='__add__'){ const d=DB.details().find(x=>x.id===id); sel.value=specStagedVal(d||{},field)||''; specAddValue(field,(nv)=>{ specStageSet(id,field,nv); }); return; }
+  specStageSet(id,field,val);
 }
-/* inline text/number edits from the Spectator table (PO NO. + EST. Unit Price).
+/* inline text/number edits (PO NO. + EST. Unit Price) — now STAGES.
    Actual Unit Price is intentionally NOT editable here — it is auto-derived on the
    Delivery Check page from value(THB) ÷ Q'ty. */
 function specRowInput(id,field,el){
   let val=(el.value||'').trim();
   if(field==='estUnitPrice'){ val = (val==='') ? '' : String(parseFloat(val)||0); }
-  specApplyRow(id,field,val);
+  specStageSet(id,field,val);
 }
-function specApplyRow(id,field,val){
-  const dets=DB.details(); const d=dets.find(x=>x.id===id); if(!d) return;
-  d[field]=val; DB.saveDetails(dets);
-  if(field==='module') diSaveModule(val); else if(field==='group' && val){ const g=diGroups(); if(!g.includes(val)){ g.push(val); diSaveGroups(g); } }
+/* reflect pending state on the action bar + blinking Update button */
+function specUpdatePending(){
+  const n=specPendingIds().length;
+  const btn=document.getElementById('specUpdateBtn'), badge=document.getElementById('specPendingBadge');
+  const bar=document.getElementById('specActionBar'), pnote=document.getElementById('specPendingNote'), cnote=document.getElementById('specCleanNote'), disc=document.getElementById('specDiscardBtn'), cnt=document.getElementById('specPendingCount');
+  if(btn){ btn.classList.toggle('is-locked',n===0); btn.classList.toggle('spec-update-blink',n>0); }
+  if(badge){ badge.style.display=n?'inline-flex':'none'; badge.textContent=n; }
+  if(cnt) cnt.textContent=n;
+  if(bar) bar.classList.toggle('is-clean',n===0);
+  if(pnote) pnote.style.display=n?'inline':'none';
+  if(cnote) cnote.style.display=n?'none':'inline';
+  if(disc) disc.style.display=n?'inline-flex':'none';
+}
+function specDiscardChanges(){ if(!specPendingIds().length){ return; } specStage={}; renderSpectator(); showToast(LANG==='en'?'Changes discarded':'ยกเลิกการแก้ไขแล้ว'); }
+/* UPDATE — write every staged change to the database at once */
+function specUpdateCommit(){
+  const en=LANG==='en';
+  const ids=specPendingIds();
+  if(!ids.length){ showToast(en?'No changes to update.':'ไม่มีการเปลี่ยนแปลง'); return; }
+  const dets=DB.details(); let n=0;
+  ids.forEach(id=>{ const d=dets.find(x=>x.id===id); const s=specStage[id]; if(!d||!s) return;
+    SPEC_EDIT_FIELDS.forEach(f=>{ if(f in s){ d[f]=s[f];
+      if(f==='module' && s[f]) diSaveModule(s[f]);
+      else if(f==='group' && s[f]){ const g=diGroups(); if(!g.includes(s[f])){ g.push(s[f]); diSaveGroups(g); } }
+    } });
+    n++;
+  });
+  DB.saveDetails(dets);
+  specStage={};
   renderSpectator(); if(typeof renderStatus==='function') renderStatus(); computeAlerts();
-  showToast(LANG==='en'?'Updated':'อัปเดตแล้ว');
+  showToast((en?`Saved ${n} item(s)`:`บันทึก ${n} รายการแล้ว`));
 }
-/* bulk apply to every checked row */
+/* bulk apply to every checked row — also STAGES (preview until Update) */
 function specBulkApply(field){
   const en=LANG==='en';
   const sel=document.getElementById(field==='module'?'specBulkModule':'specBulkGroup');
   const val=sel?sel.value:'';
   if(val==='__add__'){ specBulkOnPick(field,sel); return; }
   if(!specSel.size){ showToast(en?'Select rows first.':'เลือกแถวก่อน'); return; }
-  const ids=[...specSel];
   const dets=DB.details(); let n=0;
-  dets.forEach(d=>{ if(specSel.has(d.id)){ d[field]=val; n++; } });
-  DB.saveDetails(dets);
-  if(field==='module' && val) diSaveModule(val); else if(field==='group' && val){ const g=diGroups(); if(!g.includes(val)){ g.push(val); diSaveGroups(g); } }
-  renderSpectator(); if(typeof renderStatus==='function') renderStatus(); computeAlerts();
-  showToast((en?`Updated ${n} row(s) · `:`อัปเดต ${n} แถว · `)+(field==='module'?'Module':'Group')+' → '+(val||'—'));
+  dets.forEach(d=>{ if(specSel.has(d.id)){ if(!specStage[d.id]) specStage[d.id]={}; specStage[d.id][field]=val; n++; } });
+  [...specSel].forEach(specStageDropIfClean);
+  renderSpectator();
+  showToast((en?`Staged ${n} row(s) · press Update to save`:`เตรียม ${n} แถว · กด Update เพื่อบันทึก`));
 }
 /* add-new value modal for module/group */
 function specAddValue(kind,cb){
@@ -11427,7 +11500,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-c';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-d';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
