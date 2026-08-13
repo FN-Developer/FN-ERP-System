@@ -1903,6 +1903,23 @@ tr.dl-row:hover{background:var(--hover)}
 .year-mon:hover{transform:translateY(-2px);border-color:var(--primary)}
 .ym-badge{position:absolute;top:-7px;right:-7px;background:var(--primary);color:#fff;border-radius:20px;min-width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;padding:0 5px}
 /* company calendar */
+/* Work Week Pattern selector */
+.cwp-card{margin-bottom:16px}
+.cwp-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:6px 0 4px}
+.cwp-opt{position:relative;text-align:left;padding:14px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);cursor:pointer;transition:border-color .15s,background .15s}
+.cwp-opt:hover{border-color:var(--cyan)}
+.cwp-opt .cwp-t{font-weight:800;font-size:15px;margin-bottom:3px}
+.cwp-opt .cwp-d{font-size:12px;color:var(--muted);line-height:1.4}
+.cwp-opt .cwp-check{position:absolute;top:12px;right:14px;font-weight:900;color:#16a34a;opacity:0;transform:scale(.6);transition:opacity .15s,transform .15s}
+.cwp-opt.active{border-color:#16a34a;background:color-mix(in srgb,#16a34a 10%,var(--inset-bg));box-shadow:inset 0 0 0 1px color-mix(in srgb,#16a34a 30%,transparent)}
+.cwp-opt.active .cwp-check{opacity:1;transform:scale(1)}
+.cwp-opts.cwp-ro .cwp-opt{cursor:not-allowed;opacity:.75}
+.cwp-alt{margin:12px 0 4px;padding:13px 15px;border-radius:12px;border:1.5px dashed color-mix(in srgb,var(--cyan) 45%,var(--line));background:color-mix(in srgb,var(--cyan) 6%,var(--inset-bg))}
+.cwp-alt label{display:block;font-size:12.5px;font-weight:700;color:var(--txt-soft);margin-bottom:8px}
+.cwp-alt-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.cwp-alt-row input[type=date]{padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:13px}
+.cwp-status{margin-top:12px;font-size:13px;font-weight:700;color:var(--txt-soft)}
+.cwp-status b{color:#16a34a}
 .cal-legend{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap}
 .cl-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
 .cl-dot{width:14px;height:14px;border-radius:5px;display:inline-block}
@@ -3454,6 +3471,23 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
   <section class="view" id="view-calendar">
     <div class="page-head"><div class="bar"></div><div><h1 data-i18n="calTitle">COMPANY CALENDAR</h1><p data-i18n="calLead">Mark special days and company holidays. Special days apply the special OT rate. Click a day, or drag across days, to set them.</p></div></div>
     <div id="calRoNote" class="perm-note perm-role" style="display:none;border-color:rgba(6,132,182,.4)">👁 <span data-i18n="calViewOnly">View only — the Company Calendar can be edited by CEO and Developer accounts. Other positions can view it here.</span></div>
+    <div class="card cwp-card">
+      <h2><span class="dot"></span><span data-i18n="calPatHead">Work Week Pattern</span></h2>
+      <div class="card-sub" data-i18n="calPatSub">Choose the company's standard work week. Sunday is always a day off.</div>
+      <div class="cwp-opts" id="cwpOpts">
+        <button type="button" class="cwp-opt" data-mode="mon-sat" onclick="cwpSelect('mon-sat')">
+          <div class="cwp-t">Mon–Sat</div><div class="cwp-d" data-i18n="calPatMonSat">6-day week · every Saturday works</div><div class="cwp-check">✓</div></button>
+        <button type="button" class="cwp-opt" data-mode="alt" onclick="cwpSelect('alt')">
+          <div class="cwp-t">Mon–Sat ⇄ Mon–Fri</div><div class="cwp-d" data-i18n="calPatAlt">Alternating weeks — pick which week works Saturday, then it auto-switches every week</div><div class="cwp-check">✓</div></button>
+        <button type="button" class="cwp-opt" data-mode="mon-fri" onclick="cwpSelect('mon-fri')">
+          <div class="cwp-t">Mon–Fri</div><div class="cwp-d" data-i18n="calPatMonFri">5-day week · Saturday never works</div><div class="cwp-check">✓</div></button>
+      </div>
+      <div class="cwp-alt" id="cwpAltWrap" style="display:none">
+        <label data-i18n="calPatPick">Select any date in the week that works on Saturday — the pattern alternates from there:</label>
+        <div class="cwp-alt-row"><input type="date" id="cwpAltDate"><button type="button" class="btn primary sm" onclick="cwpConfirmAlt()">✓ <span data-i18n="calPatConfirm">Confirm &amp; auto-switch</span></button></div>
+      </div>
+      <div class="cwp-status" id="cwpStatus"></div>
+    </div>
     <div class="an-grid">
       <div class="card">
         <h2><span class="dot"></span><span data-i18n="calHead">Select special days</span></h2>
@@ -4656,12 +4690,18 @@ const PR_REASONS=[
 const PR_UNITS=['pcs','set','m','kg','L','box','roll','pack','sheet','unit'];
 function prReason(key){ return PR_REASONS.find(r=>r.key===key); }
 function prReasonLabel(key){ const r=prReason(key); return r? (LANG==='th'?r.th:r.en) : key; }
-/* ===== Company work calendar — alternating 6-day (Mon–Sat) / 5-day (Mon–Fri) weeks ===== */
-/* Anchor: the week of Mon 10 Aug 2026 is a 6-day week (Mon–Sat). Weeks alternate from there. */
+/* ===== Company work-week pattern (set in Company Calendar) =====
+   Three patterns, stored in nx_defaults.workPattern = {mode, anchor}:
+     'mon-sat' → Saturday always works (6-day week)
+     'mon-fri' → Saturday never works (5-day week)
+     'alt'     → weeks alternate 6-day (Mon–Sat) / 5-day (Mon–Fri) from the chosen anchor week.
+   Sunday is always off. Default keeps the original behaviour (alt, anchored 10 Aug 2026). */
 const WORK_ANCHOR='2026-08-10';
 function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function mondayOf(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; }
-function isSixDayWeek(ds){ const m=mondayOf(new Date(ds+'T00:00:00')); const a=mondayOf(new Date(WORK_ANCHOR+'T00:00:00')); const weeks=Math.round((m-a)/(7*86400000)); return ((weeks%2)+2)%2===0; }
+function workPattern(){ try{ const wp=(DB.defaults()||{}).workPattern; if(wp && wp.mode) return {mode:wp.mode, anchor:wp.anchor||WORK_ANCHOR}; }catch(_){} return {mode:'alt', anchor:WORK_ANCHOR}; }
+function saveWorkPattern(mode,anchor){ const d=DB.defaults(); d.workPattern={mode:mode, anchor:anchor||workPattern().anchor||WORK_ANCHOR}; DB.saveDefaults(d); }
+function isSixDayWeek(ds){ const wp=workPattern(); if(wp.mode==='mon-sat') return true; if(wp.mode==='mon-fri') return false; const m=mondayOf(new Date(ds+'T00:00:00')); const a=mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00')); const weeks=Math.round((m-a)/(7*86400000)); return ((weeks%2)+2)%2===0; }
 function baseWorkday(ds){ const w=new Date(ds+'T00:00:00').getDay(); if(w===0) return false; if(w===6) return isSixDayWeek(ds); return true; }
 /* final rule: manual switch (CEO/Dev) > company holiday > base 6/5 pattern. Special days stay working. */
 function isWorkday(ds){ const sw=DB.workSwitches()[ds]; if(sw) return sw.mode==='work'; if(DB.calDays()[ds]==='holiday') return false; return baseWorkday(ds); }
@@ -5636,7 +5676,14 @@ const I18N = {
   calListSub:{en:"All special days and holidays currently set.",th:"วันพิเศษและวันหยุดทั้งหมดที่ตั้งไว้"},
   calLegOff:{en:"Day off (weekend / holiday)",th:"วันหยุด (สุดสัปดาห์ / วันหยุด)"},
   calLegSwitch:{en:"🔁 Switched day",th:"🔁 วันที่สลับ"},
-  calPatternNote:{en:"Work week auto-alternates: 6 days (Mon–Sat) then 5 days (Mon–Fri). CEO/Developer can switch any day (with a reason).",th:"สัปดาห์ทำงานสลับอัตโนมัติ: 6 วัน (จ.–ส.) แล้ว 5 วัน (จ.–ศ.) CEO/Developer สลับวันใดก็ได้ (พร้อมเหตุผล)"},
+  calPatternNote:{en:"The work week follows the pattern set above. CEO/Developer can still switch any single day (with a reason).",th:"สัปดาห์ทำงานเป็นไปตามรูปแบบที่ตั้งไว้ด้านบน CEO/Developer ยังสลับวันใดวันหนึ่งได้ (พร้อมเหตุผล)"},
+  calPatHead:{en:"Work Week Pattern",th:"รูปแบบสัปดาห์ทำงาน"},
+  calPatSub:{en:"Choose the company's standard work week. Sunday is always a day off.",th:"เลือกสัปดาห์ทำงานมาตรฐานของบริษัท วันอาทิตย์เป็นวันหยุดเสมอ"},
+  calPatMonSat:{en:"6-day week · every Saturday works",th:"สัปดาห์ 6 วัน · ทำงานทุกวันเสาร์"},
+  calPatAlt:{en:"Alternating weeks — pick which week works Saturday, then it auto-switches every week",th:"สลับสัปดาห์ — เลือกสัปดาห์ที่ทำงานวันเสาร์ แล้วระบบจะสลับให้อัตโนมัติทุกสัปดาห์"},
+  calPatMonFri:{en:"5-day week · Saturday never works",th:"สัปดาห์ 5 วัน · ไม่ทำงานวันเสาร์"},
+  calPatPick:{en:"Select any date in the week that works on Saturday — the pattern alternates from there:",th:"เลือกวันที่ในสัปดาห์ที่ทำงานวันเสาร์ — รูปแบบจะสลับจากจุดนั้น:"},
+  calPatConfirm:{en:"Confirm & auto-switch",th:"ยืนยันและสลับอัตโนมัติ"},
   calTypeCol:{en:"Type",th:"ประเภท"},
   calNoDays:{en:"No special days marked yet.",th:"ยังไม่มีการกำหนดวันพิเศษ"},
   calPopTitle:{en:"Mark this day as…",th:"กำหนดวันนี้เป็น…"},
@@ -10336,9 +10383,47 @@ function initCompanyCal(){
   if(!calMonth){ const n=new Date(); calMonth=new Date(n.getFullYear(),n.getMonth(),1); }
   if(!window.__calMouseUp){ window.__calMouseUp=true; document.addEventListener('mouseup',()=>{ if(calDragging){ calDragging=false; const o=orderDates(calDragStart,calDragEnd); if(o[0]&&o[1]) calTypePopup(o[0],o[1]); } }); }
   const note=document.getElementById('calRoNote'); if(note) note.style.display=calCanEdit()?'none':'';
-  renderCompanyCal(); renderCalList();
+  renderCompanyCal(); renderCalList(); renderCalPattern();
 }
 function companyCalNav(dir){ calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+dir,1); renderCompanyCal(); }
+/* ---- Work Week Pattern selector ---- */
+function cwpModeLabel(mode){ const en=LANG==='en'; return mode==='mon-sat'?(en?'Mon–Sat (6-day, every Saturday)':'จ–ส (6 วัน ทุกวันเสาร์)'):mode==='mon-fri'?(en?'Mon–Fri (5-day)':'จ–ศ (5 วัน)'):(en?'Alternating Mon–Sat ⇄ Mon–Fri':'สลับ จ–ส ⇄ จ–ศ'); }
+function renderCalPattern(){
+  const wp=workPattern(); const en=LANG==='en'; const editable=calCanEdit();
+  const opts=document.getElementById('cwpOpts');
+  if(opts){ opts.classList.toggle('cwp-ro',!editable); [...opts.querySelectorAll('.cwp-opt')].forEach(o=>o.classList.toggle('active',o.getAttribute('data-mode')===wp.mode)); }
+  const st=document.getElementById('cwpStatus');
+  if(st){
+    let txt=(en?'Current pattern: ':'รูปแบบปัจจุบัน: ')+'<b>'+cwpModeLabel(wp.mode)+'</b>';
+    if(wp.mode==='alt'){ const mon=mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00')); const sat=new Date(mon); sat.setDate(sat.getDate()+5); txt+=' · '+(en?'Saturday works on the week of ':'ทำงานวันเสาร์ในสัปดาห์ของ ')+'<b>'+nxFmtD(isoOf(mon))+'</b>'+(en?' (then alternates)':' (แล้วสลับ)'); }
+    st.innerHTML=txt;
+  }
+  // prefill the alt date with the current anchor's Monday
+  const ad=document.getElementById('cwpAltDate'); if(ad && !ad.value){ ad.value=isoOf(mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00'))); }
+}
+function cwpSelect(mode){
+  if(!calCanEdit()){ showToast(LANG==='en'?'View only — CEO/Developer can change this.':'ดูอย่างเดียว — เฉพาะ CEO/Developer'); return; }
+  const wrap=document.getElementById('cwpAltWrap');
+  if(mode==='alt'){ if(wrap) wrap.style.display='block'; const wp=workPattern(); const ad=document.getElementById('cwpAltDate'); if(ad) ad.value=isoOf(mondayOf(new Date((wp.anchor||WORK_ANCHOR)+'T00:00:00')));
+    // highlight the alt option as chosen-but-pending until confirmed
+    const opts=document.getElementById('cwpOpts'); if(opts) [...opts.querySelectorAll('.cwp-opt')].forEach(o=>o.classList.toggle('active',o.getAttribute('data-mode')==='alt'));
+    return; }
+  if(wrap) wrap.style.display='none';
+  saveWorkPattern(mode);
+  cwpAfterChange();
+  showToast((LANG==='en'?'Work week set to ':'ตั้งสัปดาห์ทำงานเป็น ')+cwpModeLabel(mode));
+}
+function cwpConfirmAlt(){
+  if(!calCanEdit()) return;
+  const ad=document.getElementById('cwpAltDate'); const ds=ad?ad.value:'';
+  if(!ds){ showToast(LANG==='en'?'Pick the Saturday-working week first.':'เลือกสัปดาห์ที่ทำงานวันเสาร์ก่อน'); return; }
+  const monday=isoOf(mondayOf(new Date(ds+'T00:00:00')));
+  saveWorkPattern('alt', monday);
+  const wrap=document.getElementById('cwpAltWrap'); if(wrap) wrap.style.display='none';
+  cwpAfterChange();
+  showToast(LANG==='en'?'Alternating pattern confirmed — weeks auto-switch from the chosen week.':'ยืนยันรูปแบบสลับแล้ว — สัปดาห์จะสลับอัตโนมัติ');
+}
+function cwpAfterChange(){ renderCompanyCal(); renderCalPattern(); renderCalList(); try{ renderAttendance(); }catch(_){} try{ renderBenefit(); }catch(_){} }
 function renderCompanyCal(){
   const cal=document.getElementById('companyCal'); if(!cal||!calMonth) return;
   const y=calMonth.getFullYear(),mo=calMonth.getMonth(); const first=new Date(y,mo,1); const startDow=(first.getDay()+6)%7; const dim=new Date(y,mo+1,0).getDate();
@@ -11637,7 +11722,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-h';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-i';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
