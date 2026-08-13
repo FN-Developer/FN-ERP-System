@@ -6164,10 +6164,16 @@ function applyLang(){
   try{ if(document.getElementById('view-dbest')) renderDbEstimate(); }catch(_){}
   try{ applySound(); }catch(_){}
   refreshWorkSelect();
-  renderSpectator();
-  renderTimeline();
-  renderCheck();
-  try{ renderStatus(); }catch(_){}
+  /* PERF: the 4 heaviest tables (Spectator/Timeline/Check/Status) built ~8k DOM nodes up
+     front and re-ran on every language toggle, even while hidden. go() re-renders whichever
+     of them you open, so here we only render the one that is actually visible. This is the
+     big first-load + mobile win: hidden heavy tables are built lazily on first visit. */
+  { const _av = (typeof nxCurrentView==='function') ? nxCurrentView() : 'home';
+    if(_av==='spectator'){ try{ onFilterTypeChange(); }catch(_){} renderSpectator(); }
+    else if(_av==='timeline'){ renderTimeline(); }
+    else if(_av==='check'){ try{ if(typeof ckInit==='function') ckInit(); else renderCheck(); }catch(_){ try{renderCheck();}catch(__){} } }
+    else if(_av==='status'){ try{ renderStatus(); }catch(_){} }
+  }
   renderVendors();
   renderCustomers();
   renderStockList();
@@ -6885,6 +6891,11 @@ function onFilterTypeChange(){
   vals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; pick.appendChild(o); });
   renderSpectator();
 }
+/* PERF: debounce the (heavy) table re-render while typing so each keystroke updates the
+   lightweight suggestion list instantly but the full Spectator table repaints only after
+   the user pauses (~140ms). Big win on large datasets where a per-keystroke render lagged. */
+let _specDebTimer=null;
+function nxRenderSpecDebounced(){ if(_specDebTimer) clearTimeout(_specDebTimer); _specDebTimer=setTimeout(()=>{ _specDebTimer=null; try{ renderSpectator(); }catch(_){} }, 140); }
 function onFilterInput(){
   nxPage.spec=1;
   const type=document.getElementById('filterType').value;
@@ -6895,7 +6906,7 @@ function onFilterInput(){
   const vals=[...new Set(DB.details().map(d=>detailFieldValue(d,type)).filter(v=>v&&v.trim()!==''))];
   suggestItems = q==='' ? vals.slice(0,8) : vals.filter(v=>v.toLowerCase().startsWith(q)).slice(0,8);
   renderSuggest(q);
-  renderSpectator();
+  nxRenderSpecDebounced();
 }
 function renderSuggest(q){
   const box=document.getElementById('suggest'); suggestIndex=-1;
@@ -7402,6 +7413,8 @@ function ckTypeChange(){
   hideCkSuggest(); renderCheck();
 }
 
+let _ckDebTimer=null;
+function nxRenderCheckDebounced(){ if(_ckDebTimer) clearTimeout(_ckDebTimer); _ckDebTimer=setTimeout(()=>{ _ckDebTimer=null; try{ renderCheck(); }catch(_){} }, 140); }
 function ckInputHandler(){
   nxPage.check=1;
   const type=document.getElementById('ckType').value;
@@ -7410,7 +7423,7 @@ function ckInputHandler(){
   const vals=[...new Set(DB.details().map(d=>detailFieldValue(d,type)).filter(v=>v&&v.trim()!==''))];
   ckSuggestItems = q==='' ? vals.slice(0,8) : vals.filter(v=>v.toLowerCase().startsWith(q)).slice(0,8);
   renderCkSuggest(q);
-  renderCheck();
+  nxRenderCheckDebounced();  /* PERF: debounce heavy table repaint while typing */
 }
 function renderCkSuggest(q){
   const box=document.getElementById('ckSuggest'); ckSuggestIndex=-1;
@@ -11398,7 +11411,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.12-d';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-a';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -11774,14 +11787,9 @@ buildDetailFields();
 applyLang();
 refreshWorkSelect();
 onFilterTypeChange();
-renderSpectator();
-renderTimeline();
-renderCheck();
-renderVendors();
-renderCustomers();
-renderStockList();
-renderEmployees();
-renderWithdrawLog();
+/* PERF: applyLang() above already rendered the visible view + the light views; the four
+   heavy tables now render lazily on first navigation (go()). Re-rendering them here just
+   rebuilt ~8k hidden DOM nodes a second time at boot, so that duplicate pass is removed. */
 computeAlerts();
 injectMenuIcons();
 /* unlock audio on the first user interaction so notification/scan sounds can play */
