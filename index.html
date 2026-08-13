@@ -2717,7 +2717,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
             <div class="spec-bulk-ctrl"><select id="specBulkGroup" onchange="specBulkOnPick('group',this)"></select><button type="button" class="btn primary sm" onclick="specBulkApply('group')" data-i18n="specApply">Apply</button></div>
           </div>
           <div class="spec-bulk-cell"><label data-i18n="specSetPo">Set PO NO.</label>
-            <div class="spec-bulk-ctrl"><input type="text" id="specBulkPo" placeholder="PO NO." onkeydown="if(event.key==='Enter'){event.preventDefault();specBulkApply('poNo');}"><button type="button" class="btn primary sm" onclick="specBulkApply('poNo')" data-i18n="specApply">Apply</button></div>
+            <div class="spec-bulk-ctrl"><select id="specBulkPo" onchange="specBulkPoPick(this)"></select><button type="button" class="btn primary sm" onclick="specBulkApply('poNo')" data-i18n="specApply">Apply</button></div>
           </div>
           <button type="button" class="btn ghost sm" onclick="specClearSel()" data-i18n="specClearSel">Clear selection</button>
         </div>
@@ -7197,7 +7197,44 @@ function specUpdateBulkBar(){
   if(n){
     const bm=document.getElementById('specBulkModule'); if(bm) bm.innerHTML=specModuleOptions('');
     const bg=document.getElementById('specBulkGroup'); if(bg) bg.innerHTML=specGroupOptions('');
+    const bp=document.getElementById('specBulkPo'); if(bp) bp.innerHTML=specBulkPoOptions();
   }
+}
+/* PO dropdown for the bulk bar — POs of the selected rows' customer(s); falls back to all POs */
+function specBulkPoOptions(){
+  const en=LANG==='en';
+  const wmap={}; DB.works().forEach(w=>{ wmap[w.workNo]=w; });
+  const custs=new Set(); const detFallback=new Set();
+  DB.details().forEach(d=>{ if(specSel.has(d.id)){ const w=wmap[d.workNo]||{}; if(w.custName) custs.add(w.custName); const po=(d.poNo||'').trim(); if(po) detFallback.add(po); } });
+  const set=new Set();
+  if(custs.size){ custs.forEach(c=>poRegForCustomer(c).forEach(p=>{ if(p.poNo) set.add(p.poNo); })); }
+  else { poRegAll().forEach(p=>{ if(p.poNo) set.add(p.poNo); }); }
+  detFallback.forEach(po=>set.add(po));   // ensure POs already on selected lines appear
+  const list=[...set].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+  let html=`<option value="">${en?'— select PO —':'— เลือก PO —'}</option>`;
+  list.forEach(po=>{ html+=`<option value="${escapeAttr(po)}">${escapeHtml(po)}</option>`; });
+  html+=`<option value="__addpo__">${en?'➕ New PO…':'➕ เพิ่ม PO…'}</option>`;
+  return html;
+}
+/* choosing "➕ New PO…" from the bulk PO dropdown → prompt, then apply to all selected */
+function specBulkPoPick(sel){ if(sel.value==='__addpo__'){ sel.value=''; specBulkAddPo(); } }
+function specBulkAddPo(){
+  const en=LANG==='en';
+  if(!specSel.size){ showToast(en?'Select rows first.':'เลือกแถวก่อน'); return; }
+  customModal({icon:'🧾', title:(en?'Add new PO NO.':'เพิ่ม PO NO. ใหม่'), desc:(en?'It will be applied to all selected rows (saved on Update).':'จะถูกใช้กับทุกแถวที่เลือก (บันทึกเมื่อกด Update)'),
+    bodyHtml:`<div class="field"><input type="text" id="specBulkNewPo" placeholder="${en?'e.g. PO-2026-001':'เช่น PO-2026-001'}" onkeydown="if(event.key==='Enter'){event.preventDefault();specBulkAddPoSave();}"></div>`,
+    footButtons:[{label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},{label:'➕ '+(en?'Add & apply':'เพิ่มและใช้'),cls:'primary',onClick:specBulkAddPoSave}]});
+  setTimeout(()=>{ const el=document.getElementById('specBulkNewPo'); if(el) el.focus(); },60);
+}
+function specBulkAddPoSave(){
+  const el=document.getElementById('specBulkNewPo'); const po=el?el.value.trim():'';
+  if(!po){ if(el) el.style.borderColor='var(--red)'; return; }
+  closeModal();
+  const en=LANG==='en'; let nn=0;
+  DB.details().forEach(d=>{ if(specSel.has(d.id)){ if(!specStage[d.id]) specStage[d.id]={}; specStage[d.id].poNo=po; nn++; } });
+  [...specSel].forEach(specStageDropIfClean);
+  renderSpectator();
+  showToast((en?`Staged PO on ${nn} row(s) · press Update to save`:`เตรียม PO ${nn} แถว · กด Update เพื่อบันทึก`));
 }
 /* choosing "add new" from a bulk select → prompt, then re-select that new value */
 function specBulkOnPick(field,sel){
@@ -7274,7 +7311,7 @@ function specUpdateCommit(){
 function specBulkApply(field){
   const en=LANG==='en';
   let val;
-  if(field==='poNo'){ const inp=document.getElementById('specBulkPo'); val=inp?inp.value.trim():''; }
+  if(field==='poNo'){ const sel=document.getElementById('specBulkPo'); val=sel?sel.value:''; if(val==='__addpo__'){ sel.value=''; specBulkAddPo(); return; } if(val===''){ showToast(en?'Pick a PO (or ➕ New PO) first.':'เลือก PO (หรือ ➕ เพิ่ม PO) ก่อน'); return; } }
   else { const sel=document.getElementById(field==='module'?'specBulkModule':'specBulkGroup'); val=sel?sel.value:''; if(val==='__add__'){ specBulkOnPick(field,sel); return; } }
   if(!specSel.size){ showToast(en?'Select rows first.':'เลือกแถวก่อน'); return; }
   const dets=DB.details(); let n=0;
@@ -11588,7 +11625,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-f';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-g';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
