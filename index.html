@@ -4369,10 +4369,10 @@ const NX_CLOUD = {
     try{
       const d=await ref.get();
       const cv=(d.exists && d.data() && d.data().build)?String(d.data().build):'';
-      if(!cv || NX_BUILD>cv){ try{ ref.set({build:NX_BUILD, kind:'meta', ts:Date.now()}); }catch(_){} }
-      else if(cv>NX_BUILD){ try{ nxShowUpdateBanner(cv); }catch(_){} }
+      if(!cv || nxBuildGT(NX_BUILD,cv)){ try{ ref.set({build:NX_BUILD, kind:'meta', ts:Date.now()}); }catch(_){} }
+      else if(nxBuildGT(cv,NX_BUILD)){ try{ nxShowUpdateBanner(cv); }catch(_){} }
     }catch(_){}
-    try{ ref.onSnapshot(s=>{ try{ const cv=(s.exists && s.data() && s.data().build)?String(s.data().build):''; if(cv && cv>NX_BUILD){ nxShowUpdateBanner(cv); } }catch(_){} }, ()=>{}); }catch(_){}
+    try{ ref.onSnapshot(s=>{ try{ const cv=(s.exists && s.data() && s.data().build)?String(s.data().build):''; if(cv && nxBuildGT(cv,NX_BUILD)){ nxShowUpdateBanner(cv); } }catch(_){} }, ()=>{}); }catch(_){}
   },
   async pull(){
     /* Fetch only the known data documents (ignore backup docs stored in the
@@ -4489,10 +4489,13 @@ async function nxCheckVersion(force){
     const now=Date.now(); if(!force && now-_nxVerLast<120000) return; // throttle to ~2 min
     _nxVerLast=now; _nxVerChecking=true;
     const res=await fetch(location.pathname+'?vc='+now, {cache:'no-store'});
-    if(res.ok){ const txt=await res.text(); const m=txt.match(/NX_BUILD=['"]([^'"]+)['"]/); if(m && m[1] && m[1]!==NX_BUILD) nxShowUpdateBanner(m[1]); }
+    if(res.ok){ const txt=await res.text(); const m=txt.match(/NX_BUILD=['"]([^'"]+)['"]/); if(m && m[1] && nxBuildGT(m[1],NX_BUILD)) nxShowUpdateBanner(m[1]); }
   }catch(_){}
   finally{ _nxVerChecking=false; }
 }
+/* Compare build tags NUMERICALLY-aware so z10 > z9 (plain string compare gets this wrong,
+   because '1' < '9'). Returns true when build a is strictly newer than b. */
+function nxBuildGT(a,b){ try{ return String(a).localeCompare(String(b), undefined, {numeric:true})>0; }catch(_){ return String(a)>String(b); } }
 /* Unmissable, blocking update gate: when a newer build is deployed, cover the
    whole screen so the device cannot keep running stale code. */
 function nxShowUpdateBanner(newv){
@@ -11340,7 +11343,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-z10';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.12-a';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
