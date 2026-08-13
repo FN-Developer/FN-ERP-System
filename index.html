@@ -11411,7 +11411,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-a';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-b';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -11786,9 +11786,9 @@ applyTheme();
 buildDetailFields();
 applyLang();
 refreshWorkSelect();
-onFilterTypeChange();
 /* PERF: applyLang() above already rendered the visible view + the light views; the four
-   heavy tables now render lazily on first navigation (go()). Re-rendering them here just
+   heavy tables (incl. Spectator, whose filter dropdown is built by onFilterTypeChange() on
+   first visit via go()) now render lazily on first navigation. Re-rendering them here just
    rebuilt ~8k hidden DOM nodes a second time at boot, so that duplicate pass is removed. */
 computeAlerts();
 injectMenuIcons();
