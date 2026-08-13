@@ -725,6 +725,30 @@ tr.nx-datelead td:first-child{box-shadow:inset 3px 0 0 var(--cyan)}
 .ck-val{width:96px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-weight:800;font-size:13px}
 .ck-val:hover{border-color:var(--cyan)}
 #ckBody tr.ck-dirty .ck-val{border-color:var(--amber)}
+/* no-supplier shipping = blocked, red border, empty */
+.ck-date.ck-noSup{border:1.5px solid var(--red)!important;background:color-mix(in srgb,var(--red) 9%,transparent)!important;opacity:.85}
+/* empty required field in Delivery Check → red border cue */
+#ckBody .ck-empty{border:1.5px solid var(--red)!important;background:color-mix(in srgb,var(--red) 5%,transparent)!important}
+/* cheaper-vendor popup */
+.reco-pop{padding:2px}
+@keyframes recoPulse{0%,100%{opacity:1;transform:translateY(0)}50%{opacity:.6;transform:translateY(-1px)}}
+.reco-anim{color:#b8860b;font-weight:700;font-size:14px;background:color-mix(in srgb,var(--amber) 14%,transparent);border:1px solid color-mix(in srgb,var(--amber) 38%,transparent);border-radius:12px;padding:13px 15px;animation:recoPulse 1.6s ease-in-out infinite;margin-bottom:16px;line-height:1.45}
+@keyframes recoBlink{0%,49%{opacity:1}50%,100%{opacity:.2}}
+.reco-blink{font-size:21px;font-weight:900;color:var(--red);text-align:center;animation:recoBlink 1s step-start infinite;margin:4px 0 8px}
+.reco-vname{text-align:center;font-weight:800;margin-bottom:12px;color:var(--txt-soft);font-size:14px}
+.reco-vname small{color:var(--muted);font-weight:600}
+.reco-contact{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-bottom:18px}
+.reco-cbtn{display:inline-flex;align-items:center;gap:6px;padding:10px 15px;border-radius:11px;font-weight:800;font-size:13.5px;text-decoration:none;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt)}
+.reco-cbtn.call{border-color:#16a34a;color:#16a34a}
+.reco-cbtn.mail{border-color:var(--cyan);color:var(--cyan)}
+.reco-cbtn.line{border-color:#06c755;color:#06c755}
+.reco-valwrap{margin-top:8px}
+.reco-valwrap input{font-weight:800;font-size:15px}
+.reco-hint{font-size:12px;color:var(--muted);margin-top:7px;text-align:center}
+.reco-valhint{font-size:12.5px;font-weight:800;color:var(--red);text-align:center;margin-top:8px;animation:recoBlink 1s step-start infinite}
+.reco-val-need{border:1.5px solid var(--red)!important;background:color-mix(in srgb,var(--red) 6%,transparent)!important}
+input#recoVal::placeholder{color:color-mix(in srgb,var(--red) 65%,var(--muted));font-weight:700}
+input#recoVal.reco-val-need::placeholder{animation:recoBlink 1s step-start infinite}
 /* ---- vendor module prices + module comparison ---- */
 .vmp-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:4px}
 .vmp-table,.mc-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -7402,7 +7426,7 @@ function renderCheck(){
       <td>${escapeHtml(d.module||'-')}</td>
       <td>${d.group?'<span class="badge b-grp">'+escapeHtml(d.group)+'</span>':'-'}</td>
       <td>${escapeHtml(d.poNo||'-')}</td>
-      <td><select class="spec-inline ck-sup-sel" onchange="ckRowSupplier('${d.id}',this)">${ckSupplierOptions(sSup)}</select></td>
+      <td><select class="spec-inline ck-sup-sel${!sSup?' ck-empty':''}" onchange="ckRowSupplier('${d.id}',this)">${ckSupplierOptions(sSup)}</select></td>
       <td class="ck-best">${(function(){
         const en=LANG==='en'; const q=parseFloat(d.qty)||0;
         const sBest=priceBest(d.module,sSup);
@@ -7412,14 +7436,14 @@ function renderCheck(){
         else if(!sSup) html+=`<div class="muted" style="font-size:10.5px">${en?'pick a supplier':'เลือกผู้ขาย'}</div>`;
         if(overall){
           const better = (!sSup) || (overall.supplier!==sSup && (sBest==null || overall.price<sBest));
-          if(better) html+=`<div class="ck-reco" title="${escapeAttr(en?'A cheaper vendor supplies this module — click to switch to it':'มีผู้ขายที่ถูกกว่าสำหรับโมดูลนี้ — คลิกเพื่อเปลี่ยน')}" onclick="event.stopPropagation();ckRecoApply('${d.id}','${b64(overall.supplier)}')">↓ ${en?'cheaper':'ถูกกว่า'}: ${escapeHtml(overall.supplier)} ${fmtTHB(overall.price)}<small>/u</small></div>`;
+          if(better) html+=`<div class="ck-reco" title="${escapeAttr(en?'A cheaper vendor supplies this module — click for contact & to apply':'มีผู้ขายที่ถูกกว่าสำหรับโมดูลนี้ — คลิกเพื่อดูช่องทางติดต่อและใช้')}" onclick="event.stopPropagation();ckRecoOpen('${d.id}','${b64(overall.supplier)}',${overall.price})">↓ ${en?'cheaper':'ถูกกว่า'}: ${escapeHtml(overall.supplier)} ${fmtTHB(overall.price)}<small>/u</small></div>`;
           else if(sSup && overall.supplier===sSup) html+=`<div class="ck-reco-ok">✓ ${en?'cheapest':'ถูกสุด'}</div>`;
         }
         return html||'<span class="muted">—</span>';
       })()}</td>
       <td class="ck-valcell"><span class="ck-baht">฿</span><input type="number" step="any" min="0" class="ck-val" value="${escapeHtml(ckStagedVal(d,'total'))}" placeholder="0.00" title="${escapeAttr(LANG==='en'?'Current price (THB) for this line':'ราคาปัจจุบัน (บาท) ของรายการนี้')}" onchange="ckStageSet('${d.id}','total',this.value)"></td>
-      <td class="col-focus"><input type="date" class="ck-date" value="${escapeHtml(sShip)}" ${noSup?'disabled title="'+escapeAttr(LANG==='en'?'Select a supplier first':'เลือกผู้จัดจำหน่ายก่อน')+'"':''} onchange="ckStageSet('${d.id}','shipDate',this.value)">${noSup?'<div class="ck-need-sup">'+(LANG==='en'?'supplier first':'เลือกผู้ขายก่อน')+'</div>':''}</td>
-      <td class="col-focus"><input type="date" class="ck-date" value="${escapeHtml(sRecv)}" onchange="ckStageSet('${d.id}','recvDate',this.value)"></td>
+      <td class="col-focus"><input type="date" class="ck-date${noSup?' ck-noSup':(!sShip?' ck-empty':'')}" value="${noSup?'':escapeHtml(sShip)}" ${noSup?'disabled title="'+escapeAttr(LANG==='en'?'No supplier selected — pick a supplier before setting a shipping date':'ยังไม่ได้เลือกผู้จัดจำหน่าย — เลือกผู้ขายก่อนกำหนดวันจัดส่ง')+'"':''} onchange="ckStageSet('${d.id}','shipDate',this.value)">${noSup?'<div class="ck-need-sup">'+(LANG==='en'?'no supplier — no shipping':'ไม่มีผู้ขาย — จัดส่งไม่ได้')+'</div>':''}</td>
+      <td class="col-focus"><input type="date" class="ck-date${!sRecv?' ck-empty':''}" value="${escapeHtml(sRecv)}" onchange="ckStageSet('${d.id}','recvDate',this.value)"></td>
       <td><span class="tl-status ck-badge-static ${sb}">${stx}</span>${dirty?'<span class="ck-dirty-dot" title="'+escapeAttr(LANG==='en'?'Unsaved — press Update':'ยังไม่บันทึก — กด Update')+'">●</span>':''}</td>
       <td><button class="btn-mini" onclick="openFollowUp('${d.id}')">📇 ${t('followBtn')}</button><div class="fu-last ${needFollow?'redtext':''}">${needFollow?'⚠ ':''}${lastTxt}</div></td>`;
     body.appendChild(tr);
@@ -7463,6 +7487,38 @@ function ckStageSet(id,field,value){
   renderCheck();
 }
 function ckRecoApply(id,b){ try{ ckStageSet(id,'supplier',ub64(b)); showToast(LANG==='en'?'Supplier set to cheapest — press Update to save':'ตั้งผู้ขายเป็นราคาถูกสุด — กด Update เพื่อบันทึก'); }catch(_){} }
+/* big popup when the cheaper-vendor note is clicked: market notice + supplier contact + required value */
+function ckRecoOpen(id,b,price){
+  const en=LANG==='en';
+  const vendor=ub64(b);
+  const d=DB.details().find(x=>x.id===id); if(!d) return;
+  const v=DB.vendors().find(x=>x.name===vendor)||{};
+  const qty=parseFloat(d.qty)||0;
+  const suggest=Math.round((parseFloat(price)||0)*qty);
+  const notice = en ? 'The price may change with the current market as of today — please contact the supplier to confirm before ordering.' : 'ราคาอาจเปลี่ยนไปตามราคาตลาด ณ ปัจจุบัน กรุณาติดต่อ Supplier';
+  const cbtns=[];
+  if(v.phone) cbtns.push(`<a class="reco-cbtn call" href="tel:${escapeAttr(v.phone)}">📞 ${escapeHtml(v.phone)}</a>`);
+  if(v.email) cbtns.push(`<a class="reco-cbtn mail" href="mailto:${escapeAttr(v.email)}">✉ ${escapeHtml(v.email)}</a>`);
+  if(v.line) cbtns.push(`<span class="reco-cbtn line">💬 ${escapeHtml(v.line)}</span>`);
+  if(v.contact) cbtns.push(`<span class="reco-cbtn who">👤 ${escapeHtml(v.contact)}</span>`);
+  if(!cbtns.length) cbtns.push(`<span class="reco-cbtn none">${en?'No contact on file — add it in Vendor Directory':'ไม่มีข้อมูลติดต่อ — เพิ่มในทำเนียบผู้ขาย'}</span>`);
+  const body=`<div class="reco-pop">
+    <div class="reco-anim">⚠ <span>${escapeHtml(notice)}</span></div>
+    <div class="reco-blink">📞 ${en?'Contact to Supplier':'ช่องทางติดต่อ Supplier'}</div>
+    <div class="reco-vname">${escapeHtml(vendor)} · ${en?'best':'ถูกสุด'} ${fmtTHB(price)}<small>/unit</small></div>
+    <div class="reco-contact">${cbtns.join('')}</div>
+    <div class="field reco-valwrap"><label>${en?'Update the value (THB)':'ราคารวม (บาท)'} <span class="req">*</span></label>
+      <input type="number" step="any" min="0" id="recoVal" value="" placeholder="${escapeAttr(en?'fill the value first before submit':'กรอกราคาก่อนกดยืนยัน')}" oninput="ckRecoValCheck()"></div>
+    <div class="reco-valhint" id="recoValHint">⚠ ${en?'fill the value first before submit':'กรอกราคาก่อนกดยืนยัน'}</div>
+  </div>`;
+  customModal({icon:'💡',title:(en?'Cheaper supplier available':'มีผู้ขายที่ถูกกว่า'),desc:'',bodyHtml:body,footButtons:[
+    {label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},
+    {label:'✓ '+(en?'Submit':'ยืนยัน'),cls:'primary',id:'recoApplyBtn',onClick:()=>ckRecoConfirm(id,b)}
+  ]});
+  ckRecoValCheck();
+}
+function ckRecoValCheck(){ const el=document.getElementById('recoVal'); const btn=document.getElementById('recoApplyBtn'); const hint=document.getElementById('recoValHint'); const ok=!!el && String(el.value).trim()!=='' && parseFloat(el.value)>0; if(btn){ btn.disabled=!ok; btn.style.opacity=ok?1:.5; btn.style.cursor=ok?'pointer':'not-allowed'; btn.style.pointerEvents=ok?'auto':'none'; } if(el){ el.classList.toggle('reco-val-need',!ok); } if(hint){ hint.style.display=ok?'none':'block'; } return ok; }
+function ckRecoConfirm(id,b){ if(!ckRecoValCheck()) return; const vendor=ub64(b); const val=document.getElementById('recoVal').value; ckStageSet(id,'supplier',vendor); ckStageSet(id,'total',val); closeModal(); showToast(LANG==='en'?'Applied — press Update to save':'ใช้แล้ว — กด Update เพื่อบันทึก'); }
 function ckRowSupplier(id,sel){
   const val=sel.value;
   if(val==='__add__'){
@@ -11140,7 +11196,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.11-z5';   /* app build tag — shown per device so version mismatches are obvious */
+const NX_BUILD='2026.08.11-z7';   /* app build tag — shown per device so version mismatches are obvious */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
