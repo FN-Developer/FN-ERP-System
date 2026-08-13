@@ -4282,6 +4282,7 @@ function nxApplyViewOnlyUI(){
 
 function nxCurrentView(){ try{ const el=document.querySelector('.view.active'); return el ? el.id.replace('view-','') : 'home'; }catch(_){ return 'home'; } }
 function nxRerenderAll(){
+  try{ _priceIdx=null; }catch(_){}   /* remote data may have changed → rebuild price index lazily */
   try{ if(typeof checkSession==='function') checkSession(); }catch(_){}
   try{ if(typeof computeAlerts==='function') computeAlerts(); }catch(_){}
   /* Never yank the Work-Detail-Input form out from under someone who is entering data:
@@ -4563,7 +4564,7 @@ const DB = {
   returns(){ return JSON.parse(localStorage.getItem('nx_returns')||'[]'); },
   leaves(){ return JSON.parse(localStorage.getItem('nx_leaves')||'[]'); },
   saveWorks(w){ localStorage.setItem('nx_works',JSON.stringify(w)); },
-  saveDetails(d){ localStorage.setItem('nx_details',JSON.stringify(d)); },
+  saveDetails(d){ localStorage.setItem('nx_details',JSON.stringify(d)); try{ _priceIdx=null; }catch(_){} },
   saveVendors(v){ localStorage.setItem('nx_vendors',JSON.stringify(v)); },
   saveCustomers(c){ localStorage.setItem('nx_customers',JSON.stringify(c)); },
   saveStock(s){ localStorage.setItem('nx_stock',JSON.stringify(s)); },
@@ -7460,7 +7461,8 @@ function renderCheck(){
   const works=DB.works(), dets=DB.details();
   const type=document.getElementById('ckType').value;
   const typed=document.getElementById('ckInput').value.trim().toLowerCase();
-  let rows=dets.map(d=>({d,st:ckStagedStatus(d),w:works.find(x=>x.workNo===d.workNo)||{}}));
+  const _ckWmap=Object.create(null); works.forEach(w=>{ _ckWmap[w.workNo]=w; });
+  let rows=dets.map(d=>({d,st:ckStagedStatus(d),w:_ckWmap[d.workNo]||{}}));
   // ② scope filter (cascading)
   if(ckScope.work) rows=rows.filter(r=>r.d.workNo===ckScope.work);
   if(ckScope.group) rows=rows.filter(r=>(r.d.group||'')===ckScope.group);
@@ -8646,7 +8648,7 @@ function workMaterial(wn){ return workDetails(wn).reduce((s,d)=>s+(parseFloat(d.
    snapshot to nx_pricelog so cheapest/latest rates survive future edits & deletions.
    All queries union the log with the CURRENT details, so they're always up to date. */
 function getPriceLog(){ try{ const a=JSON.parse(localStorage.getItem('nx_pricelog')||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
-function savePriceLog(a){ try{ localStorage.setItem('nx_pricelog', JSON.stringify(a)); }catch(_){} }
+function savePriceLog(a){ try{ localStorage.setItem('nx_pricelog', JSON.stringify(a)); }catch(_){} _priceIdx=null; }
 /* the comparable unit price of a detail — actual first, else estimated */
 function detUnitPrice(d){ const a=parseFloat(d.unitPrice)||0; if(a>0) return {price:a,kind:'act'}; const e=parseFloat(d.estUnitPrice)||0; return e>0?{price:e,kind:'est'}:null; }
 function isRealSupplier(s){ s=s||''; return s && !/^stock:/i.test(s); }
@@ -8666,8 +8668,33 @@ function pricePoints(module,supplier,list){
   DB.details().forEach(d=>{ if(d.module===module && d.supplier===supplier && isRealSupplier(d.supplier) && (!list||(d.list||'')===list)){ const p=detUnitPrice(d); if(p) out.push({price:p.price,kind:p.kind,date:d.recvDate||d.shipDate||'',ts:0}); } });
   return out;
 }
-function priceBest(module,supplier,list){ const pts=pricePoints(module,supplier,list); if(!pts.length) return null; return Math.min.apply(null,pts.map(p=>p.price)); }
-function priceLatest(module,supplier,list){ const pts=pricePoints(module,supplier,list); if(!pts.length) return null; pts.sort((a,b)=> (a.date<b.date?-1:a.date>b.date?1:(a.ts-b.ts)) ); return pts[pts.length-1].price; }
+/* ---- cached price index (module → supplier → {best,latest}) — built once, not per row.
+   This replaces the O(n²) per-row scans that made Delivery Check slow. ---- */
+var _priceIdx=null;
+function priceIdxClear(){ _priceIdx=null; }
+function priceIndex(){
+  if(_priceIdx) return _priceIdx;
+  const idx=Object.create(null);
+  const add=(mod,sup,price,dkey)=>{
+    if(!mod||!isRealSupplier(sup)||!(price>0)) return;
+    let m=idx[mod]; if(!m) m=idx[mod]=Object.create(null);
+    const e=m[sup];
+    if(!e){ m[sup]={best:price,latestVal:price,latestKey:dkey}; return; }
+    if(price<e.best) e.best=price;
+    if(dkey>=e.latestKey){ e.latestKey=dkey; e.latestVal=price; }
+  };
+  getPriceLog().forEach(x=>{ add(x.module,x.supplier,+x.price,(x.date||'')+'~'+String(x.ts||0)); });
+  DB.details().forEach(d=>{ const p=detUnitPrice(d); if(p) add(d.module,d.supplier,p.price,(d.recvDate||d.shipDate||'')+'~0'); });
+  _priceIdx=idx; return idx;
+}
+function priceBest(module,supplier,list){
+  if(list){ const pts=pricePoints(module,supplier,list); return pts.length?Math.min.apply(null,pts.map(p=>p.price)):null; }
+  const m=priceIndex()[module], e=m&&m[supplier]; return e?e.best:null;
+}
+function priceLatest(module,supplier,list){
+  if(list){ const pts=pricePoints(module,supplier,list); if(!pts.length) return null; pts.sort((a,b)=> (a.date<b.date?-1:a.date>b.date?1:(a.ts-b.ts)) ); return pts[pts.length-1].price; }
+  const m=priceIndex()[module], e=m&&m[supplier]; return e?e.latestVal:null;
+}
 /* distinct modules a supplier has priced */
 function vendorPricedModules(supplier){ const set=new Set(); getPriceLog().forEach(x=>{ if(x.supplier===supplier && x.module) set.add(x.module); }); DB.details().forEach(d=>{ if(d.supplier===supplier && d.module && detUnitPrice(d)) set.add(d.module); }); return [...set].sort((a,b)=>String(a).localeCompare(String(b))); }
 /* distinct suppliers that have priced a module (optionally a specific item) */
@@ -8679,7 +8706,7 @@ function allPricedModules(){ const set=new Set(); getPriceLog().forEach(x=>{ if(
 /* only modules that TWO OR MORE vendors share — the ones actually worth comparing */
 function comparableModules(){ return allPricedModules().filter(m=>modulePricedVendors(m).length>=2); }
 /* cheapest vendor overall for a module → {supplier, price} (or null) */
-function moduleBestVendor(module){ if(!module) return null; let best=null; modulePricedVendors(module).forEach(v=>{ const b=priceBest(module,v); if(b!=null && (best==null||b<best.price)) best={supplier:v,price:b}; }); return best; }
+function moduleBestVendor(module){ if(!module) return null; const m=priceIndex()[module]; if(!m) return null; let best=null; for(const sup in m){ const b=m[sup].best; if(best==null||b<best.price) best={supplier:sup,price:b}; } return best; }
 function workLabor(wn){ return 0; }  /* labor field removed — project cost is materials-only */
 function workCost(wn){ return workMaterial(wn); }
 function workBudget(wn){ const w=DB.works().find(x=>x.workNo===wn); if(w&&w.budget!=null&&w.budget!=='') return parseFloat(w.budget)||0; return Math.round(workCost(wn)*1.4/100)*100; }
@@ -11343,7 +11370,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.12-a';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.12-b';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
