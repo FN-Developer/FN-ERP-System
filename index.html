@@ -1933,6 +1933,8 @@ tr.dl-row:hover{background:var(--hover)}
 #companyCal.cwp-picking .cal-day.cwp-sat-a{animation:cwpSatA 1.5s ease-in-out infinite}
 #companyCal.cwp-picking .cal-day.cwp-sat-b{animation:cwpSatB 1.5s ease-in-out infinite}
 #companyCal.cwp-picking .cal-day.cwp-weeksel{animation:none!important}   /* the chosen week stays solid, not blinking */
+/* while selecting a pattern, days off (weekend Sunday / company holiday / switched-off) are shown in RED */
+#companyCal.cwp-picking .cal-day.cwp-red{background:color-mix(in srgb,var(--red) 18%,var(--inset-bg))!important;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--red) 70%,transparent);color:var(--red)!important;opacity:1!important;font-weight:800}
 .cal-legend{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap}
 .cl-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
 .cl-dot{width:14px;height:14px;border-radius:5px;display:inline-block}
@@ -10478,6 +10480,8 @@ function renderCompanyCal(){
   for(let d=1;d<=dim;d++){ const ds=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const dt=new Date(ds+'T00:00:00'); const ty=calDayType(ds); const work=isWorkday(ds); const sw=DB.workSwitches()[ds]; let cls='cal-day'; if(!work) cls+=' d-off'; if(ty==='special') cls+=' d-special'; if(ty==='holiday') cls+=' d-holiday'; if(sw) cls+=(sw.mode==='work'?' d-sw-work':' d-sw-off');
     /* pick mode: every Saturday blinks, split into the two alternating groups (e.g. 1,15,29 vs 8,22) */
     if(cwpPickMode && dt.getDay()===6){ const weeks=Math.round((mondayOf(dt)-anchorMon)/(7*86400000)); cls += (((weeks%2)+2)%2===0)?' cwp-sat-a':' cwp-sat-b'; }
+    /* pick mode: mark every day off (weekend Sunday, company holiday, or switched-off) in RED — except Saturdays, which blink */
+    else if(cwpPickMode && !work){ cls += ' cwp-red'; }
     const ttl=sw?escapeAttr((sw.mode==='work'?t('calSwWorkTip'):t('calSwOffTip'))+' — '+(sw.reason||'')):''; const hnd=editable?`onmousedown="calDown('${ds}')" onmouseenter="calEnter('${ds}')"`:''; h+=`<div class="${cls}" data-d="${ds}" title="${ttl}" ${hnd}>${d}</div>`; }
   cal.innerHTML=h+'</div>';
   cal.classList.toggle('cwp-picking', !!cwpPickMode);
@@ -11770,7 +11774,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-k';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-l';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
