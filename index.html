@@ -4935,18 +4935,38 @@ function sessionEmp(){ const s=DB.session(); if(!s||!s.empId) return null; retur
 function sessionName(){ const s=DB.session(); return s?s.user:''; }
 function otApproverName(){ return t('otApprover'); }
 function empAtt(e){
-  const a=(e&&e.att)||{}; const totalDays=a.totalDays||22, workedDays=a.workedDays||0, absentDays=a.absentDays||0;
-  const _ym=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+  const a=(e&&e.att)||{};
+  const now=new Date(); const ym=isoOf(now).slice(0,7); const yr=String(now.getFullYear()); const _ym=ym;
+  /* AUTO-CALCULATE attendance from the fingerprint logs + work calendar whenever this employee has
+     scans this month — so uploading punch logs, or changing the work-week pattern / a holiday, moves
+     the day-counts immediately. Falls back to the stored e.att only when there are no logs yet. */
+  let totalDays, workedDays, absentDays;
+  const _hasLogs=(typeof taHasMonthLogs==='function') && e && taHasMonthLogs(e.id,_ym);
+  if(_hasLogs){
+    const yN=now.getFullYear(), moN=now.getMonth()+1, dim=new Date(yN,moN,0).getDate(), todayIso=isoOf(now), pad=n=>String(n).padStart(2,'0');
+    const logDays=new Set(DB.taLogs().filter(l=>l.empId===e.id && (l.date||'').slice(0,7)===_ym).map(l=>l.date));
+    const confLeaves=DB.leaves().filter(l=>l.empId===e.id && l.status==='confirmed');
+    const onLeave=ds=>confLeaves.some(l=>ds>=(l.from||'') && ds<=(l.to||l.from||''));
+    let wd=0,wk=0,ab=0;
+    for(let d=1; d<=dim; d++){ const ds=_ym+'-'+pad(d); if(ds>todayIso) break;
+      const isWD=(typeof isWorkday==='function')?isWorkday(ds):true; const hasLog=logDays.has(ds);
+      if(hasLog) wk++;
+      if(isWD){ wd++; if(!hasLog && !onLeave(ds)) ab++; }
+    }
+    totalDays=wd; workedDays=wk; absentDays=ab;
+  } else { totalDays=a.totalDays||22; workedDays=a.workedDays||0; absentDays=a.absentDays||0; }
   /* late days come from the fingerprint scans this month when available; else the manual field */
-  const lateDays=(typeof taHasMonthLogs==='function'&&e&&taHasMonthLogs(e.id,_ym))? taLateDaysMonth(e.id,_ym) : (a.lateDays||0);
+  const lateDays=_hasLogs? taLateDaysMonth(e.id,_ym) : (a.lateDays||0);
   const ben=(e&&e.benefit)||{};
-  const leaveMaxYear=(ben.leaveMaxYear!=null?parseInt(ben.leaveMaxYear):(a.leaveQuota||10))||0;
+  const _defLeave=(function(){ try{ const dv=DB.defaults().leaveMaxYear; return dv!=null?dv:10; }catch(_){ return 10; } })();
+  const leaveMaxYear=(ben.leaveMaxYear!=null?parseInt(ben.leaveMaxYear):(a.leaveQuota!=null?a.leaveQuota:_defLeave))||0;   /* falls back to the company default so changing it propagates */
   const totalHours=totalDays*8, workedHours=workedDays*8;
-  const now=new Date(); const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'); const yr=String(now.getFullYear());
   const otHours=DB.ot().filter(o=>o.empId===(e&&e.id)&&o.status==='confirmed'&&(o.date||'').slice(0,7)===ym).reduce((s,o)=>s+otHoursCalc(o.from,o.to),0);  // confirmed OT hours this month
   const myLeaves=DB.leaves().filter(l=>l.empId===(e&&e.id));
-  const leaveDaysMonth=myLeaves.filter(l=>(l.from||'').slice(0,7)===ym).reduce((s,l)=>s+(parseFloat(l.days)||0),0);
-  const leaveUsedYear=myLeaves.filter(l=>(l.from||'').slice(0,4)===yr).reduce((s,l)=>s+(parseFloat(l.days)||0),0);   /* parseFloat keeps half-day leaves */
+  /* recompute each leave's working-day length from the current calendar (holidays/pattern) instead of trusting the frozen l.days */
+  const _leaveDays=l=>{ if(l.from&&l.to&&typeof bizDays==='function'){ const b=bizDays(l.from,l.to); if(b>0) return b; } return parseFloat(l.days)||0; };
+  const leaveDaysMonth=myLeaves.filter(l=>(l.from||'').slice(0,7)===ym).reduce((s,l)=>s+_leaveDays(l),0);
+  const leaveUsedYear=myLeaves.filter(l=>(l.from||'').slice(0,4)===yr).reduce((s,l)=>s+_leaveDays(l),0);
   const leaveLeft=Math.max(0,leaveMaxYear-leaveUsedYear);            // Take time off available left (year)
   const leaveOverflowDays=Math.max(0,leaveUsedYear-leaveMaxYear);    // leave beyond the yearly maximum → counts as absence
   const leaveUsedValid=Math.min(leaveUsedYear,leaveMaxYear);         // usage counted against the allowance
@@ -7480,9 +7500,13 @@ function poRegUpsert(poNo,workNo){
 }
 /* make sure every PO currently used on a detail line exists in the registry (seed from existing data) */
 function poRegEnsureFromDetails(){
-  const reg=poRegAll(); const have=new Set(reg.map(p=>p.id)); let changed=false;
+  const reg=poRegAll(); const byId={}; reg.forEach(p=>byId[p.id]=p); let changed=false;
   const works=DB.works(); const wmap={}; works.forEach(w=>wmap[w.workNo]=w);
-  DB.details().forEach(d=>{ const po=(d.poNo||'').trim(); if(!po) return; const id=poRegId(po,d.workNo); if(have.has(id)) return; const w=wmap[d.workNo]||{}; reg.push({id, poNo:po, workNo:d.workNo||'', workName:w.workName||'', custName:w.custName||'', custCode:w.custCode||''}); have.add(id); changed=true; });
+  DB.details().forEach(d=>{ const po=(d.poNo||'').trim(); if(!po) return; const id=poRegId(po,d.workNo); const w=wmap[d.workNo]||{};
+    const cur=byId[id];
+    if(!cur){ const rec={id, poNo:po, workNo:d.workNo||'', workName:w.workName||'', custName:w.custName||'', custCode:w.custCode||''}; reg.push(rec); byId[id]=rec; changed=true; }
+    else if(cur.workName!==(w.workName||'') || cur.custName!==(w.custName||'') || cur.custCode!==(w.custCode||'')){ cur.workName=w.workName||''; cur.custName=w.custName||''; cur.custCode=w.custCode||''; changed=true; }   /* keep labels in sync if the work/customer was renamed */
+  });
   if(changed) savePoReg(reg);
   return changed;
 }
@@ -7549,8 +7573,11 @@ function specAddValueSave(kind){
   if(cb) cb(name);
 }
 function delDetail(id){
-  const dets=DB.details().filter(d=>d.id!==id); DB.saveDetails(dets);
+  const d=DB.details().find(x=>x.id===id);
+  const dets=DB.details().filter(x=>x.id!==id); DB.saveDetails(dets);
+  if(d && d.stockedId){ DB.saveStock(DB.stock().filter(x=>x.id!==d.stockedId)); }   /* remove the orphan received→stock row so totals don't stay inflated */
   renderSpectator(); renderTimeline(); computeAlerts(); onFilterTypeChange();
+  if(typeof renderStockAnalysis==='function') renderStockAnalysis();
 }
 /* click a no-shipping-date row → vendor contact + set shipping date */
 function openShipFix(id){
@@ -8068,7 +8095,7 @@ function ckCommitDetail(dets,d){
     } else if(!value && d.stockedId){
       DB.saveStock(DB.stock().filter(x=>x.id!==d.stockedId)); d.stockedId='';
     } else if(value && d.stockedId){
-      const stk=DB.stock(); const it=stk.find(x=>x.id===d.stockedId); if(it){ it.recvDate=value; it.date=value; DB.saveStock(stk); }
+      const stk=DB.stock(); const it=stk.find(x=>x.id===d.stockedId); if(it){ it.recvDate=value; it.date=value; it.supplier=d.supplier||''; it.list=d.list||it.list; it.qty=d.qty||it.qty; it.unitPrice=d.unitPrice||''; it.estUnitPrice=d.estUnitPrice||it.estUnitPrice; it.payment=d.total||''; it.prNo=d.poNo||it.prNo; DB.saveStock(stk); }
     }
   }
   try{ priceLogAppend(d); }catch(_){}   // record this supplier's price for future comparison
@@ -8672,7 +8699,7 @@ function renderStockList(){
   nxDateLead('stock',body,pageRows,getStock);
   if(typeof dmSyncBars==='function') dmSyncBars();
 }
-function delStock(id){ DB.saveStock(DB.stock().filter(s=>s.id!==id)); renderStockList(); showToast(t('stockDeleted')); }
+function delStock(id){ DB.saveStock(DB.stock().filter(s=>s.id!==id)); renderStockList(); if(typeof renderStockAnalysis==='function') renderStockAnalysis(); if(typeof renderWithdrawLog==='function') renderWithdrawLog(); computeAlerts(); showToast(t('stockDeleted')); }
 function receiveStock(id){ const s=DB.stock(); const it=s.find(x=>x.id===id); if(!it) return; it.recvDate=new Date().toISOString().slice(0,10); DB.saveStock(s); renderStockList(); renderWithdrawLog(); renderStockAnalysis(); showToast(t('stockReceived')); }
 function openStockDetail(id){
   const s=DB.stock().find(x=>x.id===id); if(!s) return;
@@ -9165,7 +9192,7 @@ function renderWorkProject(){
       <button type="button" class="btn ghost" onclick="waMarginPopup('${escapeAttr(wn)}')">📈 ${t('waBtnMargin')}</button>
     </div>`;
 }
-function saveWorkBudget(wn,val){ const ws=DB.works(); const w=ws.find(x=>x.workNo===wn); if(!w) return; w.budget=String(parseFloat(val)||0); DB.saveWorks(ws); renderWorkAnalysis(); showToast(t('waBudgetSaved')); }
+function saveWorkBudget(wn,val){ const ws=DB.works(); const w=ws.find(x=>x.workNo===wn); if(!w) return; const s=(val==null?'':String(val).trim()); if(s==='') delete w.budget; else w.budget=String(parseFloat(s)||0); DB.saveWorks(ws); renderWorkAnalysis(); showToast(t('waBudgetSaved')); }
 function numMg(o){ if(!o.__hasEst) return `<td class="num mg-na">—</td>`; const x=o.__mg; const cls=x>0?'mg-pos':(x<0?'mg-neg':'mg-zero'); return `<td class="num ${cls}">${x>0?'+':''}${fmtTHB(x)}</td>`; }
 function waMaterialPopup(wn){
   const dets=workDetails(wn); let tot=0, totMg=0, hasAnyEst=false;
@@ -11849,7 +11876,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-n';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-o';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
