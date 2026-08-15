@@ -1163,6 +1163,15 @@ tr.ck-alert-hl>td:first-child{animation:alertHlIn 1.4s ease-out}
 .dm-btn.dm-clear{background:linear-gradient(135deg,#ff5470,#c01843)}
 .dm-btn.dm-up{background:linear-gradient(135deg,#0b6bff,#0906d7)}
 .dm-btn.dm-down{background:linear-gradient(135deg,#16a34a,#0d7a37)}
+.dm-btn.dm-add{background:linear-gradient(135deg,#7c3aed,#5b21b6)}
+/* Add-Row modal form grid */
+.sar-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 16px}
+.sar-grid .field{display:flex;flex-direction:column;gap:5px}
+.sar-grid .field label{font-size:12px;font-weight:700;color:var(--txt-soft)}
+.sar-grid .field input,.sar-grid .field select{padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:14px}
+.sar-grid .field input:focus,.sar-grid .field select:focus{border-color:var(--cyan);outline:none}
+.sar-grid .field input[readonly]{opacity:.75}
+@media(max-width:640px){.sar-grid{grid-template-columns:1fr}}
 /* clear-data popup */
 .dm-clear-ctrls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:12px}
 .dm-clear-ctrls .field{margin:0;min-width:170px}
@@ -2710,6 +2719,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <div class="dm-bar" id="dmBarSpectator" style="display:none">
         <span class="dm-bar-lbl">🛠 <span data-i18n="dmTools">Data tools</span> <em data-i18n="dmCeoOnly">(CEO / Developer)</em></span>
         <div class="dm-bar-btns">
+          <button type="button" class="dm-btn dm-add" onclick="specAddRowOpen()"><span class="dm-ic">➕</span><span data-i18n="specAddRow">Add Row</span></button>
           <button type="button" class="dm-btn dm-clear" onclick="dmOpenClear('spectator')"><span class="dm-ic">🗑</span><span data-i18n="dmClear">Clear Data</span></button>
           <button type="button" class="dm-btn dm-up" onclick="dmOpenUpload('spectator')"><span class="dm-ic">⬆️</span><span data-i18n="dmUpload">Upload CSV</span></button>
           <button type="button" class="dm-btn dm-down" onclick="dmOpenDownload('spectator')"><span class="dm-ic">⬇️</span><span data-i18n="dmDownload">Download CSV</span></button>
@@ -4299,7 +4309,7 @@ Storage.prototype.setItem = function(k, v){
    so a single malformed entry can NEVER crash startup (a crash would silently
    disable cloud sync and leave a device looking normal but not syncing). Runs
    before any boot render, and again after each cloud pull. */
-const NX_ARRAY_KEYS  = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_positions','nx_ta_devices','nx_ta_logs','nx_pr','nx_departments','nx_po'];
+const NX_ARRAY_KEYS  = ['nx_works','nx_details','nx_vendors','nx_customers','nx_stock','nx_withdraws','nx_employees','nx_returns','nx_leaves','nx_ot','nx_positions','nx_ta_devices','nx_ta_logs','nx_pr','nx_departments','nx_po','nx_pricelog','nx_groups','nx_modules'];
 const NX_OBJECT_KEYS = ['nx_otrates','nx_caldays','nx_workswitch','nx_defaults','nx_payslips'];
 /* Removed detail fields (CNC/Turning/Milling/Labor) — strip their leftover data
    from stored work details so the removed columns never resurface anywhere. */
@@ -4935,8 +4945,8 @@ function empAtt(e){
   const now=new Date(); const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'); const yr=String(now.getFullYear());
   const otHours=DB.ot().filter(o=>o.empId===(e&&e.id)&&o.status==='confirmed'&&(o.date||'').slice(0,7)===ym).reduce((s,o)=>s+otHoursCalc(o.from,o.to),0);  // confirmed OT hours this month
   const myLeaves=DB.leaves().filter(l=>l.empId===(e&&e.id));
-  const leaveDaysMonth=myLeaves.filter(l=>(l.from||'').slice(0,7)===ym).reduce((s,l)=>s+(parseInt(l.days)||0),0);
-  const leaveUsedYear=myLeaves.filter(l=>(l.from||'').slice(0,4)===yr).reduce((s,l)=>s+(parseInt(l.days)||0),0);
+  const leaveDaysMonth=myLeaves.filter(l=>(l.from||'').slice(0,7)===ym).reduce((s,l)=>s+(parseFloat(l.days)||0),0);
+  const leaveUsedYear=myLeaves.filter(l=>(l.from||'').slice(0,4)===yr).reduce((s,l)=>s+(parseFloat(l.days)||0),0);   /* parseFloat keeps half-day leaves */
   const leaveLeft=Math.max(0,leaveMaxYear-leaveUsedYear);            // Take time off available left (year)
   const leaveOverflowDays=Math.max(0,leaveUsedYear-leaveMaxYear);    // leave beyond the yearly maximum → counts as absence
   const leaveUsedValid=Math.min(leaveUsedYear,leaveMaxYear);         // usage counted against the allowance
@@ -5784,6 +5794,7 @@ const I18N = {
   dmClear:{en:"Clear Data",th:"ล้างข้อมูล"},
   dmUpload:{en:"Upload CSV",th:"อัปโหลด CSV"},
   dmDownload:{en:"Download CSV",th:"ดาวน์โหลด CSV"},
+  specAddRow:{en:"Add Row",th:"เพิ่มรายการ"},
   dmClearSub:{en:"Choose what to remove — filter by a field and value, then review the matching rows before deleting.",th:"เลือกสิ่งที่จะลบ — กรองตามฟิลด์และค่า แล้วตรวจรายการที่ตรงก่อนลบ"},
   dmClearBy:{en:"Clear by",th:"ล้างตาม"},
   dmAll:{en:"ALL",th:"ทั้งหมด"},
@@ -7312,6 +7323,58 @@ function specBulkAddPoSave(){
   renderSpectator();
   showToast((en?`Staged PO on ${nn} row(s) · press Update to save`:`เตรียม PO ${nn} แถว · กด Update เพื่อบันทึก`));
 }
+/* ---- Add Row: add a brand-new detail line to the Work Spectator list ---- */
+function specAddRowOpen(){
+  const en=LANG==='en';
+  const works=DB.works();
+  if(!works.length){ showToast(en?'Create a Work Order first.':'สร้างงานก่อน'); return; }
+  const workOpts=works.map(w=>`<option value="${escapeAttr(w.workNo)}">${escapeHtml(w.workNo)}${w.workName?' · '+escapeHtml(w.workName):''}</option>`).join('');
+  const supOpts=`<option value="">${en?'— none —':'— ไม่มี —'}</option>`+DB.vendors().map(v=>`<option value="${escapeAttr(v.name)}">${escapeHtml(v.name)}</option>`).join('');
+  const L=(en,th)=>LANG==='en'?en:th;
+  const body=`<div class="sar-grid">
+    <div class="field"><label>${L('Work No','เลขงาน')} <span class="req">*</span></label><select id="sar_work">${workOpts}</select></div>
+    <div class="field"><label>Module <span class="req">*</span></label><input id="sar_module" placeholder="${L('e.g. Servo Drive Unit','เช่น Servo Drive Unit')}"></div>
+    <div class="field"><label>${L('List (รายการ)','รายการ')}</label><input id="sar_list"></div>
+    <div class="field"><label>${L('Specific','รายละเอียด')}</label><input id="sar_specific"></div>
+    <div class="field"><label>Q'ty <span class="req">*</span></label><input id="sar_qty" type="number" min="0" step="any" value="1" oninput="sarCalcTotal()"></div>
+    <div class="field"><label>${L('Unit','หน่วย')}</label><input id="sar_unit" value="pcs"></div>
+    <div class="field"><label>Brand</label><input id="sar_brand"></div>
+    <div class="field"><label>Supplier</label><select id="sar_sup">${supOpts}</select></div>
+    <div class="field"><label>PO No.</label><input id="sar_po"></div>
+    <div class="field"><label>Group</label><input id="sar_group"></div>
+    <div class="field"><label>${L('Est. Unit Price','ราคาประเมิน/หน่วย')}</label><input id="sar_est" type="number" min="0" step="any"></div>
+    <div class="field"><label>${L('Actual Unit Price','ราคาจริง/หน่วย')}</label><input id="sar_act" type="number" min="0" step="any" oninput="sarCalcTotal()"></div>
+    <div class="field"><label>${L('Total (auto)','จำนวนเงิน (อัตโนมัติ)')}</label><input id="sar_total" type="number" readonly></div>
+    <div class="field"><label>${L('Shipping','วันจัดส่ง')}</label><input id="sar_ship" type="date"></div>
+    <div class="field"><label>${L('Received','วันรับของ')}</label><input id="sar_recv" type="date"></div>
+  </div>`;
+  customModal({icon:'➕',title:L('Add to Work Spectator','เพิ่มในรายการ Work Spectator'),desc:L('Fill the fields and save — it is added to the list.','กรอกข้อมูลแล้วบันทึก — จะถูกเพิ่มในรายการ'),bodyHtml:body,footButtons:[
+    {label:L('Cancel','ยกเลิก'),cls:'ghost',onClick:closeModal},
+    {label:'✔ '+L('Add to list','เพิ่มในรายการ'),cls:'primary',onClick:specAddRowSave}
+  ]});
+  setTimeout(()=>{ try{ sarCalcTotal(); const m=document.getElementById('sar_module'); if(m) m.focus(); }catch(_){} },40);
+}
+function sarCalcTotal(){ const q=parseFloat((document.getElementById('sar_qty')||{}).value)||0; const a=parseFloat((document.getElementById('sar_act')||{}).value)||0; const el=document.getElementById('sar_total'); if(el) el.value=(q>0&&a>0)?String(+(q*a).toFixed(2)):''; }
+function specAddRowSave(){
+  const en=LANG==='en';
+  const g=id=>{ const el=document.getElementById(id); return el?(''+el.value).trim():''; };
+  const workNo=g('sar_work'), module=g('sar_module'), qty=g('sar_qty');
+  if(!workNo || !module || !(parseFloat(qty)>0)){ showToast(en?"Work, Module and Q'ty are required.":'ต้องระบุงาน โมดูล และจำนวน'); return; }
+  const act=g('sar_act'); const total=(parseFloat(qty)>0 && parseFloat(act)>0)?String(+(parseFloat(qty)*parseFloat(act)).toFixed(2)):g('sar_total');
+  const rec={ id:'add'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36),
+    workNo, rev:'1', module, list:g('sar_list'), specific:g('sar_specific'), qty, unit:g('sar_unit')||'pcs',
+    brand:g('sar_brand'), heat:'', group:g('sar_group'), supplier:g('sar_sup'),
+    shipDate:g('sar_ship'), recvDate:g('sar_recv'), poNo:g('sar_po'),
+    estUnitPrice:g('sar_est'), unitPrice:act, total };
+  const dets=DB.details(); dets.push(rec); DB.saveDetails(dets);
+  try{ if(module) diSaveModule(module); }catch(_){}
+  try{ if(rec.group){ const gl=diGroups(); if(!gl.includes(rec.group)){ gl.push(rec.group); diSaveGroups(gl); } } }catch(_){}
+  try{ if(rec.poNo) poRegUpsert(rec.poNo, workNo); }catch(_){}
+  try{ priceLogAppend(rec); }catch(_){}   /* record this supplier's price into history like the other add paths */
+  closeModal();
+  renderSpectator(); try{ onFilterTypeChange(); }catch(_){} try{renderTimeline();}catch(_){} try{renderCheck();}catch(_){} try{computeAlerts();}catch(_){} try{ if(typeof renderStatus==='function') renderStatus(); }catch(_){}
+  showToast(en?'✔ Added to the list':'✔ เพิ่มในรายการแล้ว');
+}
 /* choosing "add new" from a bulk select → prompt, then re-select that new value */
 function specBulkOnPick(field,sel){
   if(sel.value==='__add__'){ sel.value=''; specAddValue(field,(nv)=>{ if(field==='module'){ document.getElementById('specBulkModule').innerHTML=specModuleOptions(nv); } else { document.getElementById('specBulkGroup').innerHTML=specGroupOptions(nv); } }); }
@@ -7992,12 +8055,12 @@ function ckUpdatePending(){
 function ckCommitDetail(dets,d){
   const s=ckStage[d.id]; if(!s) return;
   if('supplier' in s) d.supplier=s.supplier;
-  if('total' in s){ d.total=s.total; const q=parseFloat(d.qty)||0; const tot=parseFloat(s.total)||0; if(q>0 && tot>0) d.unitPrice=String(+(tot/q).toFixed(4)); }
+  if('total' in s){ d.total=s.total; const q=parseFloat(d.qty)||0; const tot=parseFloat(s.total)||0; if(q>0 && tot>0) d.unitPrice=String(+(tot/q).toFixed(4)); else d.unitPrice=''; }   /* clear Actual Unit when value is emptied so Spectator margin stays consistent */
   if('shipDate' in s) d.shipDate=s.shipDate;
   if('recvDate' in s){
     const value=s.recvDate;
     d.recvDate=value;
-    const isStockWithdraw=(d.supplier||'').startsWith('Stock:');
+    const isStockWithdraw=/^stock:/i.test(d.supplier||'');   /* case-insensitive, matches isRealSupplier */
     if(value && !d.stockedId && !isStockWithdraw){
       const stk=DB.stock();
       const rec={ id:'stk'+Date.now()+Math.floor(Math.random()*1000), no:'RC-'+(d.poNo||d.workNo||'X')+'-'+String(Date.now()).slice(-4), date:value, supplier:d.supplier||'', work:(d.workNo||'Stock'), list:d.list||'', qty:d.qty||'0', qtyInit:d.qty||'0', unit:'pcs', estUnitPrice:d.estUnitPrice||'', unitPrice:d.unitPrice||'', shipDate:d.shipDate||'', recvDate:value, submittedBy:'', payment:d.total||'', paymentImg:'', prNo:d.poNo||'', note:t('fromDelivery')+' '+(d.workNo||''), fromDetail:d.id };
@@ -8465,6 +8528,8 @@ function saveCustomer(isEdit,oldB64){
     if(i>=0) cs[i]=rec; else cs.push(rec);
     DB.saveCustomers(cs);
     const works=DB.works(); works.forEach(w=>{ if(w.custName===oldName){ w.custName=name; w.custCode=code; } }); DB.saveWorks(works);
+    /* keep the per-customer PO registry (nx_po) in sync with the rename so the customer's PO table doesn't go blank */
+    try{ const reg=poRegAll(); let ch=false; reg.forEach(p=>{ if(p.custName===oldName){ p.custName=name; p.custCode=code; ch=true; } }); if(ch) savePoReg(reg); }catch(_){}
   } else {
     const cs=DB.customers(); const i=cs.findIndex(x=>x.name===name);
     if(i>=0) cs[i]=Object.assign(cs[i],rec); else cs.push(rec); DB.saveCustomers(cs);
@@ -8530,7 +8595,7 @@ function submitAddStock(e){
     closeModal(); successModal(t('stockAdded'),t('stockAddedSub'));
     document.getElementById('addStockForm').reset(); asPayImgData=null; document.getElementById('fas-payimg').style.display='none'; document.getElementById('as_payimg_prev').innerHTML=''; document.getElementById('as_work').value='Stock'; document.getElementById('as_valhint').style.display='none';
     document.querySelectorAll('#view-addstock .invalid').forEach(x=>x.classList.remove('invalid'));
-    renderStockList();
+    renderStockList(); try{ renderStockAnalysis(); }catch(_){} try{ computeAlerts(); }catch(_){}
   });
 }
 
@@ -8725,7 +8790,7 @@ function confirmWithdrawReq(id){ if(!canConfirm('withdraw')){ showToast(t('confN
   if(need>have){ showToast((typeof LANG!=='undefined'&&LANG==='th')?('สต๊อกไม่พอ (เหลือ '+have+')'):('Not enough stock (only '+have+' left)')); return; }
   it.qty=String(have-need); DB.saveStock(s);
   x.status='confirmed'; x.approver=whoami(); x.approvedAt=new Date().toISOString(); DB.saveWithdraws(w);
-  afterWithdrawChange(); try{ renderStockList(); }catch(_){} showToast(t('wdReqConfirmed')); }
+  afterWithdrawChange(); try{ renderStockList(); }catch(_){} try{ renderStockAnalysis(); }catch(_){} showToast(t('wdReqConfirmed')); }
 function rejectWithdrawReq(id){ if(!canConfirm('withdraw')){ showToast(t('confNoRight')); return; }
   const w=DB.withdraws(); const x=w.find(y=>y.id===id); if(!x) return;
   /* Nothing was deducted at submit time, so rejecting simply marks the request — no stock to return. */
@@ -8802,7 +8867,7 @@ function submitReturn(e){
     closeModal(); successModal(t('returnDone'),t('returnDoneSub'));
     document.getElementById('returnForm').reset(); initReturn();
     document.querySelectorAll('#view-returnstock .invalid').forEach(x=>x.classList.remove('invalid'));
-    renderStockList(); renderWithdrawLog();
+    renderStockList(); renderWithdrawLog(); try{ renderStockAnalysis(); }catch(_){}
   });
 }
 function doReturn(stockId,qty,meta){
@@ -8815,7 +8880,7 @@ function doReturn(stockId,qty,meta){
 /* =================== WITHDRAW LOG (movements) =================== */
 function allMovements(includeDeposits){
   if(includeDeposits===undefined) includeDeposits=true;
-  const w=DB.withdraws().map(x=>Object.assign({},x,{type:'withdraw'}));
+  const w=DB.withdraws().filter(x=>wdReqStatus(x)==='confirmed').map(x=>Object.assign({},x,{type:'withdraw'}));   /* only confirmed withdrawals actually left stock — wait/rejected must not count as outflows */
   const r=DB.returns().map(x=>Object.assign({},x,{type:'return',workNo:x.workNo||''}));
   let arr=w.concat(r);
   if(includeDeposits){ const d=DB.stock().filter(s=>s.recvDate).map(s=>({type:'deposit',stockId:s.id,no:s.no,list:s.list,unit:s.unit,unitPrice:s.unitPrice||'',qty:s.qtyInit||s.qty,workNo:'',reason:t('depositReason'),submittedBy:s.submittedBy||'',date:(s.recvDate+'T00:00:00')})); arr=arr.concat(d); }
@@ -8995,8 +9060,8 @@ function priceIndex(){
     if(price<e.best) e.best=price;
     if(dkey>=e.latestKey){ e.latestKey=dkey; e.latestVal=price; }
   };
-  getPriceLog().forEach(x=>{ add(x.module,x.supplier,+x.price,(x.date||'')+'~'+String(x.ts||0)); });
-  DB.details().forEach(d=>{ const p=detUnitPrice(d); if(p) add(d.module,d.supplier,p.price,(d.recvDate||d.shipDate||'')+'~0'); });
+  getPriceLog().forEach(x=>{ add(x.module,x.supplier,+x.price,(x.date||'0000-00-00')+'~'+String(x.ts||0)); });   /* undated → oldest, so a dated point always wins "latest" */
+  DB.details().forEach(d=>{ const p=detUnitPrice(d); if(p) add(d.module,d.supplier,p.price,(d.recvDate||d.shipDate||'0000-00-00')+'~0'); });
   _priceIdx=idx; return idx;
 }
 function priceBest(module,supplier,list){
@@ -9351,7 +9416,7 @@ function renderAttendance(){
 
 /* =================== TIME ATTENDANCE SYSTEM =================== */
 const TA_START=480, TA_END=1020;   // 08:00 start · 17:00 off (minutes from midnight)
-function taTodayStr(){ return new Date().toISOString().slice(0,10); }
+function taTodayStr(){ return isoOf(new Date()); }   /* LOCAL date — toISOString() is UTC and mis-dates mornings in UTC+7 */
 function taInMin(hm){ const m=(''+hm).match(/^(\d{1,2}):(\d{2})/); return m? (parseInt(m[1],10)*60+parseInt(m[2],10)) : null; }
 function taIsLate(inHM){ const m=taInMin(inHM); return m!=null && m>TA_START; }
 function taOtMinutes(outHM){ const m=taInMin(outHM); return m!=null? Math.max(0,m-TA_END) : 0; }        // OT starts after 17:00
@@ -10467,7 +10532,7 @@ function cwpConfirmAlt(){
   showToast(LANG==='en'?'Alternating pattern confirmed — weeks auto-switch from the chosen week.':'ยืนยันรูปแบบสลับแล้ว — สัปดาห์จะสลับอัตโนมัติ');
 }
 function cwpCancelPick(){ cwpPickMode=false; cwpPendingAnchor=null; const wrap=document.getElementById('cwpAltWrap'); if(wrap) wrap.style.display='none'; renderCompanyCal(); renderCalPattern(); }
-function cwpAfterChange(){ renderCompanyCal(); renderCalPattern(); renderCalList(); try{ renderAttendance(); }catch(_){} try{ renderBenefit(); }catch(_){} }
+function cwpAfterChange(){ renderCompanyCal(); renderCalPattern(); renderCalList(); try{ renderAttendance(); }catch(_){} try{ renderBenefit(); }catch(_){} try{ renderLeave(); }catch(_){} }
 function renderCompanyCal(){
   const cal=document.getElementById('companyCal'); if(!cal||!calMonth) return;
   const y=calMonth.getFullYear(),mo=calMonth.getMonth(); const first=new Date(y,mo,1); const startDow=first.getDay(); const dim=new Date(y,mo+1,0).getDate();   /* week starts on SUNDAY (Sun→Sat) */
@@ -10513,17 +10578,17 @@ function calTypePopup(a,b){
     </div>
   </div>`,footButtons:[{label:t('mCancel'),cls:'ghost',onClick:()=>{ clearCalHighlight(); renderCompanyCal(); closeModal(); }}]});
 }
-function applyCalType(a,b,type){ if(!calCanEdit()){ closeModal(); return; } const m=DB.calDays(); eachDate(a,b,ds=>{ if(type) m[ds]=type; else delete m[ds]; }); DB.saveCalDays(m); closeModal(); clearCalHighlight(); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); showToast(type?t('calSaved'):t('calRemoved')); }
+function applyCalType(a,b,type){ if(!calCanEdit()){ closeModal(); return; } const m=DB.calDays(); eachDate(a,b,ds=>{ if(type) m[ds]=type; else delete m[ds]; }); DB.saveCalDays(m); closeModal(); clearCalHighlight(); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); try{renderLeave();}catch(_){} showToast(type?t('calSaved'):t('calRemoved')); }
 function applyWorkSwitch(a,b,mode){
   if(!calCanEdit()){ closeModal(); return; }
   const sw=DB.workSwitches();
-  if(mode==='clear'){ eachDate(a,b,ds=>{ delete sw[ds]; }); DB.saveWorkSwitches(sw); closeModal(); clearCalHighlight(); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); showToast(t('calSwClearedToast')); return; }
+  if(mode==='clear'){ eachDate(a,b,ds=>{ delete sw[ds]; }); DB.saveWorkSwitches(sw); closeModal(); clearCalHighlight(); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); try{renderLeave();}catch(_){} showToast(t('calSwClearedToast')); return; }
   const inp=document.getElementById('calSwReason'); const reason=(inp?inp.value:'').trim();
   if(!reason){ const e=document.getElementById('calSwErr'); if(e) e.style.display='block'; if(inp){ inp.style.borderColor='var(--red)'; inp.focus(); } return; }
   eachDate(a,b,ds=>{ sw[ds]={mode,reason}; }); DB.saveWorkSwitches(sw);
-  closeModal(); clearCalHighlight(); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); showToast(mode==='work'?t('calSwWorkToast'):t('calSwOffToast'));
+  closeModal(); clearCalHighlight(); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); try{renderLeave();}catch(_){} showToast(mode==='work'?t('calSwWorkToast'):t('calSwOffToast'));
 }
-function removeCalDay(ds){ if(!calCanEdit()) return; const m=DB.calDays(); delete m[ds]; DB.saveCalDays(m); const sw=DB.workSwitches(); delete sw[ds]; DB.saveWorkSwitches(sw); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); showToast(t('calRemoved')); }
+function removeCalDay(ds){ if(!calCanEdit()) return; const m=DB.calDays(); delete m[ds]; DB.saveCalDays(m); const sw=DB.workSwitches(); delete sw[ds]; DB.saveWorkSwitches(sw); renderCompanyCal(); renderCalList(); renderAttendance(); renderBenefit(); try{renderLeave();}catch(_){} showToast(t('calRemoved')); }
 function renderCalList(){
   const body=document.getElementById('calListBody'); if(!body) return; const editable=calCanEdit();
   const m=DB.calDays(); const sw=DB.workSwitches();
@@ -11199,7 +11264,7 @@ let dmCurKey=null, dmClearDim='ALL', dmClearVal='', dmImportRows=null;
 const DM={
   spectator:{
     label:()=>t('specTitle'), get:()=>DB.details(), save:a=>DB.saveDetails(a),
-    refresh:()=>{ renderSpectator(); try{renderTimeline();}catch(e){} try{renderCheck();}catch(e){} try{computeAlerts();}catch(e){} },
+    refresh:()=>{ renderSpectator(); try{renderTimeline();}catch(e){} try{renderCheck();}catch(e){} try{if(typeof renderStatus==='function')renderStatus();}catch(e){} try{poRegEnsureFromDetails();}catch(e){} try{computeAlerts();}catch(e){} },
     dims:[
       {key:'workNo',label:'WorkNo',val:d=>d.workNo||''},
       {key:'custName',label:'Customer',val:d=>workOf(d.workNo).custName||''},
@@ -11211,15 +11276,19 @@ const DM={
       {key:'poNo',label:'PO No.',val:d=>d.poNo||''},
       {key:'group',label:'Group',val:d=>d.group||''}
     ],
+    /* CSV columns mirror the current Work Spectator table (incl. Customer, Code, Actual Unit, Margins) */
     cols:[
       {k:'workNo',h:'WorkNo'},{k:'workName',h:'WorkName',val:d=>workOf(d.workNo).workName||''},
+      {k:'custName',h:'Customer',val:d=>workOf(d.workNo).custName||''},{k:'custCode',h:'Code',val:d=>workOf(d.workNo).custCode||''},
       {k:'rev',h:'Rev'},{k:'module',h:'Module'},{k:'list',h:'List'},{k:'specific',h:'Specific'},
-      {k:'qty',h:'Qty'},{k:'brand',h:'Brand'},{k:'heat',h:'Heat'},{k:'supplier',h:'Supplier'},
-      {k:'shipDate',h:'ShipDate'},{k:'recvDate',h:'RecvDate'},{k:'poNo',h:'PONo'},
-      {k:'estUnitPrice',h:'EstUnitPrice'},{k:'unitPrice',h:'UnitPrice'},{k:'total',h:'Total'},
-      {k:'group',h:'Group'}
+      {k:'qty',h:'Qty'},{k:'brand',h:'Brand'},{k:'heat',h:'Heat'},{k:'supplier',h:'Supplier'},{k:'poNo',h:'PONo'},
+      {k:'estUnitPrice',h:'EstUnitPrice'},{k:'unitPrice',h:'ActualUnitPrice'},
+      {k:'mgUnit',h:'MarginUnit',val:d=>{ const e=matEstUnit(d); return e>0?String(matMarginUnit(d)):''; }},
+      {k:'mgTot',h:'TotalMargin',val:d=>{ const e=matEstUnit(d); return e>0?String(matMarginTotal(d)):''; }},
+      {k:'total',h:'Total'},{k:'group',h:'Group'},
+      {k:'shipDate',h:'ShipDate'},{k:'recvDate',h:'RecvDate'}
     ],
-    preview:['workNo','list','qty','supplier','poNo','shipDate','group','total'],
+    preview:['workNo','custName','module','list','qty','supplier','poNo','total'],
     fromCsv:row=>{ const r={id:'imp'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36)};
       ['workNo','rev','module','list','specific','qty','brand','heat','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total','group'].forEach(k=>{ r[k]=row[k]!=null?(''+row[k]).trim():''; });
       if(!r.total && r.qty && r.unitPrice) r.total=String((parseFloat(r.qty)||0)*(parseFloat(r.unitPrice)||0));
@@ -11227,7 +11296,7 @@ const DM={
   },
   stocklist:{
     label:()=>t('stockListTitle'), get:()=>DB.stock(), save:a=>DB.saveStock(a),
-    refresh:()=>{ renderStockList(); try{renderStockAnalysis();}catch(e){} try{renderWithdrawLog();}catch(e){} },
+    refresh:()=>{ renderStockList(); try{renderStockAnalysis();}catch(e){} try{renderWithdrawLog();}catch(e){} try{computeAlerts();}catch(e){} },
     dims:[
       {key:'work',label:'WorkNo',val:s=>s.work||''},
       {key:'supplier',label:'Supplier',val:s=>s.supplier||''},
@@ -11604,7 +11673,7 @@ async function dbDoRestore(){
   const id=gv('dbRestoreSel'); if(!id) return;
   try{ const doc=await NX_CLOUD.col.doc(id).get(); const snap=JSON.parse((doc.data()||{}).snap||'{}');
     Object.keys(snap).forEach(k=>{ if(NX_CLOUD_KEYS.indexOf(k)>=0) localStorage.setItem(k, snap[k]); });
-    closeModal(); nxRerenderAll(); showToast('♻️ Database restored'); try{ go('devdb'); }catch(_){}
+    closeModal(); try{ poRegEnsureFromDetails(); }catch(_){} nxRerenderAll(); showToast('♻️ Database restored'); try{ go('devdb'); }catch(_){}
   }catch(e){ showToast('⚠ Restore failed'); }
 }
 /* ---- Build files: CSV and SQL (both round-trippable, one JSON blob per table) ---- */
@@ -11661,7 +11730,7 @@ function dbApplyFile(text, fname){
   const found = (parsed||[]).filter(([k,val])=>{ if(NX_CLOUD_KEYS.indexOf(k)<0) return false; try{ JSON.parse(val); return true; }catch(_){ return false; } });
   if(!found.length){ showToast('⚠ No valid database rows found in the '+fmt+' file'); return; }
   confirmModal('Upload & replace database','This loads '+found.length+' databases from the '+fmt+' file straight into every page (ready for calculation) and pushes to the cloud for all devices. A safety backup is taken first.',found.map(([k,val])=>({k:nxDbName(k),v:nxJsonCount(val)+' records'})),async ()=>{
-    await dbBackupNow(true); found.forEach(([k,val])=>localStorage.setItem(k, val)); closeModal(); nxRerenderAll(); showToast('⬆️ Uploaded '+found.length+' databases from '+fmt); try{ go('devdb'); }catch(_){}
+    await dbBackupNow(true); found.forEach(([k,val])=>localStorage.setItem(k, val)); closeModal(); try{ poRegEnsureFromDetails(); }catch(_){} nxRerenderAll(); showToast('⬆️ Uploaded '+found.length+' databases from '+fmt); try{ go('devdb'); }catch(_){}
   });
 }
 /* ---- ADD MORE (merge/append — never replaces) ---- */
@@ -11704,7 +11773,7 @@ function dbApplyMergeFile(text, fname){
     await dbBackupNow(true);
     let quotaErr=false;
     rows.forEach(r=>{ try{ localStorage.setItem(r.k, r.merged); }catch(e){ quotaErr=true; } });
-    closeModal(); nxRerenderAll();
+    closeModal(); try{ poRegEnsureFromDetails(); }catch(_){} nxRerenderAll();
     if(quotaErr) showToast('⚠ Storage limit reached — part of the data could not be saved (browser ~5MB cap).');
     else showToast('➕ Added '+found.length+' database(s) from '+fmt);
     try{ go('devdb'); }catch(_){}
@@ -11745,7 +11814,13 @@ function dbClearConfirm(){
   (async ()=>{
     await dbBackupNow(true);
     const arr=(typeof NX_ARRAY_KEYS!=='undefined')?NX_ARRAY_KEYS:[];
-    const emptyOf=k=>(arr.indexOf(k)>=0?'[]':'{}');
+    /* pick the correct empty by the table's declared type so array tables (incl. strarr like
+       nx_groups/nx_modules and arr like nx_pricelog) clear to '[]', objects to '{}', and the
+       scalar nx_datefmt keeps a valid default — NOT a wrong-typed '{}' pushed to every device. */
+    const emptyOf=k=>{ const ty=(typeof NX_MERGE!=='undefined'&&NX_MERGE[k])?NX_MERGE[k].type:null;
+      if(ty==='arr'||ty==='strarr'||arr.indexOf(k)>=0) return '[]';
+      if(ty==='scalar') return (k==='nx_datefmt' ? NX_DATE_FMT_DEFAULT : '');   /* datefmt is a raw key string, not JSON — keep the default */
+      return '{}'; };
     const cloudReady=(typeof NX_CLOUD!=='undefined' && NX_CLOUD && NX_CLOUD.ready);
     const now=Date.now();
     /* AUTHORITATIVE clear: overwrite each cloud document to empty directly (never a merge).
@@ -11774,7 +11849,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-l';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-n';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
