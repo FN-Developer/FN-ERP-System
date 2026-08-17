@@ -5113,6 +5113,18 @@ function nxDetectDayFirst(vals){
   for(let i=0;i<vals.length;i++){ const m=String(vals[i]==null?'':vals[i]).trim().match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.]\d{2,4}$/); if(!m) continue; const a=+m[1],b=+m[2]; if(a>12) return true; if(b>12) return false; }
   return true;
 }
+/* add a supplier to the Vendor Directory if it's a real name not already there. Returns true if added. */
+function nxEnsureVendor(name){
+  const nm=String(name==null?'':name).trim();
+  if(!nm || nm==='-' || /^stock:/i.test(nm)) return false;   // skip blanks, "-", and stock-withdrawals
+  const vs=DB.vendors();
+  if(vs.some(v=>String(v.name||'').trim().toLowerCase()===nm.toLowerCase())) return false;
+  vs.push({name:nm,contact:'',phone:'',email:'',line:'',leadTime:'',note:(LANG==='en'?'Auto-added from upload':'เพิ่มอัตโนมัติจากการอัปโหลด'),bankNo:'',bankName:'',payTerm:'',termType:'',termVal:''});
+  DB.saveVendors(vs);
+  return true;
+}
+/* ensure every supplier used across a set of records exists in the Vendor Directory; returns how many were added */
+function nxEnsureVendorsFrom(recs){ let n=0; const seen=new Set(); (recs||[]).forEach(r=>{ const nm=String((r&&r.supplier)||'').trim(); if(!nm) return; const k=nm.toLowerCase(); if(seen.has(k)) return; seen.add(k); if(nxEnsureVendor(nm)) n++; }); return n; }
 function nxCalcTotal(qty,unitPrice){ const q=parseFloat(nxCleanNum(qty)), u=parseFloat(nxCleanNum(unitPrice)); if(!isFinite(q)||!isFinite(u)) return ''; const v=q*u; return v?String(+v.toFixed(2)):'0'; }
 
 /* =================== i18n =================== */
@@ -6811,6 +6823,7 @@ document.getElementById('detailForm').addEventListener('submit',function(e){
   if(stockWithdraw) rows.push({k:t('stockWithdraw'),v:stockWithdraw.qty+' '+stockWithdraw.unit+' · '+stockWithdraw.list});
   confirmModal(t('mConfirmTitle'),t('mConfirmDesc'),rows,()=>{
     const dets=DB.details(); dets.push(data); DB.saveDetails(dets); priceLogAppend(data);
+    try{ if(nxEnsureVendor(data.supplier) && typeof renderVendors==='function') renderVendors(); }catch(_){}   // auto-register a new supplier name
     if(stockWithdraw){ doWithdraw(stockWithdraw.stockId, stockWithdraw.qty, {workNo:wn, reason:t('workLabel')+' '+wn, by:''}); renderStockList(); }
     detailStockPick=null; setStockDateLabels(false);
     closeModal(); successModal(t('detailComplete'),t('detailCompleteSub'));
@@ -7125,10 +7138,12 @@ function diCsvUpload(){
   const dets=DB.details();
   scope.forEach((m,i)=>{ const rec=Object.assign({}, m.rec); rec.id='d'+Date.now()+i+Math.floor(Math.random()*1000); rec.workNo=wn; dets.push(rec); priceLogAppend(rec); });
   DB.saveDetails(dets);
+  const nv=nxEnsureVendorsFrom(scope.map(m=>m.rec));   // auto-register any new supplier names in the Vendor Directory
   const n=scope.length;
-  successModal(en?`${n} detail(s) uploaded!`:`อัปโหลดรายละเอียด ${n} รายการแล้ว!`, en?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว');
+  successModal(en?`${n} detail(s) uploaded!`:`อัปโหลดรายละเอียด ${n} รายการแล้ว!`, (en?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว')+(nv?(en?` · ${nv} new supplier(s) added to Vendors.`:` · เพิ่มผู้จัดจำหน่ายใหม่ ${nv} ราย`):''));
   diCsvReset();
   renderSpectator(); renderTimeline(); computeAlerts();
+  if(typeof renderVendors==='function') renderVendors(); if(typeof refreshSupplierSelect==='function') refreshSupplierSelect();
 }
 
 /* =================== SPECTATOR + FILTER =================== */
@@ -11997,7 +12012,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-s';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-t';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
