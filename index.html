@@ -4397,7 +4397,7 @@ function nxApplyViewOnlyUI(){
 
 function nxCurrentView(){ try{ const el=document.querySelector('.view.active'); return el ? el.id.replace('view-','') : 'home'; }catch(_){ return 'home'; } }
 function nxRerenderAll(){
-  try{ _priceIdx=null; _specModList=null; _specGrpList=null; }catch(_){}   /* remote data may have changed → rebuild caches lazily */
+  try{ _priceIdx=null; _specModList=null; _specGrpList=null; _mpCache=null; }catch(_){}   /* remote data may have changed → rebuild caches lazily */
   try{ if(typeof checkSession==='function') checkSession(); }catch(_){}
   try{ if(typeof computeAlerts==='function') computeAlerts(); }catch(_){}
   /* Never yank the Work-Detail-Input form out from under someone who is entering data:
@@ -9313,13 +9313,25 @@ function allPricedModules(){ const set=new Set(); getPriceLog().forEach(x=>{ if(
 function comparableModules(){ return allPricedModules().filter(m=>modulePricedVendors(m).length>=2); }
 /* cheapest vendor overall for a module → {supplier, price} (or null) */
 function moduleBestVendor(module){ if(!module) return null; const m=priceIndex()[module]; if(!m) return null; let best=null; for(const sup in m){ const b=m[sup].best; if(best==null||b<best.price) best={supplier:sup,price:b}; } return best; }
-function workLabor(wn){ return 0; }  /* labor field removed — project cost is materials-only */
-function workCost(wn){ return workMaterial(wn); }
-function workBudget(wn){ const w=DB.works().find(x=>x.workNo===wn); if(w&&w.budget!=null&&w.budget!=='') return parseFloat(w.budget)||0; return Math.round(workCost(wn)*1.4/100)*100; }
+/* ---- Labor via monthly-payroll allocation ---- */
+/* total company labor cost per month = every employee's full monthly pay (salary + allowances + confirmed OT) */
+var _mpCache=null;   /* memo within one analysis render; reset by renderWorkAnalysis / nxRerenderAll */
+function monthlyPayroll(){ if(_mpCache!=null) return _mpCache; let s=0; try{ DB.employees().forEach(e=>{ s+=(empBenefit(e).monthly||0); }); }catch(_){ } _mpCache=s; return s; }
+/* "active" projects = works that have detail lines (fall back to all works) */
+function activeWorks(){ const a=DB.works().filter(x=>workMaterial(x.workNo)>0); return a.length?a:DB.works(); }
+function activeWorkCount(){ const n=activeWorks().length; return n>0?n:1; }
+/* this project's share % of the monthly payroll — manual w.laborPct, else an equal split across active projects */
+function workLaborPct(wn){ const w=DB.works().find(x=>x.workNo===wn); if(w&&w.laborPct!=null&&w.laborPct!=='') return parseFloat(w.laborPct)||0; return +(100/activeWorkCount()).toFixed(2); }
+/* how many months of payroll this project draws — manual w.laborMonths, else 1 */
+function workLaborMonths(wn){ const w=DB.works().find(x=>x.workNo===wn); if(w&&w.laborMonths!=null&&w.laborMonths!=='') return parseFloat(w.laborMonths)||0; return 1; }
+function workLabor(wn){ return Math.round(monthlyPayroll()*(workLaborPct(wn)/100)*workLaborMonths(wn)); }
+function workCost(wn){ return workMaterial(wn)+workLabor(wn); }   /* project cost = materials + allocated labor */
+/* Budget baseline = the Estimated total project cost entered at work creation; a manual override (w.budget) wins. */
+function workBudget(wn){ const w=DB.works().find(x=>x.workNo===wn); if(!w) return 0; if(w.budget!=null&&w.budget!=='') return parseFloat(w.budget)||0; const est=parseFloat(w.estCost)||0; if(est>0) return est; return Math.round(workMaterial(wn)*1.4/100)*100; }
 function workMargin(wn){ return workBudget(wn)-workCost(wn); }
 /* estimate-side totals (based on estimate unit prices, before discounts) */
 function workEstMaterial(wn){ return workDetails(wn).reduce((s,d)=>{ const e=matEstUnit(d); return s+(e>0? e*matQty(d) : (parseFloat(d.total)||0)); },0); }
-function workEstCost(wn){ return workEstMaterial(wn); }
+function workEstCost(wn){ return workEstMaterial(wn)+workLabor(wn); }
 /* budget (customer payment) is fixed at quote time from the estimate — same in both scenarios */
 function workEstBudget(wn){ return workBudget(wn); }
 function workEstMargin(wn){ return workEstBudget(wn)-workEstCost(wn); }
@@ -9337,6 +9349,7 @@ function waInPeriod(w){ const ref=waRefDate(); if(!w.deliveryDate) return true; 
 function waPeriodWorks(){ return DB.works().filter(waInPeriod); }
 function waSetP(p){ waPeriod=p; document.querySelectorAll('#waPersp .pill').forEach(b=>b.classList.toggle('active',b.getAttribute('data-p')===p)); renderWorkAnalysis(); }
 function renderWorkAnalysis(){
+  _mpCache=null;   /* recompute payroll fresh for this render */
   const works=waPeriodWorks(); const ref=waRefDate(); const loc=LANG==='th'?'th-TH':'en-US';
   const q=Math.floor(ref.getMonth()/3)+1;
   document.getElementById('waPeriodInfo').textContent = (waPeriod==='year'? (LANG==='en'?'Year ':'ปี ')+ref.getFullYear() : waPeriod==='month'? ref.toLocaleDateString(loc,{month:'long',year:'numeric'}) : 'Q'+q+' '+ref.getFullYear()+' · '+t('waThreeMonths'));
@@ -9372,21 +9385,38 @@ function renderWorkProject(){
   const wrap=document.getElementById('waProject'); if(!wrap) return;
   const wn=document.getElementById('waWork').value; const w=DB.works().find(x=>x.workNo===wn);
   if(!w){ wrap.innerHTML=`<div class="chart-empty">${t('waPickProject')}</div>`; return; }
-  const mat=workMaterial(wn), lab=workLabor(wn), cost=workCost(wn), bud=workBudget(wn), mar=workMargin(wn), pct=workMarginPct(wn), stars=workStars(wn);
+  const en=LANG==='en';
+  const mat=workMaterial(wn), lab=workLabor(wn), cost=mat+lab, bud=workBudget(wn), mar=bud-cost, pct=bud>0?mar/bud*100:0, stars=workStars(wn);
+  const pay=monthlyPayroll(), lpct=workLaborPct(wn), lmon=workLaborMonths(wn), nAct=activeWorkCount();
   const marCls=mar>=0?'var(--green)':'var(--red)';
+  const budSrc = (w.budget!=null&&w.budget!=='') ? (en?'manual override':'กำหนดเอง') : ((parseFloat(w.estCost)||0)>0 ? (en?'from quote at creation':'จากใบเสนอราคาตอนสร้างงาน') : (en?'auto (material×1.4)':'อัตโนมัติ (วัสดุ×1.4)'));
+  const sub='display:block;font-size:10.5px;color:var(--muted);margin-top:3px;font-weight:600';
   wrap.innerHTML=`
     <div class="wa-proj-head">
       <div class="wa-ph-info"><div class="wa-ph-no">${escapeHtml(w.workNo)}</div><div class="wa-ph-name">${escapeHtml(w.workName||'')}</div><div class="wa-ph-cust">🏢 ${escapeHtml(w.custName||'—')}</div></div>
       <div class="wa-ph-stars">${starStr(stars)}<div class="wa-ph-cmt">${t('waCommentBest')}</div></div>
     </div>
     <div class="wa-figs">
-      <div class="wa-fig"><span class="wf-l">${t('waBudget')}</span><span class="wf-v">${fmtTHB(bud)}</span><input type="number" class="wa-bud-input" id="waBudInput" value="${escapeAttr(bud)}" onchange="saveWorkBudget('${escapeAttr(wn)}',this.value)" title="${escapeAttr(t('waBudgetEdit'))}"></div>
-      <div class="wa-fig"><span class="wf-l">${t('waCost')}</span><span class="wf-v" style="color:#e5484d">${fmtTHB(cost)}</span></div>
-      <div class="wa-fig"><span class="wf-l">${t('waMargin')}</span><span class="wf-v" style="color:${marCls}">${fmtTHB(mar)}</span><span class="wf-pct" style="color:${marCls}">${pct.toFixed(1)}%</span></div>
+      <div class="wa-fig"><span class="wf-l">${en?'Budget':'งบประมาณ'}</span><span class="wf-v">${fmtTHB(bud)}</span><input type="number" class="wa-bud-input" id="waBudInput" value="${escapeAttr(bud)}" onchange="saveWorkBudget('${escapeAttr(wn)}',this.value)" title="${escapeAttr(en?'Override the budget (blank = use the quote)':'แก้งบประมาณ (เว้นว่าง = ใช้ใบเสนอราคา)')}"><span style="${sub}">${budSrc}</span></div>
+      <div class="wa-fig"><span class="wf-l">${en?'Total cost':'ต้นทุนรวม'}</span><span class="wf-v" style="color:#e5484d">${fmtTHB(cost)}</span><span style="${sub}">${en?'Material':'วัสดุ'} ${fmtTHB(mat)} · ${en?'Labor':'แรงงาน'} ${fmtTHB(lab)}</span></div>
+      <div class="wa-fig"><span class="wf-l">${en?'Margin (gap)':'กำไร (ส่วนต่าง)'}</span><span class="wf-v" style="color:${marCls}">${fmtTHB(mar)}</span><span class="wf-pct" style="color:${marCls}">${pct.toFixed(1)}%</span></div>
+    </div>
+    <div style="margin-top:14px;padding:13px 15px;border:1.5px solid color-mix(in srgb,#7c3aed 34%,var(--line));border-radius:14px;background:color-mix(in srgb,#7c3aed 7%,var(--inset-bg))">
+      <div style="font-weight:700;font-size:13.5px;margin-bottom:9px">👷 ${en?'Labor — allocated share of monthly payroll':'แรงงาน — ปันส่วนจากค่าจ้างรายเดือน'}</div>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px">
+        <div><div style="font-size:10.5px;color:var(--muted);font-weight:600">${en?'Company payroll / month':'ค่าจ้างบริษัท/เดือน'}</div><b style="font-size:15px">${fmtTHB(pay)}</b></div>
+        <div style="font-size:18px;color:var(--muted);align-self:center">×</div>
+        <div><div style="font-size:10.5px;color:var(--muted);font-weight:600">${en?'This project share':'สัดส่วนโครงการนี้'}</div><input type="number" min="0" step="any" value="${escapeAttr(lpct)}" onchange="saveWorkLaborPct('${escapeAttr(wn)}',this.value)" style="width:74px;padding:5px 8px;border-radius:8px;border:1.5px solid var(--line);background:var(--card-bg);color:var(--txt);font-weight:700"> %</div>
+        <div style="font-size:18px;color:var(--muted);align-self:center">×</div>
+        <div><div style="font-size:10.5px;color:var(--muted);font-weight:600">${en?'Months':'จำนวนเดือน'}</div><input type="number" min="0" step="any" value="${escapeAttr(lmon)}" onchange="saveWorkLaborMonths('${escapeAttr(wn)}',this.value)" style="width:64px;padding:5px 8px;border-radius:8px;border:1.5px solid var(--line);background:var(--card-bg);color:var(--txt);font-weight:700"></div>
+        <div style="font-size:18px;color:var(--muted);align-self:center">=</div>
+        <div><div style="font-size:10.5px;color:var(--muted);font-weight:600">${en?'Labor cost':'ต้นทุนแรงงาน'}</div><b style="font-size:15px;color:#7c3aed">${fmtTHB(lab)}</b></div>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:9px">${en?('Default share = an equal split across '+nAct+' active project(s) ('+(100/nAct).toFixed(1)+'%). Type a % to override; clear it to go back to auto.'):('ค่าเริ่มต้น = แบ่งเท่ากันใน '+nAct+' โครงการ ('+(100/nAct).toFixed(1)+'%) พิมพ์ % เพื่อปรับ; ลบออกเพื่อกลับเป็นอัตโนมัติ')}</div>
     </div>
     <div class="an-grid" style="margin-top:14px">
-      <div class="chart-card"><h3>${t('waCostChart')}</h3><div class="csub">${t('waCostChartSub')}</div>${vBars([{label:t('waMaterial'),value:Math.round(mat),color:'#0891b2'}],fmtTHB)}<div class="wa-total-line">${t('waTotalCost')}: <b>${fmtTHB(cost)}</b></div></div>
-      <div class="chart-card"><h3>${t('waBudChart')}</h3><div class="csub">${t('waBudChartSub')}</div>${vBars([{label:t('waBudget'),value:Math.round(bud),color:'#d9a406'},{label:t('waCost'),value:Math.round(cost),color:'#e5484d'},{label:t('waMargin'),value:Math.round(mar),color:'#16a34a'}],fmtTHB)}<div class="wa-total-line">${t('waMargin')}: <b style="color:${marCls}">${fmtTHB(mar)}</b></div></div>
+      <div class="chart-card"><h3>${en?'Cost breakdown':'องค์ประกอบต้นทุน'}</h3><div class="csub">${en?'What the project cost is made of':'ต้นทุนโครงการมาจากอะไรบ้าง'}</div>${vBars([{label:(en?'Material':'วัสดุ'),value:Math.round(mat),color:'#0891b2'},{label:(en?'Labor':'แรงงาน'),value:Math.round(lab),color:'#7c3aed'}],fmtTHB)}<div class="wa-total-line">${en?'Total cost':'ต้นทุนรวม'}: <b>${fmtTHB(cost)}</b></div></div>
+      <div class="chart-card"><h3>${en?'Budget vs cost — the gap':'งบประมาณ vs ต้นทุน — ส่วนต่าง'}</h3><div class="csub">${en?'Margin is what is left of the budget':'กำไรคือส่วนที่เหลือจากงบประมาณ'}</div>${vBars([{label:(en?'Budget':'งบประมาณ'),value:Math.round(bud),color:'#d9a406'},{label:(en?'Cost':'ต้นทุน'),value:Math.round(cost),color:'#e5484d'},{label:(en?'Margin':'กำไร'),value:Math.round(mar),color:mar>=0?'#16a34a':'#e5484d'}],fmtTHB)}<div class="wa-total-line">${en?'Margin':'กำไร'}: <b style="color:${marCls}">${fmtTHB(mar)}</b> · ${pct.toFixed(1)}%</div></div>
     </div>
     <div class="wa-btns">
       <button type="button" class="btn ghost" onclick="waMaterialPopup('${escapeAttr(wn)}')">📦 ${t('waBtnMaterial')}</button>
@@ -9395,6 +9425,8 @@ function renderWorkProject(){
     </div>`;
 }
 function saveWorkBudget(wn,val){ const ws=DB.works(); const w=ws.find(x=>x.workNo===wn); if(!w) return; const s=(val==null?'':String(val).trim()); if(s==='') delete w.budget; else w.budget=String(parseFloat(s)||0); DB.saveWorks(ws); renderWorkAnalysis(); showToast(t('waBudgetSaved')); }
+function saveWorkLaborPct(wn,val){ const ws=DB.works(); const w=ws.find(x=>x.workNo===wn); if(!w) return; const s=(val==null?'':String(val).trim()); if(s==='') delete w.laborPct; else w.laborPct=String(parseFloat(s)||0); DB.saveWorks(ws); renderWorkAnalysis(); }
+function saveWorkLaborMonths(wn,val){ const ws=DB.works(); const w=ws.find(x=>x.workNo===wn); if(!w) return; const s=(val==null?'':String(val).trim()); if(s==='') delete w.laborMonths; else w.laborMonths=String(parseFloat(s)||0); DB.saveWorks(ws); renderWorkAnalysis(); }
 function numMg(o){ if(!o.__hasEst) return `<td class="num mg-na">—</td>`; const x=o.__mg; const cls=x>0?'mg-pos':(x<0?'mg-neg':'mg-zero'); return `<td class="num ${cls}">${x>0?'+':''}${fmtTHB(x)}</td>`; }
 function waMaterialPopup(wn){
   const dets=workDetails(wn); let tot=0, totMg=0, hasAnyEst=false;
@@ -9412,33 +9444,17 @@ function waGoStock(listB64){
   go('stocklist');
 }
 function waLaborPopup(wn){
-  const dets=workDetails(wn);
-  const dates=dets.map(d=>d.recvDate||d.shipDate).filter(Boolean).sort();
-  const wk=DB.works().find(x=>x.workNo===wn);
-  const start=dates[0]||''; const end=(wk&&wk.deliveryDate)||dates[dates.length-1]||'';
-  const durDays=(start&&end)?Math.max(1,bizDays(start,end)):0;
+  const en=LANG==='en';
   const emps=DB.employees();
-  const empRows=emps.map(e=>{ const mon=(e.benefit&&parseFloat(e.benefit.baseSalary))||0; const daily=mon/22; return {name:e.name,mon,daily}; });
-  const totMon=empRows.reduce((s,r)=>s+r.mon,0); const totDaily=empRows.reduce((s,r)=>s+r.daily,0);
-  const hireCost=Math.round(totDaily*durDays);
-  const rows=empRows.map(r=>`<tr><td>${escapeHtml(r.name)}</td><td class="num">${fmtTHB(Math.round(r.mon))}</td><td class="num">${fmtTHB(Math.round(r.daily))}</td></tr>`).join('');
-  // shared hiring: the same salaried team also runs other projects overlapping this timeline
-  const conc=concurrentWorks(wn); const nConc=Math.max(1,conc.length);
-  const shared=Math.round(hireCost/nConc);
-  const concRows=conc.map(no=>{ const wk2=DB.works().find(x=>x.workNo===no); const win=workWindow(no); const isThis=no===wn;
-    return `<tr${isThis?' class="wa-lc-self"':''}><td>${escapeHtml(no)}${isThis?` <span class="wa-lc-tag">${t('waThisProj')}</span>`:''}</td><td>${escapeHtml((wk2&&wk2.workName)||'')}</td><td class="num">${win?escapeHtml(win.start+' → '+win.end):'—'}</td></tr>`; }).join('');
-  const body=`<div class="card-sub" style="margin-bottom:10px">${t('waLaborTip')}</div>
-    <div class="wa-poptable-wrap"><table class="wa-poptable"><thead><tr><th>${t('bfEmpLbl')}</th><th class="num">${t('waMonthly')}</th><th class="num">${t('waDailyRate')}</th></tr></thead><tbody>${rows||`<tr><td colspan="3" class="muted-line" style="padding:14px">${t('noData')}</td></tr>`}</tbody>
-      <tfoot><tr><td>${t('waTeamTotal')} · ${emps.length} ${t('waPeople')}</td><td class="num">${fmtTHB(Math.round(totMon))}</td><td class="num">${fmtTHB(Math.round(totDaily))}</td></tr></tfoot></table></div>
-    <div class="wa-lc-formula"><span class="lcf-res">${fmtTHB(Math.round(totDaily))}</span><span class="lcf-op">/${t('dayUnitShort')} ×</span> <span>${durDays} ${t('workdayUnit')}</span><span class="lcf-op">=</span><span class="lcf-res">${fmtTHB(hireCost)}</span></div>
-    <div class="wa-lc-note">${t('waLaborNote')}</div>
-    <div class="wa-lc-share">
-      <div class="wa-lc-share-head">🔀 ${t('waShareHead')}</div>
-      <div class="card-sub" style="margin:2px 0 10px">${t('waShareSub')}</div>
-      <div class="wa-poptable-wrap"><table class="wa-poptable"><thead><tr><th>${t('waColWork')}</th><th>${t('waColWorkName')}</th><th class="num">${t('waColTimeline')}</th></tr></thead><tbody>${concRows}</tbody></table></div>
-      <div class="wa-lc-formula"><span>${fmtTHB(hireCost)}</span><span class="lcf-op">÷</span><span>${nConc} ${t('waConcUnit')}</span><span class="lcf-op">=</span><span class="lcf-res">${fmtTHB(shared)}</span></div>
-      <div class="wa-lc-note">${t('waShareNote')}</div>
-    </div>`;
+  const empRows=emps.map(e=>{ let mon=0; try{ mon=empBenefit(e).monthly||0; }catch(_){ mon=(e.benefit&&parseFloat(e.benefit.baseSalary))||0; } return {name:e.name,mon}; });
+  const pay=empRows.reduce((s,r)=>s+r.mon,0);
+  const pct=workLaborPct(wn), mon=workLaborMonths(wn), lab=workLabor(wn), nAct=activeWorkCount();
+  const rows=empRows.map(r=>`<tr><td>${escapeHtml(r.name)}</td><td class="num">${fmtTHB(Math.round(r.mon))}</td></tr>`).join('');
+  const body=`<div class="card-sub" style="margin-bottom:10px">${en?'Labor is charged to a project as a share of the company\'s total monthly payroll — each person\'s salary + allowances + confirmed OT.':'ค่าแรงถูกคิดเข้าโครงการเป็นสัดส่วนของค่าจ้างรวมรายเดือนของบริษัท — เงินเดือน + เบี้ยเลี้ยง + OT ที่ยืนยันของแต่ละคน'}</div>
+    <div class="wa-poptable-wrap"><table class="wa-poptable"><thead><tr><th>${t('bfEmpLbl')}</th><th class="num">${en?'Monthly pay':'ค่าจ้างต่อเดือน'}</th></tr></thead><tbody>${rows||`<tr><td colspan="2" class="muted-line" style="padding:14px">${t('noData')}</td></tr>`}</tbody>
+      <tfoot><tr><td>${en?'Company payroll / month':'ค่าจ้างบริษัท/เดือน'} · ${emps.length} ${en?'people':'คน'}</td><td class="num">${fmtTHB(Math.round(pay))}</td></tr></tfoot></table></div>
+    <div class="wa-lc-formula"><span>${fmtTHB(Math.round(pay))}</span><span class="lcf-op">×</span><span>${(+pct).toFixed(2)}%</span><span class="lcf-op">×</span><span>${mon} ${en?'mo':'เดือน'}</span><span class="lcf-op">=</span><span class="lcf-res">${fmtTHB(lab)}</span></div>
+    <div class="wa-lc-note">${en?('Default share is an equal split across '+nAct+' active project(s) = '+(100/nAct).toFixed(1)+'%. Adjust the share % and months on the analysis card.'):('ค่าเริ่มต้นแบ่งเท่ากันใน '+nAct+' โครงการ = '+(100/nAct).toFixed(1)+'% ปรับ % และจำนวนเดือนได้ที่การ์ดวิเคราะห์')}</div>`;
   customModal({icon:'👷',title:t('waBtnLabor')+' — '+wn,desc:'',bodyHtml:body,footButtons:[{label:t('mClose'),cls:'primary',onClick:closeModal}]});
 }
 function waMarginPopup(wn){
@@ -12078,7 +12094,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-w';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-x';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
