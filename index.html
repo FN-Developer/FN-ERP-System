@@ -687,6 +687,10 @@ tr.spec-dirty>td:first-child{box-shadow:inset 4px 0 0 var(--green)}
    and Delivery Check Update buttons when their tables have staged (unsaved) edits */
 .nx-update-blink{background:var(--green)!important;border-color:var(--green)!important;color:#fff!important;animation:specUpdPulse 1.05s ease-in-out infinite;opacity:1!important;filter:none!important}
 @keyframes specUpdPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 65%,transparent);transform:translateY(0)}50%{box-shadow:0 0 0 9px color-mix(in srgb,var(--green) 0%,transparent);transform:translateY(-1px)}}
+/* BLINKING RED cell — a "-" placeholder that still needs a real value (auto-filled on incomplete upload) */
+td.spec-needfill{position:relative;box-shadow:inset 0 0 0 2px var(--red);border-radius:8px;animation:nxNeedFill 1.05s ease-in-out infinite}
+td.spec-needfill>input.spec-inline,td.spec-needfill>select.spec-inline{border-color:var(--red)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--red) 45%,transparent)}
+@keyframes nxNeedFill{0%,100%{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--red) 90%,transparent),0 0 0 0 color-mix(in srgb,var(--red) 55%,transparent)}50%{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--red) 40%,transparent),0 0 6px 2px color-mix(in srgb,var(--red) 35%,transparent)}}
 /* Actual Unit Price is auto-derived from Delivery Check — show a faint hint when unset */
 .spec-auto-hint{font-size:10.5px;color:var(--muted);font-style:italic}
 .ship-fix-btn{cursor:pointer}
@@ -5073,6 +5077,20 @@ const FIELDS = [
   {key:'unitPrice', en:"Actual Unit Price (ราคาจริง/หน่วย)",    th:"ราคาจริง/หน่วย (Actual)",  req:false, type:'number'},
   {key:'total',     en:"Total Amount (จำนวนเงิน)",      th:"จำนวนเงิน (Total Amount)",    req:false, type:'number'}
 ];
+/* ---- Incomplete-data handling ----
+   "Important" section = the required fields (everything except the auto Rev). When a row is
+   uploaded/entered without every important value, the blanks are auto-filled with "-" so the row
+   can still be saved, and the "-" cells blink red in Work Spectator until someone fills them. */
+const NX_DASH='-';
+const IMPORTANT_KEYS=FIELDS.filter(f=>f.req && f.key!=='rev').map(f=>f.key);   // module,list,specific,qty,unit,brand,heat,group
+function nxIsBlank(v){ return v==null || String(v).trim()===''; }
+function nxNeedsFill(v){ return String(v==null?'':v).trim()===NX_DASH; }        // a value that was auto-dashed and still needs a real entry
+/* how many important fields carry a real value (not blank, not "-") */
+function nxImportantFilled(rec){ return IMPORTANT_KEYS.reduce((n,k)=>n+((!nxIsBlank(rec[k])&&!nxNeedsFill(rec[k]))?1:0),0); }
+/* fill every blank important field with "-" (in place); returns the list of keys that were dashed */
+function nxFillImportantDashes(rec){ const dashed=[]; IMPORTANT_KEYS.forEach(k=>{ if(nxIsBlank(rec[k])){ rec[k]=NX_DASH; dashed.push(k); } }); return dashed; }
+/* Total = Q'ty × Actual Unit Price (only when both are real numbers); returns '' otherwise */
+function nxCalcTotal(qty,unitPrice){ const q=parseFloat(qty), u=parseFloat(unitPrice); if(!isFinite(q)||!isFinite(u)) return ''; const v=q*u; return v?String(+v.toFixed(2)):'0'; }
 
 /* =================== i18n =================== */
 let LANG = localStorage.getItem('nx_lang')||'en';
@@ -6571,6 +6589,11 @@ function buildDetailFields(){
       control=`<select id="d-unit">${diUnitOptions('')}</select>`;
     } else if(f.key==='group'){
       control=diGroupPickerHtml('digrp','','d-group');
+    } else if(f.key==='total'){
+      control=`<input type="number" id="d-total" class="di-auto" step="any" min="0" readonly>`;
+      hint=`<div class="field-hint">${LANG==='en'?"Auto — Q'ty × Actual Unit Price.":'อัตโนมัติ — จำนวน × ราคาจริง/หน่วย'}</div>`;
+    } else if(f.key==='qty' || f.key==='unitPrice'){
+      control=`<input type="${f.type||'text'}" id="d-${f.key}" step="any" min="0" oninput="diCalcTotal()">`;
     } else {
       control=`<input type="${f.type||'text'}" id="d-${f.key}" ${f.type==='number'?'step="any" min="0"':''}>`;
     }
@@ -6581,6 +6604,13 @@ function buildDetailFields(){
     wrap.appendChild(div);
   });
   refreshSupplierSelect();
+  diCalcTotal();
+}
+/* live-update the read-only Total field from Q'ty × Actual Unit Price */
+function diCalcTotal(){
+  const tot=document.getElementById('d-total'); if(!tot) return;
+  const q=document.getElementById('d-qty'), u=document.getElementById('d-unitPrice');
+  tot.value=nxCalcTotal(q?q.value:'', u?u.value:'');
 }
 /* ---- Detail-input helpers (auto Rev, units, group store) ---- */
 function diNextRev(wn){
@@ -6728,9 +6758,18 @@ document.getElementById('detailForm').addEventListener('submit',function(e){
   FIELDS.forEach(f=>{
     const el=document.getElementById('d-'+f.key); const v=el?el.value.trim():'';
     data[f.key]=v;
-    const div=document.getElementById('df-'+f.key);
-    if(f.req){ const valid=v!==''; div.classList.toggle('invalid',!valid); if(!valid) ok=false; }
+    const div=document.getElementById('df-'+f.key); if(div) div.classList.remove('invalid');
   });
+  // Total Amount is always Q'ty × Actual Unit Price
+  data.total=nxCalcTotal(data.qty,data.unitPrice);
+  // Incomplete rows are allowed: require at least ONE real important value, then auto-fill the rest with "-"
+  if(nxImportantFilled(data)===0){
+    ok=false;
+    IMPORTANT_KEYS.forEach(k=>{ const div=document.getElementById('df-'+k); if(div) div.classList.add('invalid'); });
+    showToast(LANG==='en'?'Enter at least one value in the important section.':'กรอกอย่างน้อยหนึ่งช่องในส่วนสำคัญก่อน');
+  } else {
+    nxFillImportantDashes(data);   // blanks become "-" (they will blink red in Work Spectator)
+  }
   // Withdraw-from-stock case
   let stockWithdraw=null;
   if((data.supplier||'').startsWith('STOCK:') && detailStockPick){
@@ -6876,8 +6915,14 @@ function diMergedRows(){
     if(inScope){ DI_APPLY_FIELDS.forEach(f=>{ if(ov[f.key]!=='') rec[f.key]=ov[f.key]; }); }
     DI_PREVIEW_COLS.forEach(k=>{ if(rec[k]==null) rec[k]=''; });
     rec.rev = inScope ? String(revN++) : '';
-    const missing = inScope ? FIELDS.filter(f=>f.req && f.key!=='rev' && (!rec[f.key]||rec[f.key]==='')).map(f=>f.key) : [];
-    return {idx, rec, inScope, missing};
+    // auto Total, and auto-dash blanks so incomplete rows still upload (only truly-empty rows are flagged)
+    let missing=[], dashed=[];
+    if(inScope){
+      rec.total=nxCalcTotal(rec.qty,rec.unitPrice);
+      if(nxImportantFilled(rec)===0){ missing=IMPORTANT_KEYS.slice(); }
+      else { dashed=nxFillImportantDashes(rec); }
+    }
+    return {idx, rec, inScope, missing, dashed};
   });
 }
 /* Re-render ONLY the tbody (keeps override-field focus + horizontal scroll intact). */
@@ -6886,10 +6931,10 @@ function diRenderTableBody(){
   const merged=diMergedRows();
   tb.innerHTML=merged.map(m=>{
     const sel=diCsvSel.has(m.idx);
-    const cls=(sel?'sel':'')+(m.inScope?'':' outscope')+(m.inScope&&m.missing.length?' rowmiss':'');
+    const cls=(sel?'sel':'')+(m.inScope?'':' outscope')+(m.inScope&&(m.missing.length||(m.dashed&&m.dashed.length))?' rowmiss':'');
     let tds=`<td class="di-csv-ck"><input type="checkbox" ${sel?'checked':''} onclick="diCsvRowClick(event,${m.idx})"></td><td class="di-csv-n">${m.idx+1}</td>`;
     DI_PREVIEW_COLS.forEach(k=>{
-      const miss=m.inScope && m.missing.indexOf(k)>=0;
+      const miss=m.inScope && (m.missing.indexOf(k)>=0 || (m.dashed&&m.dashed.indexOf(k)>=0));
       const isRev=k==='rev';
       tds+=`<td class="${miss?'di-miss-cell':''}${isRev?' di-rev-cell':''}">${escapeHtml(m.rec[k]!=null?String(m.rec[k]):'')}</td>`;
     });
@@ -6992,7 +7037,8 @@ function diCsvConfirm(){
       footButtons:[{label:(en?'OK':'ตกลง'),cls:'primary',onClick:closeModal}]});
     return;
   }
-  showToast(en?`✓ Confirmed — ${scope.length} row(s) ready to upload`:`✓ ยืนยันแล้ว — ${scope.length} แถวพร้อมอัปโหลด`);
+  const dashRows=scope.filter(m=>m.dashed&&m.dashed.length).length;
+  showToast(en?`✓ Confirmed — ${scope.length} row(s) ready to upload${dashRows?` · ${dashRows} auto-filled with "-" (will blink in Spectator)`:''}`:`✓ ยืนยันแล้ว — ${scope.length} แถวพร้อมอัปโหลด${dashRows?` · ${dashRows} แถวเติม "-" อัตโนมัติ (จะกะพริบใน Spectator)`:''}`);
 }
 /* UPLOAD — only works after Confirm; saves the in-scope rows to the selected work. */
 function diCsvUpload(){
@@ -7244,19 +7290,19 @@ function renderSpectator(){
       <td>${escapeHtml(w.workName||'')}</td>
       <td>${escapeHtml(w.custName||'')}</td>
       <td>${w.custCode?'<span class="badge b-grp">'+escapeHtml(w.custCode)+'</span>':''}</td>
-      <td>${escapeHtml(d.rev||'')}</td>
-      <td><select class="spec-inline spec-editable${stg('module')}" onchange="specRowSet('${d.id}','module',this)">${specModuleOptions(dv.module||'')}</select></td>
-      <td>${escapeHtml(d.list||'')}</td>
-      <td>${escapeHtml(d.qty||'')}</td>
-      <td>${escapeHtml(d.brand||'')}</td>
+      <td class="${nxNeedsFill(d.rev)?'spec-needfill':''}">${escapeHtml(d.rev||'')}</td>
+      <td class="${nxNeedsFill(dv.module)?'spec-needfill':''}"><select class="spec-inline spec-editable${stg('module')}" onchange="specRowSet('${d.id}','module',this)">${specModuleOptions(dv.module||'')}</select></td>
+      <td class="${nxNeedsFill(dv.list)?'spec-needfill':''}"><input type="text" class="spec-inline spec-inline-txt spec-editable${stg('list')}" value="${escapeAttr(dv.list||'')}" placeholder="—" onchange="specRowInput('${d.id}','list',this)" onclick="event.stopPropagation()"></td>
+      <td class="${nxNeedsFill(dv.qty)?'spec-needfill':''}"><input type="text" class="spec-inline spec-inline-num spec-editable${stg('qty')}" value="${escapeAttr(dv.qty||'')}" placeholder="—" onchange="specRowInput('${d.id}','qty',this)" onclick="event.stopPropagation()"></td>
+      <td class="${nxNeedsFill(dv.brand)?'spec-needfill':''}"><input type="text" class="spec-inline spec-inline-txt spec-editable${stg('brand')}" value="${escapeAttr(dv.brand||'')}" placeholder="—" onchange="specRowInput('${d.id}','brand',this)" onclick="event.stopPropagation()"></td>
       <td>${escapeHtml(d.supplier||'')}</td>
       <td><select class="spec-inline spec-inline-txt spec-editable${stg('poNo')}" onchange="specPoSelect('${d.id}',this)" onclick="event.stopPropagation()">${specPoOptions(d)}</select></td>
       <td class="money"><input type="number" step="any" min="0" class="spec-inline spec-inline-num spec-editable${stg('estUnitPrice')}" value="${dv.estUnitPrice?escapeAttr(dv.estUnitPrice):''}" placeholder="0.00" onchange="specRowInput('${d.id}','estUnitPrice',this)" onclick="event.stopPropagation()"></td>
       <td class="money" title="${escapeAttr(LANG==='en'?"Auto — set from Delivery Check: value(THB) ÷ Q'ty":'อัตโนมัติ — มาจาก Delivery Check: value(THB) ÷ จำนวน')}">${dv.unitPrice?fmtTHB(dv.unitPrice):'<span class="spec-auto-hint">'+(LANG==='en'?'auto':'อัตโนมัติ')+'</span>'}</td>
       ${marginCell(mgUnit(dv))}
       ${marginCell(mgTot(dv))}
-      <td class="money">${d.total?fmtTHB(d.total):''}</td>
-      <td><select class="spec-inline spec-inline-grp spec-editable${stg('group')}" onchange="specRowSet('${d.id}','group',this)">${specGroupOptions(dv.group||'')}</select></td>
+      <td class="money">${(function(){ const pv=(s&&('qty' in s))?nxCalcTotal(dv.qty,dv.unitPrice):d.total; return pv?fmtTHB(pv):''; })()}</td>
+      <td class="${nxNeedsFill(dv.group)?'spec-needfill':''}"><select class="spec-inline spec-inline-grp spec-editable${stg('group')}" onchange="specRowSet('${d.id}','group',this)">${specGroupOptions(dv.group||'')}</select></td>
       <td>${shipCell}</td>
       <td>${escapeHtml(d.recvDate||'—')}</td>
       <td><button class="btn danger" style="padding:6px 12px;font-size:13px" onclick="event.stopPropagation();delDetail('${d.id}')">✕</button></td>`;
@@ -7403,7 +7449,7 @@ function specBulkOnPick(field,sel){
    Every editable field routes through specStageSet (no immediate DB write). specUpdateCommit
    writes all staged changes at once; the Update button blinks green while anything is pending. */
 let specStage={};
-const SPEC_EDIT_FIELDS=['module','group','poNo','estUnitPrice'];
+const SPEC_EDIT_FIELDS=['list','qty','brand','module','group','poNo','estUnitPrice'];
 function specStagedVal(d,field){ const s=specStage[d.id]; return (s && (field in s)) ? s[field] : (d[field]||''); }
 function specIsDirty(d){ const s=specStage[d.id]; if(!s) return false; return SPEC_EDIT_FIELDS.some(f=>(f in s) && String(s[f]||'')!==String(d[f]||'')); }
 function specPendingIds(){ return DB.details().filter(d=>specIsDirty(d)).map(d=>d.id); }
@@ -7454,6 +7500,7 @@ function specUpdateCommit(){
       if(f==='module' && s[f]) diSaveModule(s[f]);
       else if(f==='group' && s[f]){ const g=diGroups(); if(!g.includes(s[f])){ g.push(s[f]); diSaveGroups(g); } }
     } });
+    if('qty' in s){ const nt=nxCalcTotal(d.qty,d.unitPrice); if(nt!=='') d.total=nt; }   // keep Total = Q'ty × Actual Unit Price when Q'ty is edited
     if('poNo' in s) touchedPo.push({poNo:d.poNo, workNo:d.workNo});
     n++;
   });
@@ -11876,7 +11923,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-o';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-p';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
