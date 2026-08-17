@@ -5125,6 +5125,27 @@ function nxEnsureVendor(name){
 }
 /* ensure every supplier used across a set of records exists in the Vendor Directory; returns how many were added */
 function nxEnsureVendorsFrom(recs){ let n=0; const seen=new Set(); (recs||[]).forEach(r=>{ const nm=String((r&&r.supplier)||'').trim(); if(!nm) return; const k=nm.toLowerCase(); if(seen.has(k)) return; seen.add(k); if(nxEnsureVendor(nm)) n++; }); return n; }
+/* For each detail that already has a Received Date + real supplier, create its Stock row (received→stock),
+   the same link the Delivery Check page makes. Sets d.stockedId. Batched into ONE stock save. Returns count. */
+function nxStockFromDetails(list){
+  const stk=DB.stock(); let n=0; const base=Date.now();
+  (list||[]).forEach((d,i)=>{
+    if(!d || d.stockedId) return;
+    const recv=String(d.recvDate||'').trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(recv)) return;                 // only genuine received dates (ISO)
+    const sup=String(d.supplier||'').trim();
+    if(!sup || sup==='-' || /^stock:/i.test(sup)) return;         // skip blank / "-" / stock-withdrawals
+    const rec={ id:'stk'+base.toString(36)+i.toString(36)+Math.floor(Math.random()*1e6).toString(36),
+      no:'RC-'+(d.poNo||d.workNo||'X')+'-'+String(base+i).slice(-4), date:recv, supplier:sup, work:(d.workNo||'Stock'),
+      list:d.list||'', qty:d.qty||'0', qtyInit:d.qty||'0', unit:d.unit||'pcs', estUnitPrice:d.estUnitPrice||'',
+      unitPrice:d.unitPrice||'', shipDate:d.shipDate||'', recvDate:recv, submittedBy:'', payment:d.total||'',
+      paymentImg:'', prNo:d.poNo||'', note:((typeof t==='function'?t('fromDelivery'):'Received from delivery ·')||'Received from delivery ·')+' '+(d.workNo||''), fromDetail:d.id };
+    stk.push(rec); d.stockedId=rec.id; n++;
+  });
+  if(n) DB.saveStock(stk);
+  return n;
+}
+function nxStockFromDetail(d){ return nxStockFromDetails([d])>0; }
 function nxCalcTotal(qty,unitPrice){ const q=parseFloat(nxCleanNum(qty)), u=parseFloat(nxCleanNum(unitPrice)); if(!isFinite(q)||!isFinite(u)) return ''; const v=q*u; return v?String(+v.toFixed(2)):'0'; }
 
 /* =================== i18n =================== */
@@ -6792,11 +6813,9 @@ function onSelectWork(){
 function diEditWorkDetails(){
   const wn=document.getElementById('selWorkNo')?document.getElementById('selWorkNo').value:'';
   if(!wn){ showToast(LANG==='en'?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
-  go('spectator');
-  const ft=document.getElementById('filterType'); if(ft){ ft.value='workNo'; onFilterTypeChange(); }
-  const fp=document.getElementById('filterPick'); if(fp){ fp.value=wn; }
-  const fi=document.getElementById('filterInput'); if(fi) fi.value='';
-  renderSpectator();
+  go('spectator');   // go() runs its own onFilterTypeChange — so apply the work filter AFTER it
+  const applyFilter=()=>{ const ft=document.getElementById('filterType'); if(ft) ft.value='workNo'; onFilterTypeChange(); const fi=document.getElementById('filterInput'); if(fi) fi.value=''; const fp=document.getElementById('filterPick'); if(fp) fp.value=wn; renderSpectator(); };
+  applyFilter(); setTimeout(applyFilter,60);   // twice: once now, once after any deferred nav re-render, so the pick sticks
   showToast(LANG==='en'?('Editing details for '+wn+' — change values, then press Update'):('แก้ไขรายละเอียดของ '+wn+' — เปลี่ยนค่าแล้วกด Update'));
 }
 document.getElementById('detailForm').addEventListener('submit',function(e){
@@ -6837,6 +6856,7 @@ document.getElementById('detailForm').addEventListener('submit',function(e){
   confirmModal(t('mConfirmTitle'),t('mConfirmDesc'),rows,()=>{
     const dets=DB.details(); dets.push(data); DB.saveDetails(dets); priceLogAppend(data);
     try{ if(nxEnsureVendor(data.supplier) && typeof renderVendors==='function') renderVendors(); }catch(_){}   // auto-register a new supplier name
+    try{ if(!stockWithdraw && nxStockFromDetail(data)){ DB.saveDetails(dets); if(typeof renderStockList==='function') renderStockList(); } }catch(_){}   // received item → Stock
     if(stockWithdraw){ doWithdraw(stockWithdraw.stockId, stockWithdraw.qty, {workNo:wn, reason:t('workLabel')+' '+wn, by:''}); renderStockList(); }
     detailStockPick=null; setStockDateLabels(false);
     closeModal(); successModal(t('detailComplete'),t('detailCompleteSub'));
@@ -7149,14 +7169,19 @@ function diCsvUpload(){
   const scope=merged.filter(m=>m.inScope);
   if(scope.some(m=>m.missing.length)){ diCsvConfirmed=false; diUpdateCsvButtons(); diCsvConfirm(); return; }
   const dets=DB.details();
-  scope.forEach((m,i)=>{ const rec=Object.assign({}, m.rec); rec.id='d'+Date.now()+i+Math.floor(Math.random()*1000); rec.workNo=wn; dets.push(rec); priceLogAppend(rec); });
+  const newDetails=[];
+  scope.forEach((m,i)=>{ const rec=Object.assign({}, m.rec); rec.id='d'+Date.now()+i+Math.floor(Math.random()*1000); rec.workNo=wn; dets.push(rec); newDetails.push(rec); priceLogAppend(rec); });
   DB.saveDetails(dets);
-  const nv=nxEnsureVendorsFrom(scope.map(m=>m.rec));   // auto-register any new supplier names in the Vendor Directory
+  const nv=nxEnsureVendorsFrom(newDetails);            // auto-register any new supplier names in the Vendor Directory
+  const ns=nxStockFromDetails(newDetails);            // received items (with a received date) auto-fill into Stock
+  if(ns) DB.saveDetails(dets);                        // persist the detail→stock links (stockedId)
   const n=scope.length;
-  successModal(en?`${n} detail(s) uploaded!`:`อัปโหลดรายละเอียด ${n} รายการแล้ว!`, (en?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว')+(nv?(en?` · ${nv} new supplier(s) added to Vendors.`:` · เพิ่มผู้จัดจำหน่ายใหม่ ${nv} ราย`):''));
+  const extra=(nv?(en?` · ${nv} new supplier(s) added to Vendors`:` · เพิ่มผู้จัดจำหน่ายใหม่ ${nv} ราย`):'')+(ns?(en?` · ${ns} received item(s) added to Stock`:` · เพิ่มของรับเข้า Stock ${ns} รายการ`):'');
+  successModal(en?`${n} detail(s) uploaded!`:`อัปโหลดรายละเอียด ${n} รายการแล้ว!`, (en?'All rows saved to the selected work.':'บันทึกทุกแถวเข้างานที่เลือกแล้ว')+extra);
   diCsvReset();
   renderSpectator(); renderTimeline(); computeAlerts();
   if(typeof renderVendors==='function') renderVendors(); if(typeof refreshSupplierSelect==='function') refreshSupplierSelect();
+  if(typeof renderStockList==='function') renderStockList(); if(typeof renderStockAnalysis==='function') renderStockAnalysis();
 }
 
 /* =================== SPECTATOR + FILTER =================== */
@@ -12025,7 +12050,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-u';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-v';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
