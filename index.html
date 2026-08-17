@@ -2772,6 +2772,9 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <div class="spec-bulk-cell"><label data-i18n="specSetPo">Set PO NO.</label>
             <div class="spec-bulk-ctrl"><select id="specBulkPo" onchange="specBulkPoPick(this)"></select><button type="button" class="btn primary sm" onclick="specBulkApply('poNo')" data-i18n="specApply">Apply</button></div>
           </div>
+          <div class="spec-bulk-cell"><label data-i18n="specSetRev">Set Rev.</label>
+            <div class="spec-bulk-ctrl"><input type="text" id="specBulkRev" placeholder="e.g. 1" style="width:82px" onkeydown="if(event.key==='Enter'){event.preventDefault();specBulkApply('rev');}"><button type="button" class="btn primary sm" onclick="specBulkApply('rev')" data-i18n="specApply">Apply</button></div>
+          </div>
           <button type="button" class="btn ghost sm" onclick="specClearSel()" data-i18n="specClearSel">Clear selection</button>
         </div>
       </div>
@@ -6187,6 +6190,7 @@ const I18N = {
   specSetModule:{en:"Set Module",th:"กำหนด Module"},
   specSetPo:{en:"Set PO NO.",th:"กำหนด PO NO."},
   specSetGroup:{en:"Set Group",th:"กำหนดหมวดหมู่"},
+  specSetRev:{en:"Set Rev.",th:"กำหนด Rev."},
   specApply:{en:"Apply",th:"ใช้"},
   specClearSel:{en:"Clear selection",th:"ล้างการเลือก"},
   specUnsaved:{en:"unsaved change(s) — shown as a preview in the table below",th:"การเปลี่ยนแปลงที่ยังไม่บันทึก — แสดงเป็นตัวอย่างในตารางด้านล่าง"},
@@ -6583,8 +6587,8 @@ function buildDetailFields(){
       hint=`<div class="field-hint">${LANG==='en'?'Optional — select from Vendor Directory, or add a new vendor with contact info.':'ไม่บังคับ — เลือกจากทำเนียบผู้จัดจำหน่าย หรือเพิ่มผู้ขายใหม่พร้อมข้อมูลติดต่อ'}</div>`;
     } else if(f.key==='rev'){
       const nx=diNextRev(wn);
-      control=`<input type="text" id="d-rev" class="di-auto" value="${escapeAttr(nx)}" readonly>`;
-      hint=`<div class="field-hint">${LANG==='en'?'Auto — next revision for this Work No (latest + 1).':'อัตโนมัติ — ฉบับแก้ไขถัดไปของ Work No นี้ (ล่าสุด + 1)'}</div>`;
+      control=`<input type="text" id="d-rev" value="${escapeAttr(nx)}" placeholder="${escapeAttr(nx)}">`;
+      hint=`<div class="field-hint">${LANG==='en'?'Editable — defaults to the next revision ('+escapeHtml(nx)+'). Change it to keep the original Rev.':'แก้ไขได้ — ค่าเริ่มต้นคือฉบับถัดไป ('+escapeHtml(nx)+') เปลี่ยนได้เพื่อใช้ Rev เดิม'}</div>`;
     } else if(f.key==='unit'){
       control=`<select id="d-unit">${diUnitOptions('')}</select>`;
     } else if(f.key==='group'){
@@ -6849,12 +6853,40 @@ const DI_CSV_COLS=[
   {key:'brand',    en:'Brand',             th:'แบรนด์'},
   {key:'heat',     en:'Heat Treatment',    th:'การอบชุบ'}
 ];
+/* Header-name detection: the uploaded file's own column headers are matched to fields so a
+   Rev column (or any reordered column) is read as-is. Rev is NEVER auto-generated — the original
+   value from the file is kept; if the file has no Rev, it is left blank and filled via bulk apply.
+   Files whose headers don't match fall back to the positional DI_CSV_COLS order above. */
+let diCsvColMap=null;   // {fieldKey: columnIndex} or null → use positional DI_CSV_COLS
+const DI_HEADER_KEYS=['rev','module','list','specific','qty','unit','brand','heat','group'];
+function diNorm(s){ return String(s==null?'':s).toLowerCase().replace(/[\s\.\(\)\[\]_\-\/:#]+/g,''); }
+function diMatchHeader(h){
+  const n=diNorm(h); if(!n) return null;
+  const has=(...ks)=>ks.some(k=>n.indexOf(k)>=0);
+  if(has('price','ราคา','เงิน','total','amount')) return null;                 // money columns are not important-section fields
+  if(has('supplier','ผู้จัด','ship','จัดส่ง','recv','received','รับของ','po')) return null;   // additional-section columns
+  if(has('rev','ฉบับ')) return 'rev';
+  if(has('module','โมดูล')) return 'module';
+  if(has('specific','รายละเอียด')) return 'specific';
+  if(has('quantity','qty','จำนวน')) return 'qty';
+  if(has('unit','หน่วย')) return 'unit';
+  if(has('brand','แบรนด์','ยี่ห้อ')) return 'brand';
+  if(has('heat','อบชุบ','treatment')) return 'heat';
+  if(has('group','หมวด')) return 'group';
+  if(has('list','รายการ')) return 'list';                                       // broad — checked last
+  return null;
+}
+function diDetectColMap(headers){
+  const map={}; let n=0;
+  (headers||[]).forEach((h,i)=>{ const k=diMatchHeader(h); if(k && !(k in map)){ map[k]=i; n++; } });
+  return n>=2 ? map : null;   // need ≥2 recognizable headers before trusting header-mode
+}
 function diBuildCsvUI(){
   const c=document.getElementById('diCsv'); if(!c) return;
   const en=LANG==='en';
   c.innerHTML=`
-    <div class="di-csv-intro">${en?'Upload a CSV whose columns follow this order. Any column can be left blank and filled below.':'อัปโหลดไฟล์ CSV โดยเรียงคอลัมน์ตามลำดับนี้ คอลัมน์ใดเว้นว่างแล้วมากรอกด้านล่างได้'}</div>
-    <div class="di-csv-cols">${DI_CSV_COLS.map((h,i)=>`<span class="di-csv-col">${i+1}. ${escapeHtml(en?h.en:h.th)}</span>`).join('')}</div>
+    <div class="di-csv-intro">${en?'Columns are matched by their header name (any order). A <b>Rev</b> column in the file is kept as-is — never renumbered. If your headers don\'t match, columns are read in the order below. Any column can be left blank and filled below or in Work Spectator.':'ระบบจับคู่คอลัมน์จากชื่อหัวตาราง (สลับลำดับได้) คอลัมน์ <b>Rev</b> ในไฟล์จะถูกเก็บไว้ตามเดิม — ไม่สร้างเลขใหม่ หากชื่อหัวตารางไม่ตรง จะอ่านตามลำดับด้านล่าง คอลัมน์ที่เว้นว่างเติมด้านล่างหรือใน Work Spectator ได้'}</div>
+    <div class="di-csv-cols"><span class="di-csv-col">Rev</span>${DI_CSV_COLS.map((h)=>`<span class="di-csv-col">${escapeHtml(en?h.en:h.th)}</span>`).join('')}</div>
     <div class="di-drop" id="diDrop" onclick="document.getElementById('diFile').click()"
       ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')"
       ondrop="diDropFile(event)">
@@ -6876,6 +6908,7 @@ function diParseCsv(text){
   const rows=csvParse(text).filter(r=>r.some(c=>String(c).trim()!==''));
   if(!rows.length){ showToast(LANG==='en'?'CSV is empty.':'ไฟล์ CSV ว่างเปล่า'); return; }
   diCsvHeaders=rows[0];
+  diCsvColMap=diDetectColMap(diCsvHeaders);   // read the file's own Rev / reordered columns when headers are recognizable
   diCsvRows=rows.slice(1).map(cells=>({cells}));
   diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false;
   diRenderCsvArea();
@@ -6907,14 +6940,15 @@ function diMergedRows(){
   const selEl=document.getElementById('selWorkNo'); const wn=selEl?selEl.value:'';
   const scope=new Set(diCsvScope());
   const ov=diOverrides();
-  let revN=parseInt(diNextRev(wn),10); if(isNaN(revN)) revN=1;
   return diCsvRows.map((r,idx)=>{
     const inScope=scope.has(idx);
     const rec={workNo:wn};
-    DI_CSV_COLS.forEach((col,ci)=>{ rec[col.key]=(r.cells[ci]!=null?String(r.cells[ci]).trim():''); });
+    if(diCsvColMap){ DI_HEADER_KEYS.forEach(k=>{ if(k in diCsvColMap){ const ci=diCsvColMap[k]; rec[k]=(r.cells[ci]!=null?String(r.cells[ci]).trim():''); } }); }
+    else { DI_CSV_COLS.forEach((col,ci)=>{ rec[col.key]=(r.cells[ci]!=null?String(r.cells[ci]).trim():''); }); }
     if(inScope){ DI_APPLY_FIELDS.forEach(f=>{ if(ov[f.key]!=='') rec[f.key]=ov[f.key]; }); }
     DI_PREVIEW_COLS.forEach(k=>{ if(rec[k]==null) rec[k]=''; });
-    rec.rev = inScope ? String(revN++) : '';
+    // Rev is taken from the file as-is (never auto-generated). Blank Rev stays blank — fill it in Work Spectator.
+    rec.rev = (rec.rev!=null?String(rec.rev).trim():'');
     // auto Total, and auto-dash blanks so incomplete rows still upload (only truly-empty rows are flagged)
     let missing=[], dashed=[];
     if(inScope){
@@ -7012,7 +7046,7 @@ function diUpdateCsvButtons(){
     else { st.className='di-confirm-status'; st.textContent=(en?'Press Confirm to validate the table before uploading.':'กด Confirm เพื่อตรวจสอบตารางก่อนอัปโหลด'); }
   }
 }
-function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false; diBuildCsvUI(); }
+function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvColMap=null; diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false; diBuildCsvUI(); }
 function diApplyVal(key){
   if(key==='group'){ const h=document.getElementById('da-group'); return h?h.value.trim():''; }
   const el=document.getElementById('da-'+key); return el?String(el.value).trim():'';
@@ -7290,7 +7324,7 @@ function renderSpectator(){
       <td>${escapeHtml(w.workName||'')}</td>
       <td>${escapeHtml(w.custName||'')}</td>
       <td>${w.custCode?'<span class="badge b-grp">'+escapeHtml(w.custCode)+'</span>':''}</td>
-      <td class="${nxNeedsFill(d.rev)?'spec-needfill':''}">${escapeHtml(d.rev||'')}</td>
+      <td class="${nxNeedsFill(dv.rev)?'spec-needfill':''}"><input type="text" class="spec-inline spec-inline-num spec-editable${stg('rev')}" value="${escapeAttr(dv.rev||'')}" placeholder="—" onchange="specRowInput('${d.id}','rev',this)" onclick="event.stopPropagation()" title="${escapeAttr(LANG==='en'?'Revision — edit here, or select rows and use Set Rev.':'ฉบับแก้ไข — แก้ที่นี่ หรือเลือกแถวแล้วใช้ Set Rev.')}"></td>
       <td class="${nxNeedsFill(dv.module)?'spec-needfill':''}"><select class="spec-inline spec-editable${stg('module')}" onchange="specRowSet('${d.id}','module',this)">${specModuleOptions(dv.module||'')}</select></td>
       <td class="${nxNeedsFill(dv.list)?'spec-needfill':''}"><input type="text" class="spec-inline spec-inline-txt spec-editable${stg('list')}" value="${escapeAttr(dv.list||'')}" placeholder="—" onchange="specRowInput('${d.id}','list',this)" onclick="event.stopPropagation()"></td>
       <td class="${nxNeedsFill(dv.qty)?'spec-needfill':''}"><input type="text" class="spec-inline spec-inline-num spec-editable${stg('qty')}" value="${escapeAttr(dv.qty||'')}" placeholder="—" onchange="specRowInput('${d.id}','qty',this)" onclick="event.stopPropagation()"></td>
@@ -7449,7 +7483,7 @@ function specBulkOnPick(field,sel){
    Every editable field routes through specStageSet (no immediate DB write). specUpdateCommit
    writes all staged changes at once; the Update button blinks green while anything is pending. */
 let specStage={};
-const SPEC_EDIT_FIELDS=['list','qty','brand','module','group','poNo','estUnitPrice'];
+const SPEC_EDIT_FIELDS=['rev','list','qty','brand','module','group','poNo','estUnitPrice'];
 function specStagedVal(d,field){ const s=specStage[d.id]; return (s && (field in s)) ? s[field] : (d[field]||''); }
 function specIsDirty(d){ const s=specStage[d.id]; if(!s) return false; return SPEC_EDIT_FIELDS.some(f=>(f in s) && String(s[f]||'')!==String(d[f]||'')); }
 function specPendingIds(){ return DB.details().filter(d=>specIsDirty(d)).map(d=>d.id); }
@@ -7518,13 +7552,14 @@ function specBulkApply(field){
   const en=LANG==='en';
   let val;
   if(field==='poNo'){ const sel=document.getElementById('specBulkPo'); val=sel?sel.value:''; if(val==='__addpo__'){ sel.value=''; specBulkAddPo(); return; } if(val===''){ showToast(en?'Pick a PO (or ➕ New PO) first.':'เลือก PO (หรือ ➕ เพิ่ม PO) ก่อน'); return; } }
+  else if(field==='rev'){ const el=document.getElementById('specBulkRev'); val=el?el.value.trim():''; if(val===''){ showToast(en?'Type a Rev value first.':'พิมพ์ค่า Rev ก่อน'); return; } }
   else { const sel=document.getElementById(field==='module'?'specBulkModule':'specBulkGroup'); val=sel?sel.value:''; if(val==='__add__'){ specBulkOnPick(field,sel); return; } }
   if(!specSel.size){ showToast(en?'Select rows first.':'เลือกแถวก่อน'); return; }
   const dets=DB.details(); let n=0;
   dets.forEach(d=>{ if(specSel.has(d.id)){ if(!specStage[d.id]) specStage[d.id]={}; specStage[d.id][field]=val; n++; } });
   [...specSel].forEach(specStageDropIfClean);
   renderSpectator();
-  const lbl = field==='module'?'Module':(field==='group'?'Group':'PO NO.');
+  const lbl = field==='module'?'Module':(field==='group'?'Group':(field==='rev'?'Rev.':'PO NO.'));
   showToast((en?`Staged ${lbl} on ${n} row(s) · press Update to save`:`เตรียม ${lbl} ${n} แถว · กด Update เพื่อบันทึก`));
 }
 
@@ -11923,7 +11958,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-p';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-q';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
