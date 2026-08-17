@@ -691,6 +691,31 @@ tr.spec-dirty>td:first-child{box-shadow:inset 4px 0 0 var(--green)}
 td.spec-needfill{position:relative;box-shadow:inset 0 0 0 2px var(--red);border-radius:8px;animation:nxNeedFill 1.05s ease-in-out infinite}
 td.spec-needfill>input.spec-inline,td.spec-needfill>select.spec-inline{border-color:var(--red)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--red) 45%,transparent)}
 @keyframes nxNeedFill{0%,100%{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--red) 90%,transparent),0 0 0 0 color-mix(in srgb,var(--red) 55%,transparent)}50%{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--red) 40%,transparent),0 0 6px 2px color-mix(in srgb,var(--red) 35%,transparent)}}
+/* ===== Delivery-Check "Source from Stock" comparison popup ===== */
+.ck-stkcmp-head{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 14px;background:var(--inset-bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.ck-stkcmp-c{display:flex;flex-direction:column;gap:2px}
+.ck-stkcmp-k{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.ck-stkcmp-c b{font-size:14px}
+.ck-stk-list-title{font-size:12.5px;font-weight:600;color:var(--muted);margin:4px 2px 8px}
+.ck-stk-list{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto}
+.ck-stk-opt{display:flex;align-items:center;gap:11px;padding:10px 13px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;background:var(--card-bg);transition:border-color .12s,background .12s}
+.ck-stk-opt:hover{border-color:color-mix(in srgb,var(--cyan) 45%,var(--line))}
+.ck-stk-opt.sel{border-color:var(--cyan);background:color-mix(in srgb,var(--cyan) 10%,var(--card-bg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cyan) 40%,transparent)}
+.ck-stk-opt.out{opacity:.55}
+.ck-stk-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;position:relative}
+.ck-stk-opt.sel .ck-stk-radio{border-color:var(--cyan)}
+.ck-stk-opt.sel .ck-stk-radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--cyan)}
+.ck-stk-main{flex:1;min-width:0}
+.ck-stk-l{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ck-stk-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:normal}
+.ck-stk-nums{display:flex;gap:16px;flex:none;text-align:right}
+.ck-stk-nums>div{display:flex;flex-direction:column;gap:1px}
+.ck-stk-k{font-size:9.5px;color:var(--muted);font-weight:600;text-transform:uppercase}
+.ck-stk-badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px}
+.ck-stk-badge.list{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+.ck-stk-badge.mod{background:color-mix(in srgb,#d9a406 20%,transparent);color:#a97706}
+.ck-stk-cheap{color:var(--green);font-weight:700;font-size:10.5px}
+.ck-stk-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--inset-bg);border-radius:12px}
 /* Actual Unit Price is auto-derived from Delivery Check — show a faint hint when unset */
 .spec-auto-hint{font-size:10.5px;color:var(--muted);font-style:italic}
 .ship-fix-btn{cursor:pointer}
@@ -7439,7 +7464,7 @@ function renderSpectator(){
     if(specSel.has(d.id)) tr.classList.add('spec-selrow');
     if(dirty) tr.classList.add('spec-dirty');
     tr.innerHTML=`
-      <td class="spec-ck"><input type="checkbox" ${specSel.has(d.id)?'checked':''} onclick="event.stopPropagation();specToggle('${d.id}',this.checked)"></td>
+      <td class="spec-ck"><input type="checkbox" ${specSel.has(d.id)?'checked':''} onclick="event.stopPropagation();specToggle(event,'${d.id}',this.checked)"></td>
       <td>${noShip?`<span class="ship-fix-btn" onclick="event.stopPropagation();openShipFix('${d.id}')" title="${escapeAttr(t('shipFixHint'))}">`:''}<span class="badge b-work">${escapeHtml(d.workNo)}</span>${noShip?'</span>':''}${dirty?'<span class="spec-dirty-dot" title="'+escapeAttr(LANG==='en'?'Unsaved — press Update':'ยังไม่บันทึก — กด Update')+'">●</span>':''}</td>
       <td>${escapeHtml(w.workName||'')}</td>
       <td>${escapeHtml(w.custName||'')}</td>
@@ -7492,7 +7517,16 @@ function specOptsFrom(list,sel,addLabel){
 }
 function specModuleOptions(sel){ return specOptsFrom(specModuleList(),sel,LANG==='en'?'Add new module…':'เพิ่มโมดูลใหม่…'); }
 function specGroupOptions(sel){ return specOptsFrom(specGroupList(),sel,LANG==='en'?'Add new group…':'เพิ่มหมวดหมู่ใหม่…'); }
-function specToggle(id,on){ if(on) specSel.add(id); else specSel.delete(id); const tr=document.querySelector(`#specBody input[onclick*="${id}"]`)?.closest('tr'); if(tr) tr.classList.toggle('spec-selrow',on); specUpdateBulkBar(); }
+let specAnchor=null;
+function specToggle(ev,id,on){
+  if(ev&&ev.shiftKey&&specAnchor&&specAnchor!==id){
+    const ids=specVisibleIds||[]; const a=ids.indexOf(specAnchor), b=ids.indexOf(id);
+    if(a>=0&&b>=0){ const lo=Math.min(a,b),hi=Math.max(a,b); for(let i=lo;i<=hi;i++) specSel.add(ids[i]); specAnchor=id; renderSpectator(); return; }   /* shift-click = select the whole range */
+  }
+  if(on) specSel.add(id); else specSel.delete(id);
+  specAnchor=id;
+  const tr=document.querySelector(`#specBody input[onclick*="${id}"]`)?.closest('tr'); if(tr) tr.classList.toggle('spec-selrow',on); specUpdateBulkBar();
+}
 function specToggleAll(on){ specSel = on ? new Set(specVisibleIds) : new Set(); renderSpectator(); }
 function specClearSel(){ specSel=new Set(); renderSpectator(); }
 function specUpdateBulkBar(){
@@ -8046,6 +8080,7 @@ function ckSupplierOptions(sel){
   let has=false;
   vendors.forEach(v=>{ const s=(v.name===sel); if(s) has=true; html+=`<option value="${escapeAttr(v.name)}"${s?' selected':''}>${escapeHtml(v.name)}</option>`; });
   if(sel && !has) html=`<option value="${escapeAttr(sel)}" selected>${escapeHtml(sel)}</option>`+html;  // e.g. "Stock: ..." keeps showing
+  html+=`<option value="__stock__">📦 ${en?'From Stock…':'จากสต็อก…'}</option>`;
   html+=`<option value="__add__">➕ ${en?'Add vendor…':'เพิ่มผู้ขาย…'}</option>`;
   return html;
 }
@@ -8100,7 +8135,7 @@ function renderCheck(){
     if(ckSel.has(d.id)) tr.classList.add('spec-selrow');
     if(dirty) tr.classList.add('ck-dirty');
     tr.innerHTML=`
-      <td class="spec-ck"><input type="checkbox" ${ckSel.has(d.id)?'checked':''} onclick="event.stopPropagation();ckToggle('${d.id}',this.checked)"></td>
+      <td class="spec-ck"><input type="checkbox" ${ckSel.has(d.id)?'checked':''} onclick="event.stopPropagation();ckToggle(event,'${d.id}',this.checked)"></td>
       <td><span class="badge b-work">${escapeHtml(d.workNo)}</span></td>
       <td>${escapeHtml(w.workName||'')}</td>
       <td>${escapeHtml(d.list||d.module||'-')}</td>
@@ -8215,9 +8250,76 @@ function ckRowSupplier(id,sel){
     openVendorForm();
     return;
   }
+  if(val==='__stock__'){
+    const d=DB.details().find(x=>x.id===id); sel.value=ckStagedVal(d,'supplier')||'';   // keep current until confirmed
+    ckStockCompare(id);
+    return;
+  }
   ckStageSet(id,'supplier',val);
 }
-function ckToggle(id,on){ if(on) ckSel.add(id); else ckSel.delete(id); const c=document.getElementById('ckSelCount'); if(c) c.textContent=ckSel.size; const tr=document.getElementById('ck-'+id); if(tr) tr.classList.toggle('spec-selrow',on); const all=document.getElementById('ckAll'); if(all){ const rows=document.querySelectorAll('#ckBody tr').length; all.checked=ckSel.size>0&&ckSel.size===rows; } }
+/* module of a stock row (stock stores list, not module — derive it from the detail it came from) */
+function stockModule(s){ if(!s) return ''; if(s.module) return s.module; if(s.fromDetail){ const d=DB.details().find(x=>x.id===s.fromDetail); if(d) return d.module||''; } return ''; }
+let ckStockPick={id:null, stockId:null};
+/* Compare this delivery line with matching items already in Stock, and let the user pick one to source from. */
+function ckStockCompare(id){
+  const en=LANG==='en';
+  const d=DB.details().find(x=>x.id===id); if(!d) return;
+  const dl=(d.list||'').trim().toLowerCase(), dm=(d.module||'').trim().toLowerCase();
+  const dq=parseFloat(d.qty)||0, dPrice=parseFloat(d.unitPrice)||parseFloat(d.estUnitPrice)||0;
+  const matches=DB.stock().map(s=>{ const avail=parseFloat(s.qty)||0; const sm=stockModule(s); const sl=(s.list||'').trim().toLowerCase();
+      return {s,avail,sm,matchList:!!(dl&&sl===dl),matchModule:!!(dm&&(sm||'').trim().toLowerCase()===dm)}; })
+    .filter(x=>x.matchList||x.matchModule)
+    .sort((a,b)=> (b.matchList-a.matchList) || (b.avail-a.avail) || ((parseFloat(a.s.unitPrice)||1e12)-(parseFloat(b.s.unitPrice)||1e12)) );
+  ckStockPick={id, stockId: matches.length?matches[0].s.id:null};
+  const head=`<div class="ck-stkcmp-head">
+      <div class="ck-stkcmp-c"><span class="ck-stkcmp-k">${en?'Module':'โมดูล'}</span><b>${escapeHtml(d.module||'—')}</b></div>
+      <div class="ck-stkcmp-c"><span class="ck-stkcmp-k">${en?'Item (List)':'รายการ'}</span><b>${escapeHtml(d.list||'—')}</b></div>
+      <div class="ck-stkcmp-c"><span class="ck-stkcmp-k">${en?'Need':'ต้องการ'}</span><b>${dq||'—'} ${escapeHtml(d.unit||'')}</b></div>
+      <div class="ck-stkcmp-c"><span class="ck-stkcmp-k">${en?'Your price/unit':'ราคา/หน่วย'}</span><b>${dPrice?fmtTHB(dPrice):'—'}</b></div>
+    </div>`;
+  const rowsHtml = matches.length ? matches.map(m=>{ const s=m.s; const up=parseFloat(s.unitPrice)||0;
+      const cheaper=dPrice>0&&up>0&&up<dPrice; const low=m.avail<=0; const sel=s.id===ckStockPick.stockId;
+      const badge=m.matchList?`<span class="ck-stk-badge list">${en?'list match':'ตรงรายการ'}</span>`:`<span class="ck-stk-badge mod">${en?'module match':'ตรงโมดูล'}</span>`;
+      return `<div class="ck-stk-opt${sel?' sel':''}${low?' out':''}" onclick="ckStockSelRow(this,'${b64(s.id)}')">
+        <div class="ck-stk-radio"></div>
+        <div class="ck-stk-main"><div class="ck-stk-l">${escapeHtml(s.list||'—')} ${badge}</div>
+          <div class="ck-stk-sub">${escapeHtml(s.no||'')}${s.supplier?' · '+(en?'from ':'จาก ')+escapeHtml(s.supplier):''}${m.sm?' · '+(en?'mod ':'โมดูล ')+escapeHtml(m.sm):''}${s.recvDate?' · '+(en?'recv ':'รับ ')+escapeHtml(s.recvDate):''}</div></div>
+        <div class="ck-stk-nums"><div><span class="ck-stk-k">${en?'avail':'คงเหลือ'}</span> <b class="${low?'redtext':''}">${m.avail}</b></div>
+          <div><span class="ck-stk-k">${en?'unit':'ต่อหน่วย'}</span> <b>${up?fmtTHB(up):'—'}</b>${cheaper?' <span class="ck-stk-cheap" title="'+(en?'cheaper than your price':'ถูกกว่าราคาของคุณ')+'">▼ '+(en?'cheaper':'ถูกกว่า')+'</span>':''}</div></div>
+      </div>`; }).join('')
+    : `<div class="ck-stk-empty">${en?'No matching item in stock (by list or module). Pick a vendor instead, or add it to stock first.':'ไม่พบสินค้าในสต็อกที่ตรงกัน (ตามรายการหรือโมดูล) เลือกผู้ขาย หรือเพิ่มเข้าสต็อกก่อน'}</div>`;
+  const body=`<div class="ck-stkcmp">${head}
+    <div class="ck-stk-list-title">${en?'Matching items in Stock — click to choose, then Confirm':'สินค้าในสต็อกที่ตรงกัน — คลิกเพื่อเลือก แล้วกดยืนยัน'}</div>
+    <div class="ck-stk-list">${rowsHtml}</div></div>`;
+  customModal({icon:'📦', title:(en?'Source from Stock':'ดึงจากสต็อก'), desc:(en?'Compare this line with what you already have in stock':'เปรียบเทียบรายการนี้กับของที่มีในสต็อก'), bodyHtml:body, footButtons:[
+    {label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},
+    {label:'✔ '+(en?'Confirm':'ยืนยัน'),cls:'primary',onClick:ckStockConfirm}
+  ]});
+}
+function ckStockSelRow(el,sIdB64){ ckStockPick.stockId=ub64(sIdB64); const list=el.closest('.ck-stk-list'); if(list) list.querySelectorAll('.ck-stk-opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel'); }
+function ckStockConfirm(){
+  const en=LANG==='en'; const id=ckStockPick.id, sid=ckStockPick.stockId;
+  if(!sid){ showToast(en?'Pick a stock item first.':'เลือกสินค้าในสต็อกก่อน'); return; }
+  const s=DB.stock().find(x=>x.id===sid); const d=DB.details().find(x=>x.id===id);
+  if(!s||!d){ closeModal(); return; }
+  if(!ckStage[id]) ckStage[id]={};
+  ckStage[id].supplier='Stock: '+(s.list||d.list||'');
+  const up=parseFloat(s.unitPrice)||0, q=parseFloat(d.qty)||0;
+  if(up>0&&q>0) ckStage[id].total=String(+(up*q).toFixed(2));
+  ckStage[id].recvDate=isoOf(new Date());   // on-hand → received now
+  closeModal(); renderCheck();
+  showToast(en?('Sourced from stock: '+(s.list||'')+' — press Update to save'):('ดึงจากสต็อก: '+(s.list||'')+' — กด Update เพื่อบันทึก'));
+}
+let ckAnchor=null;
+function ckToggle(ev,id,on){
+  if(ev&&ev.shiftKey&&ckAnchor&&ckAnchor!==id){
+    const ids=ckVisibleIds||[]; const a=ids.indexOf(ckAnchor), b=ids.indexOf(id);
+    if(a>=0&&b>=0){ const lo=Math.min(a,b),hi=Math.max(a,b); for(let i=lo;i<=hi;i++) ckSel.add(ids[i]); ckAnchor=id; renderCheck(); return; }   /* shift-click = select the whole range */
+  }
+  if(on) ckSel.add(id); else ckSel.delete(id);
+  ckAnchor=id;
+  const c=document.getElementById('ckSelCount'); if(c) c.textContent=ckSel.size; const tr=document.getElementById('ck-'+id); if(tr) tr.classList.toggle('spec-selrow',on); const all=document.getElementById('ckAll'); if(all){ const rows=document.querySelectorAll('#ckBody tr').length; all.checked=ckSel.size>0&&ckSel.size===rows; }
+}
 function ckToggleAll(on){ ckSel = on ? new Set(ckVisibleIds) : new Set(); renderCheck(); }
 /* choosing "Add vendor…" in the batch Supplier select → open the form, then keep the new name selected */
 function ckAsgSupplierChange(sel){
@@ -12094,7 +12196,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-x';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-z';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
