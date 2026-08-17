@@ -5095,6 +5095,24 @@ function nxFillImportantDashes(rec){ const dashed=[]; IMPORTANT_KEYS.forEach(k=>
 /* Total = Q'ty × Actual Unit Price (only when both are real numbers); returns '' otherwise */
 /* strip thousand-commas / spaces / currency so "  26,570.00 " → "26570.00"; '' if no digits */
 function nxCleanNum(s){ const t=String(s==null?'':s).replace(/[^0-9.\-]/g,''); return /\d/.test(t)?t:''; }
+/* normalise an uploaded date to ISO yyyy-mm-dd (the ONLY storable form — needed by the date
+   pickers, sorting & date math). Handles dd/mm/yy(yy), mm/dd/yy(yy) and already-ISO; leaves
+   non-dates (e.g. "-", "ยกเลิก") untouched. dayFirst is auto-detected per file. */
+function nxToIso(s,dayFirst){
+  const t=String(s==null?'':s).trim(); if(!t) return ''; const P=n=>String(n).padStart(2,'0');
+  let m=t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);        // already yyyy-mm-dd-ish
+  if(m){ const mo=+m[2],da=+m[3]; return (mo>=1&&mo<=12&&da>=1&&da<=31)?(m[1]+'-'+P(mo)+'-'+P(da)):t; }
+  m=t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);          // dd/mm/yy(yy) or mm/dd/yy(yy)
+  if(m){ let a=+m[1],b=+m[2],y=+m[3]; if(y<100) y+=2000; let mo,da; if(dayFirst!==false){ da=a; mo=b; } else { mo=a; da=b; }
+    if(mo>12 && da<=12){ const tmp=mo; mo=da; da=tmp; }            // obviously swapped → correct it
+    if(mo>=1&&mo<=12&&da>=1&&da<=31) return y+'-'+P(mo)+'-'+P(da); }
+  return t;   // not a recognisable date — keep as-is
+}
+/* look at a column of dates: any first-part >12 ⇒ day-first; any second-part >12 ⇒ month-first; else day-first */
+function nxDetectDayFirst(vals){
+  for(let i=0;i<vals.length;i++){ const m=String(vals[i]==null?'':vals[i]).trim().match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.]\d{2,4}$/); if(!m) continue; const a=+m[1],b=+m[2]; if(a>12) return true; if(b>12) return false; }
+  return true;
+}
 function nxCalcTotal(qty,unitPrice){ const q=parseFloat(nxCleanNum(qty)), u=parseFloat(nxCleanNum(unitPrice)); if(!isFinite(q)||!isFinite(u)) return ''; const v=q*u; return v?String(+v.toFixed(2)):'0'; }
 
 /* =================== i18n =================== */
@@ -6860,6 +6878,7 @@ const DI_CSV_COLS=[
    value from the file is kept; if the file has no Rev, it is left blank and filled via bulk apply.
    Files whose headers don't match fall back to the positional DI_CSV_COLS order above. */
 let diCsvColMap=null;   // {fieldKey: columnIndex} or null → use positional DI_CSV_COLS
+let diCsvDayFirst=true; // whether the uploaded file's dates are day-first (dd/mm) — auto-detected
 const DI_HEADER_KEYS=['rev','module','list','specific','qty','unit','brand','heat','group','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total'];
 function diNorm(s){ return String(s==null?'':s).toLowerCase().replace(/[\s\.\(\)\[\]_\-\/:#]+/g,''); }
 /* Match one CSV header to a field key. Whole-file layout (16 columns) is supported: the important
@@ -6922,6 +6941,9 @@ function diParseCsv(text){
   diCsvHeaders=rows[0];
   diCsvColMap=diDetectColMap(diCsvHeaders);   // read the file's own Rev / reordered columns when headers are recognizable
   diCsvRows=rows.slice(1).map(cells=>({cells}));
+  // detect day-first vs month-first from the file's own Shipping/Received date columns
+  diCsvDayFirst=true;
+  if(diCsvColMap){ const dvals=[]; ['shipDate','recvDate'].forEach(k=>{ if(k in diCsvColMap){ const ci=diCsvColMap[k]; diCsvRows.forEach(r=>{ if(r.cells[ci]) dvals.push(r.cells[ci]); }); } }); if(dvals.length) diCsvDayFirst=nxDetectDayFirst(dvals); }
   diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false;
   diRenderCsvArea();
 }
@@ -6959,6 +6981,9 @@ function diMergedRows(){
     else { DI_CSV_COLS.forEach((col,ci)=>{ rec[col.key]=(r.cells[ci]!=null?String(r.cells[ci]).trim():''); }); }
     // clean numeric fields so thousand-commas / spaces from the file don't break the math
     ['qty','estUnitPrice','unitPrice','total'].forEach(k=>{ if(rec[k]) rec[k]=nxCleanNum(rec[k]); });
+    // dates → ISO yyyy-mm-dd so they land in the Delivery Check pickers, sorting & date math
+    if(rec.shipDate) rec.shipDate=nxToIso(rec.shipDate,diCsvDayFirst);
+    if(rec.recvDate) rec.recvDate=nxToIso(rec.recvDate,diCsvDayFirst);
     if(inScope){ DI_APPLY_FIELDS.forEach(f=>{ if(ov[f.key]!=='') rec[f.key]=ov[f.key]; }); }
     DI_PREVIEW_COLS.forEach(k=>{ if(rec[k]==null) rec[k]=''; });
     // Rev is taken from the file as-is (never auto-generated). Blank Rev stays blank — fill it in Work Spectator.
@@ -7060,7 +7085,7 @@ function diUpdateCsvButtons(){
     else { st.className='di-confirm-status'; st.textContent=(en?'Press Confirm to validate the table before uploading.':'กด Confirm เพื่อตรวจสอบตารางก่อนอัปโหลด'); }
   }
 }
-function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvColMap=null; diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false; diBuildCsvUI(); }
+function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvColMap=null; diCsvDayFirst=true; diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false; diBuildCsvUI(); }
 function diApplyVal(key){
   if(key==='group'){ const h=document.getElementById('da-group'); return h?h.value.trim():''; }
   const el=document.getElementById('da-'+key); return el?String(el.value).trim():'';
@@ -11972,7 +11997,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-r';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-s';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
