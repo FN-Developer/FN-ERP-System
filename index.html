@@ -2660,7 +2660,7 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     <div class="page-head"><div class="bar"></div><div><h1 data-i18n="detailTitle">WORK DETAIL INPUT</h1><p data-i18n="detailLead">Select a work order, then add its item details.</p></div></div>
 
     <div class="card" style="margin-bottom:22px">
-      <h2><span class="dot"></span><span data-i18n="selHead">Selection of WORK Detail Input</span></h2>
+      <h2 style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span><span class="dot"></span><span data-i18n="selHead">Selection of WORK Detail Input</span></span><button type="button" class="btn ghost sm" id="selEditBtn" onclick="diEditWorkDetails()" style="display:none">✎ <span data-i18n="selEditBtn">Edit work details</span></button></h2>
       <div class="card-sub" data-i18n="selSub">Choose a Work No — its Name and Delivery Date load automatically.</div>
       <div class="field" style="max-width:420px">
         <label data-i18n="lblSelWorkNo">WORK NO</label>
@@ -6199,6 +6199,7 @@ const I18N = {
   detailTitle:{en:"WORK DETAIL INPUT",th:"กรอกรายละเอียดงาน"},
   detailLead:{en:"Select a work order, then add its item details.",th:"เลือกงาน แล้วกรอกรายละเอียดรายการ"},
   selHead:{en:"Selection of WORK Detail Input",th:"เลือกงานเพื่อกรอกรายละเอียด"},
+  selEditBtn:{en:"Edit work details",th:"แก้ไขรายละเอียดงาน"},
   selSub:{en:"Choose a Work No — its Name and Delivery Date load automatically.",th:"เลือกเลขที่งาน ระบบจะแสดงชื่องานและวันส่งงานอัตโนมัติ"},
   lblSelWorkNo:{en:"WORK NO",th:"เลขที่งาน (WORK NO)"},
   roName:{en:"WORK NAME",th:"ชื่องาน"},
@@ -6784,7 +6785,19 @@ function onSelectWork(){
   document.getElementById('roName').textContent = w?w.workName:'—';
   const rc=document.getElementById('roCost'); if(rc) rc.textContent = (w&&w.estCost)?(w.estCost+' '+(w.estCurrency||'THB')):'—';
   document.getElementById('detailFormCard').style.display = w?'block':'none';
+  const eb=document.getElementById('selEditBtn'); if(eb) eb.style.display = w?'inline-flex':'none';
   if(w){ try{ diMode(diCurrentMode); }catch(_){} }
+}
+/* jump to Work Spectator filtered to the selected work, where its detail lines can be edited inline */
+function diEditWorkDetails(){
+  const wn=document.getElementById('selWorkNo')?document.getElementById('selWorkNo').value:'';
+  if(!wn){ showToast(LANG==='en'?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
+  go('spectator');
+  const ft=document.getElementById('filterType'); if(ft){ ft.value='workNo'; onFilterTypeChange(); }
+  const fp=document.getElementById('filterPick'); if(fp){ fp.value=wn; }
+  const fi=document.getElementById('filterInput'); if(fi) fi.value='';
+  renderSpectator();
+  showToast(LANG==='en'?('Editing details for '+wn+' — change values, then press Update'):('แก้ไขรายละเอียดของ '+wn+' — เปลี่ยนค่าแล้วกด Update'));
 }
 document.getElementById('detailForm').addEventListener('submit',function(e){
   e.preventDefault();
@@ -12012,7 +12025,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-t';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-u';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
