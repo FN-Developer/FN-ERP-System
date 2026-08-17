@@ -6809,14 +6809,42 @@ function onSelectWork(){
   const eb=document.getElementById('selEditBtn'); if(eb) eb.style.display = w?'inline-flex':'none';
   if(w){ try{ diMode(diCurrentMode); }catch(_){} }
 }
-/* jump to Work Spectator filtered to the selected work, where its detail lines can be edited inline */
+/* edit the selected work's own fields: Customer Name, Code, Work Name, Estimated cost */
 function diEditWorkDetails(){
   const wn=document.getElementById('selWorkNo')?document.getElementById('selWorkNo').value:'';
   if(!wn){ showToast(LANG==='en'?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
-  go('spectator');   // go() runs its own onFilterTypeChange — so apply the work filter AFTER it
-  const applyFilter=()=>{ const ft=document.getElementById('filterType'); if(ft) ft.value='workNo'; onFilterTypeChange(); const fi=document.getElementById('filterInput'); if(fi) fi.value=''; const fp=document.getElementById('filterPick'); if(fp) fp.value=wn; renderSpectator(); };
-  applyFilter(); setTimeout(applyFilter,60);   // twice: once now, once after any deferred nav re-render, so the pick sticks
-  showToast(LANG==='en'?('Editing details for '+wn+' — change values, then press Update'):('แก้ไขรายละเอียดของ '+wn+' — เปลี่ยนค่าแล้วกด Update'));
+  const w=DB.works().find(x=>x.workNo===wn); if(!w){ showToast(LANG==='en'?'Work not found.':'ไม่พบงาน'); return; }
+  const en=LANG==='en';
+  const cur=w.estCurrency||'THB';
+  const body=`
+    <div class="field"><label>${t('lblCustName')} <span class="req">*</span></label><input type="text" id="ewCust" value="${escapeAttr(w.custName||'')}"></div>
+    <div class="field"><label>${t('lblCode')}</label><input type="text" id="ewCode" value="${escapeAttr(w.custCode||'')}" placeholder="${en?'e.g. C001':'เช่น C001'}"></div>
+    <div class="field"><label>${t('roName')} <span class="req">*</span></label><input type="text" id="ewName" value="${escapeAttr(w.workName||'')}"></div>
+    <div class="field"><label>${t('lblEstCost')}</label><div class="cost-row"><input type="number" id="ewCost" step="any" min="0" value="${escapeAttr(w.estCost||'')}" placeholder="0.00"><select id="ewCur"><option value="THB"${cur==='THB'?' selected':''}>THB (฿)</option><option value="USD"${cur==='USD'?' selected':''}>USD ($)</option></select></div></div>`;
+  customModal({icon:'✎', title:(en?'Edit work details':'แก้ไขรายละเอียดงาน'), desc:(en?('Work No '+wn):('งาน '+wn)), bodyHtml:body, footButtons:[
+    {label:(en?'Cancel':'ยกเลิก'),cls:'ghost',onClick:closeModal},
+    {label:'✔ '+(en?'Save':'บันทึก'),cls:'primary',onClick:()=>diSaveWorkDetails(wn)}
+  ]});
+  setTimeout(()=>{ const el=document.getElementById('ewCust'); if(el) el.focus(); },60);
+}
+function diSaveWorkDetails(wn){
+  const en=LANG==='en';
+  const g=id=>{ const el=document.getElementById(id); return el?String(el.value).trim():''; };
+  const custName=g('ewCust'), custCode=g('ewCode'), workName=g('ewName'), estCost=g('ewCost'), estCurrency=g('ewCur')||'THB';
+  let ok=true;
+  if(!custName){ const el=document.getElementById('ewCust'); if(el) el.style.borderColor='var(--red)'; ok=false; }
+  if(!workName){ const el=document.getElementById('ewName'); if(el) el.style.borderColor='var(--red)'; ok=false; }
+  if(!ok){ showToast(en?'Customer Name and Work Name are required.':'ต้องระบุชื่อลูกค้าและชื่องาน'); return; }
+  const works=DB.works(); const w=works.find(x=>x.workNo===wn); if(!w){ closeModal(); return; }
+  w.custName=custName; w.custCode=custCode; w.workName=workName; w.estCost=estCost; w.estCurrency=estCurrency;
+  DB.saveWorks(works);
+  try{ upsertCustomer(custName,custCode); }catch(_){}
+  try{ poRegEnsureFromDetails(); }catch(_){}   // keep PO-registry labels in sync after a rename
+  closeModal();
+  onSelectWork();                              // refresh the readout boxes on this page
+  try{ if(typeof renderSpectator==='function') renderSpectator(); }catch(_){}
+  try{ if(typeof computeAlerts==='function') computeAlerts(); }catch(_){}
+  showToast(en?'Work details saved':'บันทึกรายละเอียดงานแล้ว');
 }
 document.getElementById('detailForm').addEventListener('submit',function(e){
   e.preventDefault();
@@ -12050,7 +12078,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-v';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-w';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
