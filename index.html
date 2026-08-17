@@ -5093,7 +5093,9 @@ function nxImportantFilled(rec){ return IMPORTANT_KEYS.reduce((n,k)=>n+((!nxIsBl
 /* fill every blank important field with "-" (in place); returns the list of keys that were dashed */
 function nxFillImportantDashes(rec){ const dashed=[]; IMPORTANT_KEYS.forEach(k=>{ if(nxIsBlank(rec[k])){ rec[k]=NX_DASH; dashed.push(k); } }); return dashed; }
 /* Total = Q'ty × Actual Unit Price (only when both are real numbers); returns '' otherwise */
-function nxCalcTotal(qty,unitPrice){ const q=parseFloat(qty), u=parseFloat(unitPrice); if(!isFinite(q)||!isFinite(u)) return ''; const v=q*u; return v?String(+v.toFixed(2)):'0'; }
+/* strip thousand-commas / spaces / currency so "  26,570.00 " → "26570.00"; '' if no digits */
+function nxCleanNum(s){ const t=String(s==null?'':s).replace(/[^0-9.\-]/g,''); return /\d/.test(t)?t:''; }
+function nxCalcTotal(qty,unitPrice){ const q=parseFloat(nxCleanNum(qty)), u=parseFloat(nxCleanNum(unitPrice)); if(!isFinite(q)||!isFinite(u)) return ''; const v=q*u; return v?String(+v.toFixed(2)):'0'; }
 
 /* =================== i18n =================== */
 let LANG = localStorage.getItem('nx_lang')||'en';
@@ -6858,22 +6860,32 @@ const DI_CSV_COLS=[
    value from the file is kept; if the file has no Rev, it is left blank and filled via bulk apply.
    Files whose headers don't match fall back to the positional DI_CSV_COLS order above. */
 let diCsvColMap=null;   // {fieldKey: columnIndex} or null → use positional DI_CSV_COLS
-const DI_HEADER_KEYS=['rev','module','list','specific','qty','unit','brand','heat','group'];
+const DI_HEADER_KEYS=['rev','module','list','specific','qty','unit','brand','heat','group','supplier','shipDate','recvDate','poNo','estUnitPrice','unitPrice','total'];
 function diNorm(s){ return String(s==null?'':s).toLowerCase().replace(/[\s\.\(\)\[\]_\-\/:#]+/g,''); }
+/* Match one CSV header to a field key. Whole-file layout (16 columns) is supported: the important
+   section AND the additional section (supplier, dates, PO, prices, total). Most-specific checks first
+   so overlapping words ("Unit" vs "Est. Unit Price", "จำนวน" vs "จำนวนเงิน") resolve correctly. */
 function diMatchHeader(h){
   const n=diNorm(h); if(!n) return null;
   const has=(...ks)=>ks.some(k=>n.indexOf(k)>=0);
-  if(has('price','ราคา','เงิน','total','amount')) return null;                 // money columns are not important-section fields
-  if(has('supplier','ผู้จัด','ship','จัดส่ง','recv','received','รับของ','po')) return null;   // additional-section columns
+  // additional section (checked first — they contain words that also appear in important headers)
+  if(has('total','amount','จำนวนเงิน')) return 'total';
+  if(has('estunit','estimate','ประเมิน')) return 'estUnitPrice';
+  if(has('actualunit','actual','จริง')) return 'unitPrice';
+  if(has('ship','จัดส่ง')) return 'shipDate';
+  if(has('recv','received','รับของ','รับ')) return 'recvDate';
+  if(has('pono','po')) return 'poNo';
+  if(has('supplier','ผู้จัด','vendor')) return 'supplier';
+  // important section
   if(has('rev','ฉบับ')) return 'rev';
   if(has('module','โมดูล')) return 'module';
   if(has('specific','รายละเอียด')) return 'specific';
-  if(has('quantity','qty','จำนวน')) return 'qty';
-  if(has('unit','หน่วย')) return 'unit';
+  if(has('quantity','qty','จำนวน')) return 'qty';   // 'จำนวนเงิน' already caught by total above
+  if(has('unit','หน่วย')) return 'unit';            // price/est/actual already caught above
   if(has('brand','แบรนด์','ยี่ห้อ')) return 'brand';
   if(has('heat','อบชุบ','treatment')) return 'heat';
   if(has('group','หมวด')) return 'group';
-  if(has('list','รายการ')) return 'list';                                       // broad — checked last
+  if(has('list','รายการ')) return 'list';           // broad — checked last
   return null;
 }
 function diDetectColMap(headers){
@@ -6885,8 +6897,8 @@ function diBuildCsvUI(){
   const c=document.getElementById('diCsv'); if(!c) return;
   const en=LANG==='en';
   c.innerHTML=`
-    <div class="di-csv-intro">${en?'Columns are matched by their header name (any order). A <b>Rev</b> column in the file is kept as-is — never renumbered. If your headers don\'t match, columns are read in the order below. Any column can be left blank and filled below or in Work Spectator.':'ระบบจับคู่คอลัมน์จากชื่อหัวตาราง (สลับลำดับได้) คอลัมน์ <b>Rev</b> ในไฟล์จะถูกเก็บไว้ตามเดิม — ไม่สร้างเลขใหม่ หากชื่อหัวตารางไม่ตรง จะอ่านตามลำดับด้านล่าง คอลัมน์ที่เว้นว่างเติมด้านล่างหรือใน Work Spectator ได้'}</div>
-    <div class="di-csv-cols"><span class="di-csv-col">Rev</span>${DI_CSV_COLS.map((h)=>`<span class="di-csv-col">${escapeHtml(en?h.en:h.th)}</span>`).join('')}</div>
+    <div class="di-csv-intro">${en?'Every column is matched by its header name (any order) — the full sheet is read: Rev, the important section, <b>and</b> Supplier, Dates, PO, Prices &amp; Total. A <b>Rev</b> column is kept as-is (never renumbered); prices with thousand-commas are cleaned automatically. Blank cells can be filled below or in Work Spectator.':'ทุกคอลัมน์จับคู่จากชื่อหัวตาราง (สลับลำดับได้) — อ่านทั้งชีต: Rev, ส่วนสำคัญ <b>และ</b> ผู้จัดจำหน่าย วันที่ PO ราคา และยอดรวม คอลัมน์ <b>Rev</b> เก็บตามเดิม (ไม่สร้างเลขใหม่) ราคาที่มีจุลภาคหลักพันถูกล้างอัตโนมัติ ช่องที่ว่างเติมด้านล่างหรือใน Work Spectator ได้'}</div>
+    <div class="di-csv-cols">${FIELDS.map((f)=>`<span class="di-csv-col">${escapeHtml(en?f.en:f.th)}</span>`).join('')}</div>
     <div class="di-drop" id="diDrop" onclick="document.getElementById('diFile').click()"
       ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')"
       ondrop="diDropFile(event)">
@@ -6945,6 +6957,8 @@ function diMergedRows(){
     const rec={workNo:wn};
     if(diCsvColMap){ DI_HEADER_KEYS.forEach(k=>{ if(k in diCsvColMap){ const ci=diCsvColMap[k]; rec[k]=(r.cells[ci]!=null?String(r.cells[ci]).trim():''); } }); }
     else { DI_CSV_COLS.forEach((col,ci)=>{ rec[col.key]=(r.cells[ci]!=null?String(r.cells[ci]).trim():''); }); }
+    // clean numeric fields so thousand-commas / spaces from the file don't break the math
+    ['qty','estUnitPrice','unitPrice','total'].forEach(k=>{ if(rec[k]) rec[k]=nxCleanNum(rec[k]); });
     if(inScope){ DI_APPLY_FIELDS.forEach(f=>{ if(ov[f.key]!=='') rec[f.key]=ov[f.key]; }); }
     DI_PREVIEW_COLS.forEach(k=>{ if(rec[k]==null) rec[k]=''; });
     // Rev is taken from the file as-is (never auto-generated). Blank Rev stays blank — fill it in Work Spectator.
@@ -11958,7 +11972,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.13-q';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.13-r';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
