@@ -1075,7 +1075,7 @@ tr.ck-alert-hl>td:first-child{animation:alertHlIn 1.4s ease-out}
 .btn-mini{border:1px solid var(--line2);background:var(--chip-bg);color:var(--primary);font-weight:700;font-family:'Rajdhani';font-size:12.5px;padding:6px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:.15s}
 .btn-mini:hover{background:var(--chip-bg-h);border-color:var(--primary);transform:translateY(-1px)}
 .fu-last{font-size:11.5px;color:var(--muted);margin-top:5px}
-.fu-last.fu-done{display:inline-block;margin-top:6px;color:var(--green);font-weight:700;background:color-mix(in srgb,var(--green) 14%,transparent);border:1px solid color-mix(in srgb,var(--green) 40%,transparent);padding:3px 10px;border-radius:20px}
+.fu-last.fu-done{display:block;width:fit-content;max-width:100%;margin-top:6px;color:var(--green);font-weight:700;font-size:10px;line-height:1.35;background:color-mix(in srgb,var(--green) 14%,transparent);border:1px solid color-mix(in srgb,var(--green) 40%,transparent);padding:2px 8px;border-radius:20px}
 .vc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
 @media(max-width:560px){.vc-grid{grid-template-columns:1fr}}
 .vc-grid>div{display:flex;flex-direction:column;gap:3px;padding:11px 13px;background:var(--inset-bg);border:1px solid var(--line);border-radius:11px}
@@ -12137,7 +12137,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.18-c';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.18-d';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
