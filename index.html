@@ -5180,7 +5180,7 @@ function nxSyncReceivedToStock(){
     const recv=String(d.recvDate||'').trim();
     if(!/^\d{4}-\d{2}-\d{2}$/.test(recv)) return;                 // only genuine received dates
     if(/^stock:/i.test(String(d.supplier||''))) return;          // sourced from stock — don't re-add
-    if(d.stockedId && stockIds.has(d.stockedId)) return;          // already in stock
+    if(d.stockedId) return;                                       // already stocked once (even if the user later deleted that stock row) — never resurrect it
     const sup=String(d.supplier||'').trim();
     const rec={ id:'stk'+base.toString(36)+i.toString(36)+Math.floor(Math.random()*1e6).toString(36),
       no:'RC-'+(d.poNo||d.workNo||'X')+'-'+String(base+i).slice(-4), date:recv, supplier:(sup==='-'?'':sup), work:(d.workNo||'Stock'),
@@ -12219,7 +12219,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.14-a';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.14-b';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
