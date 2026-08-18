@@ -583,6 +583,15 @@ select option{background:var(--panel-solid);color:var(--txt)}
 .cost-row select{width:120px;flex:0 0 auto}
 
 /* ---- Detail Input: mode switch ---- */
+.di-head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.di-head-row h2{margin:0}
+.btn-tmpl{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.2px;color:#fff;background:linear-gradient(120deg,var(--primary),var(--cyan,#22d3ee));border:none;border-radius:20px;padding:7px 14px;cursor:pointer;box-shadow:0 4px 14px color-mix(in srgb,var(--primary) 40%,transparent);animation:tmplPulse 1.5s ease-in-out infinite;transition:transform .12s}
+.btn-tmpl:hover{transform:translateY(-1px) scale(1.03);animation-play-state:paused;filter:brightness(1.08)}
+.btn-tmpl:active{transform:scale(.97)}
+@keyframes tmplPulse{0%,100%{box-shadow:0 4px 14px color-mix(in srgb,var(--primary) 30%,transparent),0 0 0 0 color-mix(in srgb,var(--primary) 55%,transparent);opacity:.94}50%{box-shadow:0 6px 20px color-mix(in srgb,var(--primary) 55%,transparent),0 0 0 7px color-mix(in srgb,var(--primary) 0%,transparent);opacity:1}}
+@media(prefers-reduced-motion:reduce){.btn-tmpl{animation:none}}
+.tmpl-note{font-size:12.5px;line-height:1.5;color:var(--txt-soft);background:color-mix(in srgb,var(--primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--primary) 22%,transparent);border-radius:12px;padding:9px 13px;margin:12px 0 4px}
+.tmpl-note b{color:var(--txt)}
 .di-modes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0 22px}
 @media(max-width:640px){.di-modes{grid-template-columns:1fr}}
 .di-mode-btn{display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:16px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);cursor:pointer;transition:.18s}
@@ -2722,8 +2731,12 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     </div>
 
     <div class="card" id="detailFormCard" style="display:none">
-      <h2><span class="dot"></span><span data-i18n="inputHead">Input your information</span></h2>
+      <div class="di-head-row">
+        <h2><span class="dot"></span><span data-i18n="inputHead">Input your information</span></h2>
+        <button type="button" class="btn-tmpl" onclick="diDownloadTemplate()" title="Download a blank CSV template with every column, then fill it in Excel and upload it back here">⬇︎ <span data-i18n="tmplBtn">CSV template</span></button>
+      </div>
       <div class="card-sub" data-i18n="inputSub">Enter the detail line for the selected work order.</div>
+      <div class="tmpl-note" data-i18n="tmplNote">📝 Tip: click <b>CSV template</b> to download a ready-made file with every column already named. Fill in your data in Excel, save it, and upload it back here in one go (the file must stay a <b>.csv</b>).</div>
 
       <div class="di-modes">
         <button type="button" class="di-mode-btn active" id="diModeOne" onclick="diMode('one')">
@@ -6232,6 +6245,8 @@ const I18N = {
   roName:{en:"WORK NAME",th:"ชื่องาน"},
   inputHead:{en:"Input your information",th:"กรอกข้อมูลของคุณ"},
   inputSub:{en:"Enter the detail line for the selected work order.",th:"กรอกรายละเอียดสำหรับงานที่เลือก"},
+  tmplBtn:{en:"CSV template",th:"เทมเพลต CSV"},
+  tmplNote:{en:"📝 Tip: click <b>CSV template</b> to download a ready-made file with every column already named. Fill in your data in Excel, save it, and upload it back here in one go (the file must stay a <b>.csv</b>).",th:"📝 เคล็ดลับ: คลิก <b>เทมเพลต CSV</b> เพื่อดาวน์โหลดไฟล์ที่มีชื่อคอลัมน์ครบทุกช่อง กรอกข้อมูลของคุณใน Excel บันทึก แล้วอัปโหลดกลับที่นี่ได้ในครั้งเดียว (ไฟล์ต้องเป็น <b>.csv</b> เท่านั้น)"},
   thBestRate:{en:"Best rate · Est.",th:"ราคาถูกสุด · ประเมิน"},
   mcHead:{en:"Module Price Comparison",th:"เปรียบเทียบราคาต่อโมดูล"},
   mcSub:{en:"Pick a module to compare every vendor's cheapest and latest value/unit. Lowest price is green, highest is red.",th:"เลือกโมดูลเพื่อเปรียบเทียบราคาถูกสุดและล่าสุดของแต่ละผู้ขาย ถูกสุดสีเขียว แพงสุดสีแดง"},
@@ -7199,6 +7214,28 @@ function diUpdateCsvButtons(){
   }
 }
 function diCsvReset(){ diCsvRows=[]; diCsvHeaders=[]; diCsvColMap=null; diCsvDayFirst=true; diCsvSel=new Set(); diCsvAnchor=-1; diCsvConfirmed=false; diBuildCsvUI(); }
+/* Download a blank CSV template whose header names exactly match this app's own column wording (every
+   one of the 16 fields, in the same order the preview shows them). diMatchHeader recognises these
+   headers on re-upload, so a filled-in copy imports straight back. One example row shows the format
+   (dates day-first dd/mm/yyyy) and is clearly marked to be overwritten or deleted. */
+function diDownloadTemplate(){
+  const en=(typeof LANG==='undefined'||LANG==='en');
+  const headers=FIELDS.map(f=>en?f.en:f.th);
+  // one example row keyed by field, so a fresh user can see what goes where
+  const ex={rev:'A',module:'M01',list:en?'Bearing':'ตลับลูกปืน',specific:'6204-2RS',qty:'4',unit:'pcs',
+    brand:'SKF',heat:'-',group:'standard',supplier:en?'ABC Supply Co.':'บริษัท เอบีซี',shipDate:'15/08/2026',
+    recvDate:'20/08/2026',poNo:'PO-0001',estUnitPrice:'120',unitPrice:'118',total:'472'};
+  const noteCell=en?'<< EXAMPLE ROW — replace with your data or delete this row before uploading':
+                    '<< แถวตัวอย่าง — แก้เป็นข้อมูลของคุณ หรือลบแถวนี้ก่อนอัปโหลด';
+  const exRow=FIELDS.map(f=>csvCell(ex[f.key]!=null?ex[f.key]:''));
+  exRow.push(csvCell(noteCell)); // trailing note column (no matching header → ignored on import)
+  const lines=[FIELDS.map(f=>csvCell(en?f.en:f.th)).join(','), exRow.join(',')];
+  const csv='﻿'+lines.join('\r\n')+'\r\n';
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='FN_work_detail_template.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  try{ showToast(en?'⬇️ CSV template downloaded — fill it in Excel and upload it back here (.csv)':'⬇️ ดาวน์โหลดเทมเพลต CSV แล้ว — กรอกใน Excel แล้วอัปโหลดกลับที่นี่ (.csv)'); }catch(_){}
+}
 function diApplyVal(key){
   if(key==='group'){ const h=document.getElementById('da-group'); return h?h.value.trim():''; }
   const el=document.getElementById('da-'+key); return el?String(el.value).trim():'';
@@ -12164,7 +12201,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.18-e';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.18-f';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
