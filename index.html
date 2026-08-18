@@ -409,7 +409,6 @@ main{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:34px 26p
 .nxi-check{--hv:h_check;--ck:c_pop}
 .nxi-vendors{--hv:h_flipy;--ck:c_flipy}
 .nxi-customers{--hv:h_rise;--ck:c_stamp}
-.nxi-addstock{--hv:h_drop;--ck:c_drop}
 .nxi-stocklist{--hv:h_tilt;--ck:c_wobble}
 .nxi-withdraw{--hv:h_pullr;--ck:c_swing}
 .nxi-returnstock{--hv:h_uturn;--hd:.7s;--ck:c_spin}
@@ -593,6 +592,20 @@ select option{background:var(--panel-solid);color:var(--txt)}
 .di-mode-tx{display:flex;flex-direction:column;gap:3px}
 .di-mode-tx b{font-size:15px}
 .di-mode-tx small{font-size:12px;color:var(--muted)}
+
+/* Work No row + "For Stock" toggle on Work Detail Input */
+.di-wrow{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.di-wrow .field{max-width:420px;flex:1 1 300px;margin-bottom:0}
+.di-stock-btn{display:flex;align-items:center;gap:11px;text-align:left;padding:10px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);cursor:pointer;transition:.18s;flex:0 0 auto}
+.di-stock-btn:hover{border-color:var(--cyan);transform:translateY(-1px)}
+.di-stock-btn.active{border-color:var(--cyan);background:linear-gradient(135deg,color-mix(in srgb,var(--cyan) 16%,transparent),transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--cyan) 18%,transparent)}
+.di-stock-ic{font-size:20px;line-height:1;color:var(--cyan)}
+.di-stock-tx{display:flex;flex-direction:column;gap:2px}
+.di-stock-tx b{font-size:14px}
+.di-stock-tx small{font-size:11.5px;color:var(--muted)}
+.di-stock-val{background:color-mix(in srgb,var(--cyan) 10%,var(--inset-bg))!important;font-family:'Orbitron';color:var(--cyan);font-weight:700;letter-spacing:1px}
+.di-stock-note{margin-top:14px;padding:11px 14px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--cyan) 40%,var(--line));background:color-mix(in srgb,var(--cyan) 8%,transparent);color:var(--muted);font-size:12.5px;line-height:1.55}
+@media(max-width:640px){.di-wrow{align-items:stretch}.di-wrow .field{flex:1 1 100%}.di-stock-btn{flex:1 1 100%}}
 
 /* auto Rev field */
 .di-auto{background:color-mix(in srgb,var(--cyan) 10%,var(--inset-bg))!important;font-family:'Orbitron';color:var(--cyan);font-weight:700;letter-spacing:1px}
@@ -1176,10 +1189,6 @@ tr.ck-alert-hl>td:first-child{animation:alertHlIn 1.4s ease-out}
 .wa-lc-share-head{font-weight:800;font-size:14px;margin-bottom:2px}
 .wa-lc-self td{background:rgba(119,233,71,.12);font-weight:700}
 .wa-lc-tag{font-size:10px;font-weight:800;color:var(--primary);border:1px solid var(--primary);border-radius:6px;padding:1px 6px;margin-left:6px;text-transform:uppercase;letter-spacing:.4px}
-/* est price input + mode selector on Add Stock */
-.est-input{display:flex;gap:8px}
-.est-input input{flex:1;min-width:0}
-.est-input select{flex:0 0 auto;width:auto;padding-right:28px}
 /* data-manager toolbar (Clear / Upload / Download CSV) — CEO only */
 .dm-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 18px;padding:12px 14px;border-radius:14px;border:1px dashed var(--primary);background:linear-gradient(100deg,rgba(9,6,215,.06),rgba(119,233,71,.06))}
 .dm-bar-lbl{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--primary);display:flex;align-items:center;gap:7px}
@@ -2441,7 +2450,6 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <span class="chev">⌄</span>
         </button>
         <div class="dd-sub">
-          <a class="dd-item sub" data-nav="addstock" onclick="go('addstock')"><span class="ic">➕</span><span class="dd-txt"><span data-i18n="stkAdd">Add Stock</span></span></a>
           <a class="dd-item sub" data-nav="stocklist" onclick="go('stocklist')"><span class="ic">📋</span><span class="dd-txt"><span data-i18n="stkList">Stock List</span></span></a>
           <a class="dd-item sub" data-nav="withdraw" onclick="go('withdraw')"><span class="ic">➖</span><span class="dd-txt"><span data-i18n="stkWithdraw">Withdraw Stock</span></span></a>
           <a class="dd-item sub" data-nav="returnstock" onclick="go('returnstock')"><span class="ic">↩</span><span class="dd-txt"><span data-i18n="stkReturn">Return Stock</span></span></a>
@@ -2567,12 +2575,11 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       <div class="big-card" id="bc-stock" style="--tc:#d97706">
         <div class="bc-face" onclick="toggleBig('stock')">
           <div class="bc-ic">📦</div>
-          <div class="bc-info"><h2 data-i18n="grpStock">Stock</h2><p data-i18n="grpStockSub">Inventory management</p><span class="bc-count">5 <span data-i18n="modules">modules</span></span></div>
+          <div class="bc-info"><h2 data-i18n="grpStock">Stock</h2><p data-i18n="grpStockSub">Inventory management</p><span class="bc-count">4 <span data-i18n="modules">modules</span></span></div>
           <span class="bc-chev">⌄</span>
         </div>
         <div class="bc-pop">
           <div class="bc-grid one">
-            <a class="bc-item" onclick="go('addstock')"><span class="bi-ic">➕</span><span data-i18n="stkAdd">Add Stock</span></a>
             <a class="bc-item" onclick="go('stocklist')"><span class="bi-ic">📋</span><span data-i18n="stkList">Stock List</span></a>
             <a class="bc-item" onclick="go('withdraw')"><span class="bi-ic">➖</span><span data-i18n="stkWithdraw">Withdraw Stock</span></a>
             <a class="bc-item" onclick="go('returnstock')"><span class="bi-ic">↩</span><span data-i18n="stkReturn">Return Stock</span></a>
@@ -2687,11 +2694,19 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
     <div class="card" style="margin-bottom:22px">
       <h2 style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span><span class="dot"></span><span data-i18n="selHead">Selection of WORK Detail Input</span></span><button type="button" class="btn ghost sm" id="selEditBtn" onclick="diEditWorkDetails()" style="display:none">✎ <span data-i18n="selEditBtn">Edit work details</span></button></h2>
       <div class="card-sub" data-i18n="selSub">Choose a Work No — its Name and Delivery Date load automatically.</div>
-      <div class="field" style="max-width:420px">
-        <label data-i18n="lblSelWorkNo">WORK NO</label>
-        <select id="selWorkNo" onchange="onSelectWork()"></select>
+      <div class="di-wrow">
+        <div class="field" id="fSelWorkNo">
+          <label><span id="selWorkNoLbl" data-i18n="lblSelWorkNo">WORK NO</span></label>
+          <select id="selWorkNo" onchange="onSelectWork()"></select>
+          <input type="text" id="selWorkStock" class="di-stock-val" value="Stock" readonly tabindex="-1" style="display:none">
+        </div>
+        <button type="button" class="di-stock-btn" id="diStockBtn" onclick="diToggleStock()" aria-pressed="false">
+          <span class="di-stock-ic">📦</span>
+          <span class="di-stock-tx"><b data-i18n="diStockT">For Stock</b><small data-i18n="diStockS">No work order needed</small></span>
+        </button>
       </div>
-      <div class="readout" style="margin-top:20px">
+      <div class="di-stock-note" id="diStockNote" style="display:none">📦 <span data-i18n="diStockNote">Stock mode — Cust Name, Code, Work Name and project cost are not required. Received items appear in Stock List as Work: Stock.</span></div>
+      <div class="readout" id="diReadout" style="margin-top:20px">
         <div class="ro-box"><div class="k" data-i18n="lblCustName">Cust Name (Company)</div><div class="v" id="roCust">—</div></div>
         <div class="ro-box"><div class="k" data-i18n="lblCode">Code</div><div class="v" id="roCode">—</div></div>
         <div class="ro-box"><div class="k" data-i18n="roName">WORK NAME</div><div class="v" id="roName">—</div></div>
@@ -3044,42 +3059,6 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
           <select id="mcItem" onchange="renderModuleCompare()"></select></div>
       </div>
       <div id="mcResult"></div>
-    </div>
-  </section>
-
-  <!-- ============ ADD STOCK ============ -->
-  <section class="view" id="view-addstock">
-    <div class="page-head"><div class="bar"></div><div><h1 data-i18n="addStockTitle">ADD STOCK</h1><p data-i18n="addStockLead">Receive items into the inventory.</p></div></div>
-    <div class="card">
-      <h2><span class="dot"></span><span data-i18n="addStockHead">Add Stock Item</span></h2>
-      <div class="hint-req"><span data-i18n="reqNote">Fields marked</span> <span class="redtext" style="margin:0 4px">*</span> <span data-i18n="reqNote2">are important and must be filled before submit.</span></div>
-      <form id="addStockForm" autocomplete="off">
-        <div class="grid three">
-          <div class="field" id="fas-no"><label>1. NO. <span class="req">*</span></label><input id="as_no" placeholder="e.g. ST-021"><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field" id="fas-date"><label>2. <span data-i18n="lblDate">Date</span> <span class="req">*</span></label><input type="date" id="as_date"><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field" id="fas-supplier"><label>3. <span data-i18n="lblSupplierName">SUPPLIER NAME</span> <span class="req">*</span></label><select id="as_supplier" onchange="asSupplierChange()"></select><div class="field-hint" data-i18n="supplierHint">From Vendor Directory, or add a new vendor.</div><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field"><label>4. <span data-i18n="lblWork">Work</span></label><input id="as_work" value="Stock" readonly></div>
-          <div class="field" id="fas-list"><label>5. <span data-i18n="lblListR">List (รายการ)</span> <span class="req">*</span></label><input id="as_list"><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field" id="fas-qty"><label>6. <span data-i18n="lblQtyR">Q'ty (จำนวน)</span> <span class="req">*</span></label><input type="number" min="0" step="any" id="as_qty" oninput="asCalcValue()"><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field" id="fas-unit"><label>7. <span data-i18n="lblUnit">Unit (หน่วย)</span> <span class="req">*</span></label><select id="as_unit"></select><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field" id="fas-est"><label>8. <span data-i18n="lblEstPrice">Est. Price (ราคาประเมิน · THB)</span></label>
-            <div class="est-input"><input type="number" min="0" step="any" id="as_est" oninput="asCalcValue()" placeholder="0">
-            <select id="as_est_mode" onchange="asCalcValue()"><option value="unit" data-i18n-opt="estPerUnit">per unit</option><option value="stock" data-i18n-opt="estPerStock">per stock</option></select></div>
-            <div class="field-hint" id="as_esthint" data-i18n="estPriceHint">Estimate used to compare against the real buy price for margin.</div></div>
-          <div class="field" id="fas-price"><label>9. <span data-i18n="lblUnitPrice2">Actual Unit Price (ราคาจริง/หน่วย · THB)</span> <span class="req">*</span></label><input type="number" min="0" step="any" id="as_price" oninput="asCalcValue()"><div class="field-hint" id="as_valhint" style="display:none"></div><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field"><label>10. <span data-i18n="lblShipR">Shipping Date (กำหนดจัดส่ง)</span></label><input type="date" id="as_ship"></div>
-          <div class="field"><label>11. <span data-i18n="lblRecvR">Received Date (วันรับของ)</span></label><input type="date" id="as_recv"></div>
-          <div class="field" id="fas-by"><label>12. <span data-i18n="lblSubmittedBy">Submitted by (จัดทำโดย)</span> <span class="req">*</span></label><select id="as_by"></select><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field"><label>13. <span data-i18n="lblPayment">Payment (ยอดซื้อ)</span></label><input type="number" min="0" step="any" id="as_pay" oninput="asPayToggle()"></div>
-          <div class="field" id="fas-payimg" style="display:none"><label><span data-i18n="lblPayImg">Payment picture</span> <span class="req">*</span></label><input type="file" accept="image/*" id="as_payimg" onchange="asPayImg(event)"><div class="err" data-i18n="errPayImg">Please upload the payment picture.</div><div id="as_payimg_prev"></div></div>
-          <div class="field" id="fas-pr"><label>14. PR No. <span class="req">*</span></label><input id="as_pr"><div class="err" data-i18n="reqField">This field is required.</div></div>
-          <div class="field"><label>15. <span data-i18n="lblNote">Note (หมายเหตุ)</span></label><input id="as_note"></div>
-        </div>
-        <div class="actions">
-          <button type="submit" class="btn primary">⏻ <span data-i18n="btnSubmit">Submit</span></button>
-          <button type="reset" class="btn ghost" data-i18n="btnClear">Clear</button>
-        </div>
-      </form>
     </div>
   </section>
 
@@ -5159,9 +5138,9 @@ function nxStockFromDetails(list){
     const recv=String(d.recvDate||'').trim();
     if(!/^\d{4}-\d{2}-\d{2}$/.test(recv)) return;                 // only genuine received dates (ISO)
     const sup=String(d.supplier||'').trim();
-    if(/^stock:/i.test(sup)) return;                              // skip only stock-withdrawals (came FROM stock)
+    if(!sup || sup==='-' || /^stock:/i.test(sup)) return;         // skip blank / "-" / stock-withdrawals
     const rec={ id:'stk'+base.toString(36)+i.toString(36)+Math.floor(Math.random()*1e6).toString(36),
-      no:'RC-'+(d.poNo||d.workNo||'X')+'-'+String(base+i).slice(-4), date:recv, supplier:(sup==='-'?'':sup), work:(d.workNo||'Stock'),
+      no:'RC-'+(d.poNo||d.workNo||'X')+'-'+String(base+i).slice(-4), date:recv, supplier:sup, work:(d.workNo||'Stock'),
       list:d.list||'', qty:d.qty||'0', qtyInit:d.qty||'0', unit:d.unit||'pcs', estUnitPrice:d.estUnitPrice||'',
       unitPrice:d.unitPrice||'', shipDate:d.shipDate||'', recvDate:recv, submittedBy:'', payment:d.total||'',
       paymentImg:'', prNo:d.poNo||'', note:((typeof t==='function'?t('fromDelivery'):'Received from delivery ·')||'Received from delivery ·')+' '+(d.workNo||''), fromDetail:d.id };
@@ -5171,28 +5150,6 @@ function nxStockFromDetails(list){
   return n;
 }
 function nxStockFromDetail(d){ return nxStockFromDetails([d])>0; }
-/* RECONCILE: make sure every received detail (valid received date, not sourced-from-stock) has a Stock row.
-   Idempotent — skips items already in stock; repairs items whose stockedId points to a deleted stock row. */
-function nxSyncReceivedToStock(){
-  const dets=DB.details(); const stk=DB.stock(); const stockIds=new Set(stk.map(s=>s.id));
-  let n=0; let detsChanged=false; const base=Date.now();
-  dets.forEach((d,i)=>{
-    const recv=String(d.recvDate||'').trim();
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(recv)) return;                 // only genuine received dates
-    if(/^stock:/i.test(String(d.supplier||''))) return;          // sourced from stock — don't re-add
-    if(d.stockedId) return;                                       // already stocked once (even if the user later deleted that stock row) — never resurrect it
-    const sup=String(d.supplier||'').trim();
-    const rec={ id:'stk'+base.toString(36)+i.toString(36)+Math.floor(Math.random()*1e6).toString(36),
-      no:'RC-'+(d.poNo||d.workNo||'X')+'-'+String(base+i).slice(-4), date:recv, supplier:(sup==='-'?'':sup), work:(d.workNo||'Stock'),
-      list:d.list||'', qty:d.qty||'0', qtyInit:d.qty||'0', unit:d.unit||'pcs', estUnitPrice:d.estUnitPrice||'',
-      unitPrice:d.unitPrice||'', shipDate:d.shipDate||'', recvDate:recv, submittedBy:'', payment:d.total||'',
-      paymentImg:'', prNo:d.poNo||'', note:((typeof t==='function'?t('fromDelivery'):'Received from delivery ·')||'Received from delivery ·')+' '+(d.workNo||''), fromDetail:d.id };
-    stk.push(rec); stockIds.add(rec.id); d.stockedId=rec.id; n++; detsChanged=true;
-  });
-  if(n) DB.saveStock(stk);
-  if(detsChanged) DB.saveDetails(dets);
-  return n;
-}
 function nxCalcTotal(qty,unitPrice){ const q=parseFloat(nxCleanNum(qty)), u=parseFloat(nxCleanNum(unitPrice)); if(!isFinite(q)||!isFinite(u)) return ''; const v=q*u; return v?String(+v.toFixed(2)):'0'; }
 
 /* =================== i18n =================== */
@@ -5213,7 +5170,6 @@ const I18N = {
   modules:{en:"modules",th:"เมนู"},
   lblDate:{en:"Date",th:"วันที่"},
   lblSupplierName:{en:"SUPPLIER NAME",th:"ชื่อผู้จัดจำหน่าย"},
-  lblWork:{en:"Work",th:"งาน"},
   lblListR:{en:"List (รายการ)",th:"รายการ"},
   lblQtyR:{en:"Q'ty (จำนวน)",th:"จำนวน"},
   lblUnit:{en:"Unit (หน่วย)",th:"หน่วย"},
@@ -5223,14 +5179,7 @@ const I18N = {
   lblPayment:{en:"Payment (ยอดซื้อ)",th:"ยอดซื้อ"},
   lblPayImg:{en:"Payment picture",th:"รูปหลักฐานการจ่าย"},
   lblNote:{en:"Note (หมายเหตุ)",th:"หมายเหตุ"},
-  supplierHint:{en:"From Vendor Directory, or add a new vendor.",th:"เลือกจากทำเนียบผู้จัดจำหน่าย หรือเพิ่มผู้ขายใหม่"},
   reqField:{en:"This field is required.",th:"จำเป็นต้องกรอกช่องนี้"},
-  errPayImg:{en:"Please upload the payment picture.",th:"กรุณาอัปโหลดรูปหลักฐานการจ่าย"},
-  addStockTitle:{en:"ADD STOCK",th:"เพิ่มสต็อก"},
-  addStockLead:{en:"Receive items into the inventory.",th:"รับสินค้าเข้าคลัง"},
-  addStockHead:{en:"Add Stock Item",th:"เพิ่มรายการสต็อก"},
-  stockAdded:{en:"Stock added!",th:"เพิ่มสต็อกแล้ว!"},
-  stockAddedSub:{en:"The item is now in the stock list.",th:"รายการถูกเพิ่มในคลังแล้ว"},
   stockListTitle:{en:"STOCK LIST",th:"รายการสต็อก"},
   stockListLead:{en:"Current inventory of every stocked item.",th:"คลังสินค้าปัจจุบันของทุกรายการ"},
   stockListHead:{en:"Stock Inventory",th:"คลังสินค้า"},
@@ -5926,7 +5875,6 @@ const I18N = {
   mvDeposit:{en:"DEPOSIT",th:"ฝากเข้า"},
   depositReason:{en:"Stock received",th:"รับเข้าสต็อก"},
   lblUnitPrice:{en:"Unit Price (ราคา/หน่วย · THB)",th:"ราคา/หน่วย (บาท)"},
-  lineValue:{en:"Line value",th:"มูลค่ารายการ"},
   slValue2:{en:"Total Stock Value (THB)",th:"มูลค่าสต็อกรวม (บาท)"},
   slMargin:{en:"Total Stock Margin (THB)",th:"กำไรสต็อกรวม (บาท)"},
   slViewDetail:{en:"Stock item detail",th:"รายละเอียดสต็อก"},
@@ -5970,11 +5918,6 @@ const I18N = {
   stockOk:{en:"In stock",th:"มีสต็อก"},
   stockReceive:{en:"Receive",th:"รับเข้า"},
   withdrawWord:{en:"Withdraw",th:"เบิก"},
-  lblEstPrice:{en:"Est. Price (ราคาประเมิน · THB)",th:"ราคาประเมิน (บาท)"},
-  lblUnitPrice2:{en:"Actual Unit Price (ราคาจริง/หน่วย · THB)",th:"ราคาจริง/หน่วย (บาท)"},
-  estPerUnit:{en:"per unit",th:"ต่อหน่วย"},
-  estPerStock:{en:"per stock",th:"ต่อทั้งสต็อก"},
-  estPriceHint:{en:"Estimate used to compare against the real buy price for margin.",th:"ราคาประเมินไว้เทียบกับราคาซื้อจริงเพื่อหากำไร"},
   thUnitPrice:{en:"Unit Price",th:"ราคา/หน่วย"},
   thValue:{en:"Value (THB)",th:"มูลค่า (บาท)"},
   totalValueLbl:{en:"Total value",th:"มูลค่ารวม"},
@@ -6114,12 +6057,10 @@ const I18N = {
   eaLoadSub:{en:"Stock movements submitted — balance the load",th:"การเคลื่อนไหวสต็อกที่ทำ — กระจายภาระงาน"},
   eaInsight1:{en:"💡 You have <b>{n}</b> team member(s). <b>{top}</b> handles the most stock operations — avoid over-reliance on one person. <b>{noage}</b> record(s) are missing age data for planning.",th:"💡 มีทีมงาน <b>{n}</b> คน <b>{top}</b> ดูแลงานสต็อกมากที่สุด — ควรกระจายงานไม่ให้พึ่งพาคนเดียว และมี <b>{noage}</b> รายการที่ขาดข้อมูลอายุสำหรับการวางแผน"},
   soon:{en:"soon",th:"เร็วๆนี้"},
-  stkAdd:{en:"Add Stock",th:"เพิ่มสต็อก"},
   stkList:{en:"Stock List",th:"รายการสต็อก"},
   stkWithdraw:{en:"Withdraw Stock",th:"เบิกสต็อก"},
   stockTitle:{en:"STOCK",th:"สต็อก"},
   stockLead:{en:"Inventory module — layout awaiting design. Here's what's planned.",th:"โมดูลคลังสินค้า — รอการออกแบบ นี่คือสิ่งที่วางแผนไว้"},
-  stkAddDesc:{en:"Receive items into inventory with quantity, location and cost.",th:"รับสินค้าเข้าคลังพร้อมจำนวน ตำแหน่ง และต้นทุน"},
   stkListDesc:{en:"Browse and search current stock levels across all items.",th:"ดูและค้นหาระดับสต็อกปัจจุบันของสินค้าทั้งหมด"},
   stkWithdrawDesc:{en:"Issue items out for a work order and log the movement.",th:"เบิกสินค้าออกสำหรับงานและบันทึกการเคลื่อนไหว"},
   awaiting:{en:"Awaiting design",th:"รอการออกแบบ"},
@@ -6270,6 +6211,13 @@ const I18N = {
   selEditBtn:{en:"Edit work details",th:"แก้ไขรายละเอียดงาน"},
   selSub:{en:"Choose a Work No — its Name and Delivery Date load automatically.",th:"เลือกเลขที่งาน ระบบจะแสดงชื่องานและวันส่งงานอัตโนมัติ"},
   lblSelWorkNo:{en:"WORK NO",th:"เลขที่งาน (WORK NO)"},
+  lblSelected:{en:"SELECTED",th:"ที่เลือก"},
+  diStockT:{en:"For Stock",th:"เข้าสต็อก"},
+  diStockS:{en:"No work order needed",th:"ไม่ต้องมีเลขที่งาน"},
+  diStockNote:{en:"Stock mode — Cust Name, Code, Work Name and project cost are not required. Received items appear in Stock List as Work: Stock.",th:"โหมดสต็อก — ไม่ต้องกรอกชื่อลูกค้า รหัส ชื่องาน และราคาประเมินโครงการ ของที่รับเข้าแล้วจะแสดงใน Stock List เป็น Work: Stock"},
+  diStockOn:{en:"Stock mode on — this detail goes to Stock, not to a work order.",th:"เปิดโหมดสต็อก — รายละเอียดนี้จะเข้าสต็อก ไม่ผูกกับงาน"},
+  diStockOff:{en:"Stock mode off — select a Work No.",th:"ปิดโหมดสต็อก — กรุณาเลือกเลขที่งาน"},
+  diStockReserved:{en:'"Stock" is reserved for stock items — use another Work No.',th:'"Stock" เป็นชื่อสงวนสำหรับรายการสต็อก กรุณาใช้เลขที่งานอื่น'},
   roName:{en:"WORK NAME",th:"ชื่องาน"},
   inputHead:{en:"Input your information",th:"กรอกข้อมูลของคุณ"},
   inputSub:{en:"Enter the detail line for the selected work order.",th:"กรอกรายละเอียดสำหรับงานที่เลือก"},
@@ -6462,7 +6410,6 @@ function applyLang(){
   renderPermEmployees();
   renderAccountEmployees();
   if(document.getElementById('view-salary')&&document.getElementById('view-salary').classList.contains('active')) initSalary();
-  initAddStock();
   initWithdraw();
   initReturn();
   renderWithdrawLog();
@@ -6485,7 +6432,7 @@ function go(view){
   document.querySelectorAll('.navmenu .dd .dd-item').forEach(a=>a.classList.toggle('active',a.getAttribute('data-nav')===view));
   const _workViews=['create','detail','spectator','timeline','check','status','vendors','customers'];
   if(_workViews.includes(view)) document.getElementById('grp-work')?.classList.add('open');
-  if(['addstock','stocklist','withdraw','returnstock','withdrawlog'].includes(view)) document.getElementById('grp-stock')?.classList.add('open');
+  if(['stocklist','withdraw','returnstock','withdrawlog'].includes(view)) document.getElementById('grp-stock')?.classList.add('open');
   if(['employees','attendance','timeattend','benefit','otmgmt','leaveconfirm','calendar','permission','account'].includes(view)) document.getElementById('grp-hr')?.classList.add('open');
   if(['salary','otreg','leave','purchaserequest'].includes(view)) document.getElementById('grp-personal')?.classList.add('open');
   if(['prlist'].includes(view)) document.getElementById('grp-purchase')?.classList.add('open');
@@ -6501,8 +6448,7 @@ function go(view){
   if(view==='status'){ renderStatus(); }
   if(view==='vendors'){ renderVendors(); }
   if(view==='customers'){ renderCustomers(); }
-  if(view==='addstock'){ initAddStock(); }
-  if(view==='stocklist'){ try{ nxSyncReceivedToStock(); }catch(_){} renderStockList(); }
+  if(view==='stocklist'){ renderStockList(); }
   if(view==='withdraw'){ initWithdraw(); renderMyWithdrawStatus(); }
   if(view==='returnstock'){ initReturn(); }
   if(view==='withdrawlog'){ renderWithdrawLog(); renderWithdrawReqList(); }
@@ -6624,6 +6570,9 @@ document.getElementById('createForm').addEventListener('submit',function(e){
   ok = markValid('f-custName', custName!=='') && ok;
   ok = markValid('f-custCode', custCode!=='') && ok;
   if(!ok) return;
+  if(workNo.toLowerCase()===DI_STOCK_WN.toLowerCase()){
+    const f=document.getElementById('f-workNo'); f.classList.add('invalid'); f.querySelector('.err').textContent=t('diStockReserved'); f.querySelector('.err').style.display='block'; return;
+  }
   if(DB.works().some(w=>w.workNo.toLowerCase()===workNo.toLowerCase())){
     const f=document.getElementById('f-workNo'); f.classList.add('invalid'); f.querySelector('.err').textContent=t('dupWork'); f.querySelector('.err').style.display='block'; return;
   }
@@ -6678,7 +6627,7 @@ function initCreate(){ fillCreateCustSelect(document.getElementById('custName')?
 function buildDetailFields(){
   const wrap=document.getElementById('detailFields'); if(!wrap) return;
   wrap.innerHTML='';
-  const wn=document.getElementById('selWorkNo')?document.getElementById('selWorkNo').value:'';
+  const wn=diWorkNo();
   FIELDS.forEach((f,i)=>{
     const label = LANG==='en'?f.en:f.th;
     const div=document.createElement('div'); div.className='field'; div.id='df-'+f.key;
@@ -6838,6 +6787,7 @@ function onSupplierSelect(){
 }
 function refreshWorkSelect(){
   const sel=document.getElementById('selWorkNo'); if(!sel) return;
+  if(diStockMode) diSetStock(true);            /* re-apply the stock-mode chrome after a re-render */
   const works=DB.works();
   const prev=sel.value;
   sel.innerHTML=`<option value="">${works.length?t('chooseWork'):t('noWorks')}</option>`;
@@ -6845,16 +6795,44 @@ function refreshWorkSelect(){
   if(works.some(w=>w.workNo===prev)) sel.value=prev;
   onSelectWork();
 }
+/* ---- "For Stock" mode ------------------------------------------------------
+   Detail lines entered in this mode carry the reserved Work No below instead of a
+   real work order, so no Cust Name / Code / Work Name / project cost is needed.
+   Everything downstream is unchanged: received lines still flow into Stock via
+   nxStockFromDetails(), where work:(d.workNo||'Stock') then reads "Stock". */
+const DI_STOCK_WN='Stock';
+let diStockMode=false;
+/* the Work No a detail typed on this page belongs to — the sentinel while in stock mode */
+function diWorkNo(){
+  if(diStockMode) return DI_STOCK_WN;
+  const s=document.getElementById('selWorkNo'); return s?s.value:'';
+}
+function diToggleStock(){ diSetStock(!diStockMode); showToast(t(diStockMode?'diStockOn':'diStockOff')); }
+function diSetStock(on){
+  diStockMode=!!on;
+  const btn=document.getElementById('diStockBtn');
+  if(btn){ btn.classList.toggle('active',diStockMode); btn.setAttribute('aria-pressed',diStockMode?'true':'false'); }
+  const sel=document.getElementById('selWorkNo'), box=document.getElementById('selWorkStock');
+  if(sel) sel.style.display=diStockMode?'none':'';
+  if(box) box.style.display=diStockMode?'':'none';
+  const lbl=document.getElementById('selWorkNoLbl');
+  if(lbl){ lbl.setAttribute('data-i18n',diStockMode?'lblSelected':'lblSelWorkNo'); lbl.textContent=t(diStockMode?'lblSelected':'lblSelWorkNo'); }
+  const note=document.getElementById('diStockNote'); if(note) note.style.display=diStockMode?'block':'none';
+  const ro=document.getElementById('diReadout'); if(ro) ro.style.display=diStockMode?'none':'';
+  if(diStockMode && sel) sel.value='';   /* the two are mutually exclusive */
+  onSelectWork();
+}
 function onSelectWork(){
   const wn=document.getElementById('selWorkNo').value;
   const w=DB.works().find(x=>x.workNo===wn);
+  const open=diStockMode||!!w;                       /* stock mode needs no work record */
   document.getElementById('roCust').textContent = w?(w.custName||'—'):'—';
   document.getElementById('roCode').textContent = w?(w.custCode||'—'):'—';
   document.getElementById('roName').textContent = w?w.workName:'—';
   const rc=document.getElementById('roCost'); if(rc) rc.textContent = (w&&w.estCost)?(w.estCost+' '+(w.estCurrency||'THB')):'—';
-  document.getElementById('detailFormCard').style.display = w?'block':'none';
-  const eb=document.getElementById('selEditBtn'); if(eb) eb.style.display = w?'inline-flex':'none';
-  if(w){ try{ diMode(diCurrentMode); }catch(_){} }
+  document.getElementById('detailFormCard').style.display = open?'block':'none';
+  const eb=document.getElementById('selEditBtn'); if(eb) eb.style.display = (w&&!diStockMode)?'inline-flex':'none';
+  if(open){ try{ diMode(diCurrentMode); }catch(_){} }
 }
 /* edit the selected work's own fields: Customer Name, Code, Work Name, Estimated cost */
 function diEditWorkDetails(){
@@ -6895,7 +6873,7 @@ function diSaveWorkDetails(wn){
 }
 document.getElementById('detailForm').addEventListener('submit',function(e){
   e.preventDefault();
-  const wn=document.getElementById('selWorkNo').value;
+  const wn=diWorkNo();
   if(!wn) return;
   let ok=true; const data={workNo:wn, id:'d'+Date.now()+Math.floor(Math.random()*1000)};
   FIELDS.forEach(f=>{
@@ -6925,7 +6903,7 @@ document.getElementById('detailForm').addEventListener('submit',function(e){
   }
   if(!ok){ document.querySelector('#view-detail .invalid')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   const w=DB.works().find(x=>x.workNo===wn);
-  const rows=[{k:'WORK NO',v:wn},{k:'WORK NAME',v:w?w.workName:''}];
+  const rows=[{k:'WORK NO',v:wn},{k:'WORK NAME',v:w?w.workName:(diStockMode?t('diStockT'):'')}];
   FIELDS.forEach(f=>rows.push({k:(LANG==='en'?f.en:f.th),v:data[f.key]}));
   if(stockWithdraw) rows.push({k:t('stockWithdraw'),v:stockWithdraw.qty+' '+stockWithdraw.unit+' · '+stockWithdraw.list});
   confirmModal(t('mConfirmTitle'),t('mConfirmDesc'),rows,()=>{
@@ -7092,7 +7070,7 @@ function diCsvScope(){ return diCsvSel.size ? [...diCsvSel].sort((a,b)=>a-b) : d
 function diOverrides(){ const ov={}; DI_APPLY_FIELDS.forEach(f=>{ ov[f.key]=diApplyVal(f.key); }); return ov; }
 /* Merge CSV cells + override panel → the exact records the preview shows and Upload will save. */
 function diMergedRows(){
-  const selEl=document.getElementById('selWorkNo'); const wn=selEl?selEl.value:'';
+  const wn=diWorkNo();
   const scope=new Set(diCsvScope());
   const ov=diOverrides();
   return diCsvRows.map((r,idx)=>{
@@ -7214,7 +7192,7 @@ function diApplyVal(key){
 /* CONFIRM — validate the in-scope rows; highlight any missing required cells in the table. */
 function diCsvConfirm(){
   const en=LANG==='en';
-  const selEl=document.getElementById('selWorkNo'); const wn=selEl?selEl.value:'';
+  const wn=diWorkNo();
   if(!wn){ showToast(en?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
   if(!diCsvRows.length){ showToast(en?'Upload a CSV first.':'อัปโหลด CSV ก่อน'); return; }
   const merged=diMergedRows();
@@ -7238,7 +7216,7 @@ function diCsvConfirm(){
 function diCsvUpload(){
   const en=LANG==='en';
   if(!diCsvConfirmed){ showToast(en?'Press Confirm first to review the table.':'กด Confirm ก่อนเพื่อตรวจสอบตาราง'); const cb=document.getElementById('diConfirmBtn'); if(cb){ cb.classList.add('nudge'); setTimeout(()=>cb.classList.remove('nudge'),600); } return; }
-  const selEl=document.getElementById('selWorkNo'); const wn=selEl?selEl.value:'';
+  const wn=diWorkNo();
   if(!wn){ showToast(en?'Select a Work No first.':'เลือก Work No ก่อน'); return; }
   const merged=diMergedRows();
   const scope=merged.filter(m=>m.inScope);
@@ -8443,10 +8421,9 @@ function ckUpdateCommit(){
     const dets2=DB.details();
     ids.forEach(id=>{ const d=dets2.find(x=>x.id===id); if(d) ckCommitDetail(dets2,d); });
     DB.saveDetails(dets2);
-    let synced=0; try{ synced=nxSyncReceivedToStock(); }catch(_){}   // pull EVERY received item into Stock (incl. blank/"-" suppliers)
     ckStage={};
     closeModal();
-    successModal(en?`${ids.length} item(s) updated!`:`อัปเดต ${ids.length} รายการแล้ว!`, (en?'Saved to the database and synced.':'บันทึกลงฐานข้อมูลและซิงค์แล้ว')+(synced?(en?` · ${synced} received item(s) added to Stock.`:` · เพิ่มของรับเข้า Stock ${synced} รายการ`):''));
+    successModal(en?`${ids.length} item(s) updated!`:`อัปเดต ${ids.length} รายการแล้ว!`, en?'Saved to the database and synced.':'บันทึกลงฐานข้อมูลและซิงค์แล้ว');
     renderCheck(); renderTimeline(); renderSpectator(); computeAlerts(); renderStockList(); renderStockAnalysis(); renderWithdrawLog(); if(typeof renderStatus==='function') renderStatus();
   });
 }
@@ -8846,6 +8823,7 @@ function openCustomerDetail(x){
 }
 function openWorkInDetail(x){
   const wn=ub64(x); closeModal(); go('detail');
+  diSetStock(false);
   const s=document.getElementById('selWorkNo'); if(s){ s.value=wn; onSelectWork(); }
   setTimeout(()=>leadTo(document.querySelector('#view-detail .readout')||s),340);
 }
@@ -8892,66 +8870,6 @@ function saveCustomer(isEdit,oldB64){
   if(_custFormCb){ const cb=_custFormCb; _custFormCb=null; try{ cb(rec); }catch(_){} }
 }
 function delCustomer(x){ const nm=ub64(x); DB.saveCustomers(DB.customers().filter(c=>c.name!==nm)); renderCustomers(); showToast(t('custDeleted')); }
-
-/* =================== ADD STOCK =================== */
-let asPayImgData=null;
-function initAddStock(){
-  const sup=document.getElementById('as_supplier'); if(sup) fillVendorSelect(sup,true);
-  const unit=document.getElementById('as_unit'); if(unit) unit.innerHTML=unitOptions(unit.value);
-  const by=document.getElementById('as_by'); if(by){ const my=sessionEmp(); by.innerHTML=employeeOptions(by.value||(my?my.name:'')); by.disabled=!!my; by.title=my?t('lockedToYou'):''; }
-  const wk=document.getElementById('as_work'); if(wk) wk.value='Stock';
-}
-function asSupplierChange(){
-  const sel=document.getElementById('as_supplier');
-  if(sel.value==='__add__'){ sel.value=''; vendorSaveCallback=(name)=>{ fillVendorSelect(sel,true); sel.value=name; document.getElementById('fas-supplier')?.classList.remove('invalid'); }; openVendorForm(); }
-  else document.getElementById('fas-supplier')?.classList.remove('invalid');
-}
-function asEstUnit(){ const est=parseFloat((document.getElementById('as_est')||{}).value)||0; if(est<=0) return 0; const mode=(document.getElementById('as_est_mode')||{}).value; if(mode==='stock'){ const qty=parseFloat(document.getElementById('as_qty').value)||0; return qty>0? est/qty : 0; } return est; }
-function asCalcValue(){
-  const qty=parseFloat(document.getElementById('as_qty').value)||0;
-  const price=parseFloat(document.getElementById('as_price').value)||0;
-  const estU=asEstUnit();
-  const hint=document.getElementById('as_valhint');
-  document.getElementById('fas-price')?.classList.remove('invalid');
-  document.getElementById('fas-qty')?.classList.remove('invalid');
-  let html='';
-  if(qty>0 && price>0) html+=`<span style="color:${C_DEP};font-weight:700">▲ ${t('lineValue')}: ${fmtTHB(qty*price)}</span>`;
-  if(estU>0 && price>0){ const mu=estU-price, mt=mu*qty; const c=mu>=0?'#16a34a':'#e5484d'; html+=`<span style="color:${c};font-weight:700">◆ ${t('thMgUnit')}: ${mu>=0?'+':''}${fmtTHB(Math.round(mu))} · ${t('thMgTot')}: ${mt>=0?'+':''}${fmtTHB(Math.round(mt))}</span>`; }
-  if(html){ hint.style.display='flex'; hint.style.flexWrap='wrap'; hint.style.gap='4px 16px'; hint.innerHTML=html; } else hint.style.display='none';
-}
-function asPayToggle(){
-  const pay=parseFloat(document.getElementById('as_pay').value)||0;
-  const box=document.getElementById('fas-payimg');
-  box.style.display = pay>0 ? 'block':'none';
-  if(pay<=0){ asPayImgData=null; document.getElementById('as_payimg').value=''; document.getElementById('as_payimg_prev').innerHTML=''; box.classList.remove('invalid'); }
-}
-function asPayImg(e){
-  const f=e.target.files&&e.target.files[0]; if(!f){ asPayImgData=null; return; }
-  const r=new FileReader(); r.onload=()=>{ asPayImgData=r.result; document.getElementById('as_payimg_prev').innerHTML=`<img src="${asPayImgData}" alt="payment" style="max-width:170px;max-height:120px;border-radius:10px;margin-top:8px;border:1px solid var(--line)">`; document.getElementById('fas-payimg').classList.remove('invalid'); }; r.readAsDataURL(f);
-}
-function submitAddStock(e){
-  e.preventDefault();
-  const g=id=>{const el=document.getElementById(id); return el?el.value.trim():'';};
-  const req=[['fas-no','as_no'],['fas-date','as_date'],['fas-supplier','as_supplier'],['fas-list','as_list'],['fas-qty','as_qty'],['fas-unit','as_unit'],['fas-price','as_price'],['fas-by','as_by'],['fas-pr','as_pr']];
-  let ok=true;
-  req.forEach(([fid,iid])=>{ const v=g(iid); const valid=v!==''; document.getElementById(fid).classList.toggle('invalid',!valid); if(!valid) ok=false; });
-  const pay=parseFloat(g('as_pay'))||0;
-  if(pay>0 && !asPayImgData){ document.getElementById('fas-payimg').classList.add('invalid'); ok=false; }
-  if(!ok){ document.querySelector('#view-addstock .invalid')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
-  const estUnit=asEstUnit();
-  const rec={ id:'stk'+Date.now(), no:g('as_no'), date:g('as_date'), supplier:g('as_supplier'), work:'Stock', list:g('as_list'), qty:g('as_qty'), qtyInit:g('as_qty'), unit:g('as_unit'), estUnitPrice:estUnit>0?String(Math.round(estUnit*100)/100):'', unitPrice:g('as_price'), shipDate:g('as_ship'), recvDate:g('as_recv'), submittedBy:g('as_by'), payment:g('as_pay'), paymentImg:asPayImgData||'', prNo:g('as_pr'), note:g('as_note') };
-  const lineVal=(parseFloat(rec.qty)||0)*(parseFloat(rec.unitPrice)||0);
-  const rows=[{k:'NO.',v:rec.no},{k:t('lblDate'),v:rec.date},{k:t('lblSupplierName'),v:rec.supplier},{k:t('lblWork'),v:'Stock'},{k:t('lblListR'),v:rec.list},{k:t('lblQtyR'),v:rec.qty+' '+rec.unit}];
-  if(estUnit>0){ const mu=estUnit-(parseFloat(rec.unitPrice)||0); rows.push({k:t('lblEstPrice'),v:fmtTHB(Math.round(estUnit))+' /'+t('estPerUnit')}); rows.push({k:t('thMgTot'),v:(mu>=0?'+':'')+fmtTHB(Math.round(mu*(parseFloat(rec.qty)||0)))}); }
-  rows.push({k:t('lblUnitPrice'),v:fmtTHB(rec.unitPrice)},{k:t('lineValue'),v:fmtTHB(lineVal)},{k:t('lblSubmittedBy'),v:rec.submittedBy},{k:'PR No.',v:rec.prNo},{k:t('lblPayment'),v:rec.payment?fmtTHB(rec.payment):'—'});
-  confirmModal(t('mConfirmTitle'),t('mConfirmDesc'),rows,()=>{
-    const s=DB.stock(); s.push(rec); DB.saveStock(s);
-    closeModal(); successModal(t('stockAdded'),t('stockAddedSub'));
-    document.getElementById('addStockForm').reset(); asPayImgData=null; document.getElementById('fas-payimg').style.display='none'; document.getElementById('as_payimg_prev').innerHTML=''; document.getElementById('as_work').value='Stock'; document.getElementById('as_valhint').style.display='none';
-    document.querySelectorAll('#view-addstock .invalid').forEach(x=>x.classList.remove('invalid'));
-    renderStockList(); try{ renderStockAnalysis(); }catch(_){} try{ computeAlerts(); }catch(_){}
-  });
-}
 
 /* =================== STOCK LIST =================== */
 function stockFieldValue(s,type){ return s[type]||''; }
@@ -10978,7 +10896,7 @@ function renderCalList(){
 /* =================== PERMISSION MANAGEMENT (CEO/Developer only) =================== */
 const PERM_PAGES=[
   {g:'grpWork', items:[['create','navCreate'],['detail','navDetail'],['spectator','navSpectator'],['timeline','navTimeline'],['check','navCheck'],['vendors','navVendors'],['customers','navCustomers']]},
-  {g:'grpStock', items:[['addstock','stkAdd'],['stocklist','stkList'],['withdraw','stkWithdraw'],['returnstock','stkReturn'],['withdrawlog','stkLog']]},
+  {g:'grpStock', items:[['stocklist','stkList'],['withdraw','stkWithdraw'],['returnstock','stkReturn'],['withdrawlog','stkLog']]},
   {g:'grpHR', items:[['employees','navEmployees'],['attendance','navAttendance'],['timeattend','navTimeAttend'],['benefit','navBenefit'],['otmgmt','navOtMgmt'],['leaveconfirm','navLeaveMgmt'],['calendar','navCalendar'],['permission','navPermission']]},
   {g:'grpPersonal', items:[['otreg','navOtReg'],['leave','navLeave'],['purchaserequest','navPurchaseReq']]},
   {g:'grpPurchase', items:[['prlist','navPrList']]},
@@ -10988,7 +10906,7 @@ function allPageKeys(){ return PERM_PAGES.reduce((a,g)=>a.concat(g.items.map(i=>
 function ensurePositions(){
   if(localStorage.getItem('nx_seed_pos')) return;
   const all=allPageKeys(); const mk=(keys)=>{ const o={}; all.forEach(k=>o[k]=keys.indexOf(k)>=0); return o; };
-  const workStock=['create','detail','spectator','timeline','check','vendors','customers','addstock','stocklist','withdraw','returnstock','withdrawlog','otreg','leave'];
+  const workStock=['create','detail','spectator','timeline','check','vendors','customers','stocklist','withdraw','returnstock','withdrawlog','otreg','leave'];
   const pos=[
     {id:'pos_mgr',name:'Manager',perms:mk(all)},
     {id:'pos_eng',name:'Engineer',perms:mk(workStock.concat(['attendance','stockanalysis']))},
@@ -11581,7 +11499,6 @@ const NAV_ICON={
   check:NX_SVG(`<rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4h6v3H9z"/><path d="M8.6 13.2l2.5 2.5 4.3-4.9"/>`),
   vendors:NX_SVG(`<rect x="5.5" y="3.2" width="13.5" height="17.6" rx="2.2"/><circle cx="12.3" cy="10" r="2.4"/><path d="M8.7 17c.7-2.3 6.5-2.3 7.2 0"/><path d="M5.5 7.6H3M5.5 12H3M5.5 16.4H3"/>`),
   customers:NX_SVG(`<rect x="5" y="3" width="14" height="18" rx="1.6"/><path d="M9 7h1.6M13.4 7H15M9 11h1.6M13.4 11H15"/><path d="M10 21v-3.4h4V21"/>`),
-  addstock:NX_SVG(`<path d="M12 3.2 20 7.5v9L12 20.8 4 16.5v-9z"/><path d="M4 7.5 12 12l8-4.5"/><path d="M12 12v3.4M10.3 13.7h3.4"/>`),
   stocklist:NX_SVG(`<rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4h6v3H9z"/><path d="M9 12h6M9 16h4"/>`),
   withdraw:NX_SVG(`<path d="M12 3.2 20 7.5v9L12 20.8 4 16.5v-9z"/><path d="M4 7.5 12 12l8-4.5"/><path d="M9.2 13.4h5.6"/>`),
   returnstock:NX_SVG(`<path d="M9 14.5 4.8 10.3 9 6.1"/><path d="M4.8 10.3h9.4a4.7 4.7 0 0 1 0 9.4h-3.1"/>`),
@@ -12219,7 +12136,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.14-b';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.18-b';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
@@ -12587,7 +12504,6 @@ ensureDepartments();
 seedPayslips();
 seedTimeAttend();
 seedPurchase();
-document.getElementById('addStockForm').addEventListener('submit',submitAddStock);
 document.getElementById('withdrawForm').addEventListener('submit',submitWithdraw);
 document.getElementById('returnForm').addEventListener('submit',submitReturn);
 applyTheme();
