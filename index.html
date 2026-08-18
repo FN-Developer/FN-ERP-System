@@ -960,6 +960,12 @@ tr.row-noship:hover{background:rgba(255,176,32,0.24)}
 .tl-layout{display:grid;grid-template-columns:1fr 330px;gap:20px;align-items:start;margin-top:6px}
 @media(max-width:960px){.tl-layout{grid-template-columns:1fr}}
 .tl-col-head{font-family:'Rajdhani';font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.tl-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.tlf-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:22px;border:1.5px solid var(--line);background:var(--inset-bg);color:var(--txt);font-size:12.5px;font-weight:600;cursor:pointer;transition:border-color .12s,background .12s,color .12s}
+.tlf-btn:hover{border-color:color-mix(in srgb,var(--cyan) 45%,var(--line))}
+.tlf-btn.active{background:linear-gradient(120deg,var(--primary),var(--cyan));color:#fff;border-color:transparent;box-shadow:0 4px 14px color-mix(in srgb,var(--primary) 30%,transparent)}
+.tlf-n{font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;min-width:20px;text-align:center;background:color-mix(in srgb,var(--txt) 12%,transparent);color:var(--txt)}
+.tlf-btn.active .tlf-n{background:rgba(255,255,255,.28);color:#fff}
 .tl-col-head .dot-mini{width:9px;height:9px;border-radius:50%;background:var(--primary)}
 .tl-col-head.recv{color:var(--green)}
 .tl-recv-count{margin-left:auto;background:rgba(20,154,90,.16);color:var(--green);border-radius:20px;min-width:24px;height:22px;display:inline-grid;place-items:center;font-family:'Orbitron';font-weight:700;font-size:12px;padding:0 7px}
@@ -2895,7 +2901,11 @@ body.bg-paused .lg-orb,body.bg-paused .hb-orb,body.bg-paused .lg-ring,body.bg-pa
       </div>
       <div class="tl-layout">
         <div class="tl-main">
-          <div class="tl-col-head"><span class="dot-mini"></span><span data-i18n="tlActive">Active deliveries</span></div>
+          <div class="tl-filter" id="tlFilter">
+            <button type="button" class="tlf-btn active" data-f="active" onclick="tlSetFilter('active')">📦 <span data-i18n="tlfActive">Active deliveries</span> <span class="tlf-n" id="tlfNactive">0</span></button>
+            <button type="button" class="tlf-btn" data-f="today" onclick="tlSetFilter('today')">📅 <span data-i18n="tlfToday">Today shipping</span> <span class="tlf-n" id="tlfNtoday">0</span></button>
+            <button type="button" class="tlf-btn" data-f="week" onclick="tlSetFilter('week')">🗓 <span data-i18n="tlfWeek">This week shipping</span> <span class="tlf-n" id="tlfNweek">0</span></button>
+          </div>
           <div class="tl-list" id="tlList"></div>
           <div class="empty-state" id="tlEmpty" style="display:none"><div class="e-ic">📦</div><div data-i18n="tlNoData">No detail items yet. Add items in Work Detail Input.</div></div>
         </div>
@@ -6290,6 +6300,9 @@ const I18N = {
   lgOk:{en:"Received / on track",th:"รับแล้ว / ตามกำหนด"},
   tlNoData:{en:"No detail items yet. Add items in Work Detail Input.",th:"ยังไม่มีรายการ เพิ่มได้ที่หน้ากรอกรายละเอียดงาน"},
   tlActive:{en:"Active deliveries",th:"รายการที่กำลังติดตาม"},
+  tlfActive:{en:"Active deliveries",th:"กำลังส่งมอบ"},
+  tlfToday:{en:"Today shipping",th:"ส่งวันนี้"},
+  tlfWeek:{en:"This week shipping",th:"ส่งสัปดาห์นี้"},
   tlReceived:{en:"Received",th:"รับของแล้ว"},
   tlRecvNone:{en:"No received items yet.",th:"ยังไม่มีรายการที่รับของแล้ว"},
   fabTitle:{en:"Delivery Alert!",th:"แจ้งเตือนการรับของ"},
@@ -7918,6 +7931,8 @@ function renderKpiPops(alerts){
   const vs=DB.vendors();
   setKpiPop('kpiPopVendors', vs.slice(0,6).map(v=>`<b>${escapeHtml(kpiCap(v.name,16))}</b>${escapeHtml(kpiCap(v.contact,14))}`), vs.length, t('thSupplier'));
 }
+let tlFilter='active';   /* Delivery Monitor list filter: active | today | week */
+function tlSetFilter(f){ tlFilter=f; try{ document.querySelectorAll('#tlFilter .tlf-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-f')===f)); }catch(_){} renderTimeline(); }
 function renderTimeline(){
   const list=document.getElementById('tlList'); if(!list) return;
   const works=DB.works(), dets=DB.details();
@@ -7927,6 +7942,18 @@ function renderTimeline(){
   const items=all.filter(x=>!isRecv(x));
   const order={lost:0,urgent:1,warn:2,none:3,ok:4};
   items.sort((a,b)=>order[a.st.level]-order[b.st.level] || ((a.st.days??999)-(b.st.days??999)));
+  // ---- Delivery Monitor filter: Active / Today shipping / This week shipping ----
+  const _now=new Date(), _today=isoOf(_now);
+  const _ws=new Date(_now); _ws.setDate(_now.getDate()-_now.getDay());              // Sunday of this week
+  const _we=new Date(_ws);  _we.setDate(_ws.getDate()+6);                            // Saturday
+  const _wkS=isoOf(_ws), _wkE=isoOf(_we);
+  const _shipIso=x=>{ const s=String(x.d.shipDate||'').trim(); return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:''; };
+  const nToday=items.filter(x=>_shipIso(x)===_today).length;
+  const nWeek =items.filter(x=>{ const s=_shipIso(x); return s&&s>=_wkS&&s<=_wkE; }).length;
+  (function(){ const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; }; set('tlfNactive',items.length); set('tlfNtoday',nToday); set('tlfNweek',nWeek); })();
+  let itemsF=items;
+  if(tlFilter==='today') itemsF=items.filter(x=>_shipIso(x)===_today);
+  else if(tlFilter==='week') itemsF=items.filter(x=>{ const s=_shipIso(x); return s&&s>=_wkS&&s<=_wkE; });
   received.sort((a,b)=>String(b.d.recvDate).localeCompare(String(a.d.recvDate)));
   // ---- right-side "Received" list (decorated buttons) ----
   const recvList=document.getElementById('tlRecvList');
@@ -7945,7 +7972,7 @@ function renderTimeline(){
     const re=document.getElementById('tlRecvEmpty'); if(re) re.style.display=received.length?'none':'block';
   }
   list.innerHTML='';
-  items.forEach(({d,st,w})=>{
+  itemsF.forEach(({d,st,w})=>{
     const card=document.createElement('div'); card.className='tl-card'; card.id='tl-'+d.id;
     let cls='',statusTxt='',statusBadge='',daysTxt='',daysCls='';
     if(st.level==='lost'){ cls='flag-lost blink-lost'; statusBadge='st-lost'; statusTxt=t('stLost'); daysCls='lost';
@@ -7972,7 +7999,7 @@ function renderTimeline(){
       </div>`;
     list.appendChild(card);
   });
-  document.getElementById('tlEmpty').style.display = items.length? 'none':'block';
+  document.getElementById('tlEmpty').style.display = itemsF.length? 'none':'block';
 }
 function fabClick(){
   go('timeline');
@@ -12137,7 +12164,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.18-d';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.18-e';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
