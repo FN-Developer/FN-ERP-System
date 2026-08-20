@@ -522,12 +522,23 @@ main{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:34px 26p
   #bc-work .bc-pop{right:auto;width:min(600px,calc(100vw - 40px))}
 }
 @media(max-width:900px){
-  .bc-mega{flex-direction:column;gap:10px}
-  .bc-mega-nav{flex:none;flex-direction:row;overflow-x:auto;padding:0 0 9px;margin:0}
+  /* stack: a 3-up segmented tab row that FILLS the width (no horizontal scroll), pages below */
+  .bc-mega{flex-direction:column;gap:12px}
+  .bc-mega-nav{flex:none;flex-direction:row;overflow:visible;gap:6px;padding:0 0 11px;margin:0}
   .bc-mega-nav::after{top:auto;bottom:0;left:0;right:0;width:auto;height:1px;background:linear-gradient(90deg,transparent,var(--line2) 18%,var(--line2) 82%,transparent)}
-  .bc-secbtn{white-space:nowrap;flex:0 0 auto}
+  .bc-secbtn{flex:1 1 0;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 5px;text-align:center;border-radius:13px}
+  .bc-secbtn.active{box-shadow:none;border-color:var(--acc,#4338ca);background:color-mix(in srgb,var(--acc,#4338ca) 13%,transparent)}
+  .bc-secbtn .bc-sec-ic{width:30px;height:30px}
+  .bc-secbtn .bc-sec-tx{flex:none;align-items:center;min-width:0;max-width:100%}
+  .bc-secbtn .bc-sec-tx b{font-size:12.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .bc-secbtn .bc-sec-tx small{display:none}
   .bc-secbtn .bc-sec-ar{display:none}
   .bc-secpage{grid-template-columns:1fr}
+  .bc-secpage.active{animation:none}
+}
+@media(min-width:521px) and (max-width:900px){
+  /* tablet: two page columns fit comfortably */
+  .bc-secpage{grid-template-columns:1fr 1fr}
 }
 .bc-grid.one{grid-template-columns:1fr}
 .bc-item{position:relative;overflow:hidden;display:flex;align-items:center;gap:11px;padding:11px 12px 11px 15px;border-radius:12px;color:var(--txt);text-decoration:none;font-weight:600;font-size:14px;cursor:pointer;opacity:0;transform:translateY(8px);transition:background .16s ease,transform .24s cubic-bezier(.2,.9,.3,1.25)}
@@ -3004,7 +3015,7 @@ body.locked{overflow:hidden}
 @keyframes bgRipple{0%{transform:scale(1);opacity:.75}100%{transform:scale(30);opacity:0}}
 /* ---- home page animated background — full-screen fixed layer (theme-aware) ---- */
 main{position:relative;z-index:1}
-.home-bg{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;overflow:hidden;pointer-events:none;z-index:0;display:none;--px:0;--py:0;--zoom:1;--rip:var(--primary);transform-origin:center;scale:var(--zoom,1);transition:scale .7s cubic-bezier(.2,.7,.3,1)}
+.home-bg{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden;max-width:100%;pointer-events:none;z-index:0;display:none;--px:0;--py:0;--zoom:1;--rip:var(--primary);transform-origin:center;scale:var(--zoom,1);transition:scale .7s cubic-bezier(.2,.7,.3,1)}
 .home-bg.show{display:block}
 .hb-orb{position:absolute;border-radius:50%;opacity:.34;background:radial-gradient(circle at 50% 50%,var(--oc,#0906d7) 0%,transparent 72%);will-change:transform;transform:translateZ(0);animation:lgFloat 28s ease-in-out infinite;translate:calc(var(--px)*30px) calc(var(--py)*30px);transition:translate .4s cubic-bezier(.2,.7,.3,1)}
 .hb-orb.h1{width:560px;height:560px;--oc:#0906d7;top:-160px;left:-100px}
@@ -13904,7 +13915,7 @@ function dbClearConfirm(){
   })();
 }
 /* ================= Phase 3: Database Connectivity ================= */
-const NX_BUILD='2026.08.20-y';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
+const NX_BUILD='2026.08.20-z';   /* app build tag — numeric-aware compare (nxBuildGT) so z10>z9; date bump keeps it newest */
 let _nxSid=null, _nxLoginAt=null, _nxIP=null, _cnTimer=null;
 function nxSid(){ if(!_nxSid){ try{ _nxSid=sessionStorage.getItem('nx_sid'); }catch(_){} if(!_nxSid){ _nxSid='sess_'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6).toString(36); try{ sessionStorage.setItem('nx_sid',_nxSid); }catch(_){} } } return _nxSid; }
 function nxDeviceInfo(){
